@@ -33,6 +33,10 @@ namespace insigne {
 	freelist_allocator_t						g_stream_allocator;
 };
 
+namespace stone {
+	LinearAllocator								g_PersistanceAllocator;
+}
+
 namespace helich {
 	void init_memory_system()
 	{
@@ -44,7 +48,8 @@ namespace helich {
 				memory_region<refrain2::FreelistAllocator>	{ "refrain2/taskdata",			SIZE_MB(32),	&refrain2::g_TaskDataAllocator },
 				memory_region<insigne::linear_allocator_t>	{ "insigne/persist",			SIZE_MB(64),	&insigne::g_persistance_allocator },
 				memory_region<insigne::arena_allocator_t>	{ "insigne/arena",				SIZE_MB(64),	&insigne::g_arena_allocator },
-				memory_region<insigne::freelist_allocator_t>{ "insigne/stream",				SIZE_MB(32),	&insigne::g_stream_allocator }
+				memory_region<insigne::freelist_allocator_t>{ "insigne/stream",				SIZE_MB(32),	&insigne::g_stream_allocator },
+				memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(16),	&stone::g_PersistanceAllocator }
 				);
 	}
 }
