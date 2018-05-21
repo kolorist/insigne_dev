@@ -34,7 +34,10 @@ namespace insigne {
 };
 
 namespace stone {
+	LinearAllocator								g_SystemAllocator;
 	LinearAllocator								g_PersistanceAllocator;
+	LinearAllocator								g_PersistanceResourceAllocator;
+	LinearAllocator								g_SceneResourceAllocator;
 }
 
 namespace helich {
@@ -49,7 +52,10 @@ namespace helich {
 				memory_region<insigne::linear_allocator_t>	{ "insigne/persist",			SIZE_MB(64),	&insigne::g_persistance_allocator },
 				memory_region<insigne::arena_allocator_t>	{ "insigne/arena",				SIZE_MB(64),	&insigne::g_arena_allocator },
 				memory_region<insigne::freelist_allocator_t>{ "insigne/stream",				SIZE_MB(32),	&insigne::g_stream_allocator },
-				memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(16),	&stone::g_PersistanceAllocator }
+				memory_region<stone::LinearAllocator>		{ "stone/system",				SIZE_MB(16),	&stone::g_SystemAllocator },
+				memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(32),	&stone::g_PersistanceAllocator },
+				memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(16),	&stone::g_PersistanceResourceAllocator },
+				memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(16),	&stone::g_SceneResourceAllocator }
 				);
 	}
 }

@@ -6,6 +6,7 @@
 
 #include "Memory/MemorySystem.h"
 #include "Graphics/SurfaceDefinitions.h"
+#include "Graphics/ShaderManager.h"
 
 namespace stone {
 	Application::Application(Controller* i_controller)
@@ -18,7 +19,9 @@ namespace stone {
 		i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 		i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
 
-		m_Debugger = g_PersistanceAllocator.allocate<Debugger>();
+		m_ShaderManager = g_SystemAllocator.allocate<ShaderManager>();
+		m_MaterialManager = g_SystemAllocator.allocate<MaterialManager>(m_ShaderManager);
+		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager);
 	}
 
 	Application::~Application()
@@ -50,6 +53,7 @@ namespace stone {
 		insigne::set_clear_color(0.3f, 0.4f, 0.5f, 1.0f);
 
 		m_Debugger->Initialize();
+		m_ShaderManager->Initialize();
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)

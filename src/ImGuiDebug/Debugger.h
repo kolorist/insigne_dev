@@ -3,11 +3,14 @@
 #include <floral.h>
 #include <imgui.h>
 
+#include "Graphics/MaterialManager.h"
+#include "DebugUIMaterial.h"
+
 namespace stone {
 	
 	class Debugger {
 		public:
-			Debugger();
+			Debugger(MaterialManager* i_materialManager);
 			~Debugger();
 
 			void								Initialize();
@@ -19,9 +22,15 @@ namespace stone {
 			void								OnCursorInteract(bool i_pressed, u32 i_buttonId);
 
 		private:
+			static void							RenderImGuiDrawLists(ImDrawData* i_drawData);
+
+		private:
 			f32									m_MouseX, m_MouseY;
 			bool								m_MousePressed[2];
 			bool								m_MouseHeldThisFrame[2];
+
+			MaterialManager*					m_MaterialManager;
+			DebugUIMaterial*						m_UIMaterial;
 	};
 
 }

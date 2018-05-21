@@ -3,6 +3,8 @@
 #include "Logic/Game.h"
 #include "Graphics/ITextureManager.h"
 #include "Graphics/IModelManager.h"
+#include "Graphics/IShaderManager.h"
+#include "Graphics/MaterialManager.h"
 #include "System/Controller.h"
 #include "ImGuiDebug/Debugger.h"
 
@@ -27,8 +29,10 @@ namespace stone {
 
 		private:
 			Game*								m_Game;
+			IShaderManager*						m_ShaderManager;
 			ITextureManager*					m_TextureManager;
 			IModelManager*						m_ModelManager;
+			MaterialManager*					m_MaterialManager;
 			Debugger*							m_Debugger;
 	};
 }
