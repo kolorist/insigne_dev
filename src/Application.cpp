@@ -8,6 +8,7 @@
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/ShaderManager.h"
 #include "Graphics/TextureManager.h"
+#include "Graphics/ModelManager.h"
 
 namespace stone {
 	Application::Application(Controller* i_controller)
@@ -23,6 +24,7 @@ namespace stone {
 		m_ShaderManager = g_SystemAllocator.allocate<ShaderManager>();
 		m_MaterialManager = g_SystemAllocator.allocate<MaterialManager>(m_ShaderManager);
 		m_TextureManager = g_SystemAllocator.allocate<TextureManager>();
+		m_ModelManager = g_SystemAllocator.allocate<ModelManager>();
 		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
 	}
 
@@ -58,6 +60,9 @@ namespace stone {
 
 		m_Debugger->Initialize();
 		m_ShaderManager->Initialize();
+		m_ModelManager->Initialize();
+
+		m_ModelManager->CreateSingleSurface("gfx/envi/models/demo/cube.cbobj");
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)
