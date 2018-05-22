@@ -2,15 +2,16 @@
 
 #include <floral.h>
 #include <imgui.h>
+#include <insigne/commons.h>
 
 #include "Graphics/MaterialManager.h"
-#include "DebugUIMaterial.h"
+#include "Graphics/ITextureManager.h"
 
 namespace stone {
 	
 	class Debugger {
 		public:
-			Debugger(MaterialManager* i_materialManager);
+			Debugger(MaterialManager* i_materialManager, ITextureManager* i_textureManager);
 			~Debugger();
 
 			void								Initialize();
@@ -30,7 +31,7 @@ namespace stone {
 			bool								m_MouseHeldThisFrame[2];
 
 			MaterialManager*					m_MaterialManager;
-			DebugUIMaterial*						m_UIMaterial;
+			ITextureManager*					m_TextureManager;
 	};
 
 }

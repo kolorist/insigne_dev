@@ -7,6 +7,7 @@
 #include "Memory/MemorySystem.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/ShaderManager.h"
+#include "Graphics/TextureManager.h"
 
 namespace stone {
 	Application::Application(Controller* i_controller)
@@ -21,7 +22,8 @@ namespace stone {
 
 		m_ShaderManager = g_SystemAllocator.allocate<ShaderManager>();
 		m_MaterialManager = g_SystemAllocator.allocate<MaterialManager>(m_ShaderManager);
-		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager);
+		m_TextureManager = g_SystemAllocator.allocate<TextureManager>();
+		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
 	}
 
 	Application::~Application()
@@ -32,11 +34,13 @@ namespace stone {
 	// -----------------------------------------
 	void Application::UpdateFrame(f32 i_deltaMs)
 	{
+		m_Debugger->Update(i_deltaMs);
 	}
 
 	void Application::RenderFrame(f32 i_deltaMs)
 	{
 		insigne::begin_frame();
+		m_Debugger->Render(i_deltaMs);
 		insigne::end_frame();
 		insigne::dispatch_frame();
 	}
