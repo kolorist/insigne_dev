@@ -26,6 +26,7 @@ namespace stone {
 		m_TextureManager = g_SystemAllocator.allocate<TextureManager>();
 		m_ModelManager = g_SystemAllocator.allocate<ModelManager>();
 		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
+		m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager);
 	}
 
 	Application::~Application()
@@ -36,12 +37,14 @@ namespace stone {
 	// -----------------------------------------
 	void Application::UpdateFrame(f32 i_deltaMs)
 	{
+		m_Game->Update(i_deltaMs);
 		m_Debugger->Update(i_deltaMs);
 	}
 
 	void Application::RenderFrame(f32 i_deltaMs)
 	{
 		insigne::begin_frame();
+		m_Game->Render();
 		m_Debugger->Render(i_deltaMs);
 		insigne::end_frame();
 		insigne::dispatch_frame();
@@ -61,9 +64,6 @@ namespace stone {
 		m_Debugger->Initialize();
 		m_ShaderManager->Initialize();
 		m_ModelManager->Initialize();
-
-		m_ModelManager->CreateSingleSurface("gfx/envi/models/demo/cube.cbobj");
-		m_ModelManager->CreateSingleSurface("gfx/go/models/demo/uv_sphere_pbr.cbobj");
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)
