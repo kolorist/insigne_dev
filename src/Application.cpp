@@ -63,6 +63,7 @@ namespace stone {
 		m_ModelManager->Initialize();
 
 		m_ModelManager->CreateSingleSurface("gfx/envi/models/demo/cube.cbobj");
+		m_ModelManager->CreateSingleSurface("gfx/go/models/demo/uv_sphere_pbr.cbobj");
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)

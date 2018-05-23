@@ -1,5 +1,7 @@
 #pragma once
 
+#include <floral.h>
+
 #include <insigne/render.h>
 #include <insigne/renderer.h>
 
@@ -13,6 +15,12 @@ namespace stone {
 			renderer::set_depth_test<false_type>(compare_func_e::func_always);
 			renderer::set_depth_write<false_type>();	
 		}
+	};
+
+	struct Vertex {
+		floral::vec3f							Position;
+		floral::vec3f							Normal;
+		floral::vec2f							TexCoord;
 	};
 
 	struct SolidSurface : insigne::renderable_surface_t<SolidSurface> {
