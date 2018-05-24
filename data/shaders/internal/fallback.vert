@@ -1,6 +1,7 @@
 #version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
 layout (location = 1) in mediump vec3 l_Normal_L;
+layout (location = 2) in mediump vec2 l_TexCoord;
 
 uniform highp mat4 iu_PerspectiveWVP;
 uniform highp mat4 iu_TransformMat;

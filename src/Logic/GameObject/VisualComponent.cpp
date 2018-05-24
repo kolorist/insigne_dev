@@ -22,8 +22,14 @@ namespace stone {
 	void VisualComponent::Render()
 	{
 		PBRMaterial* mat = reinterpret_cast<PBRMaterial*>(m_Material);
-		mat->SetWVP(floral::mat4x4f(1.0f));
-		mat->SetTransform(floral::mat4x4f(1.0f));
+		floral::mat4x4f v = floral::construct_lookat(
+				floral::vec3f(0.0f, 1.0f, 0.0f),
+				floral::vec3f(3.0f, 3.0f, 3.0f),
+				floral::vec3f(-3.0f, -3.0f, -3.0f));
+		floral::mat4x4f p = floral::construct_perspective(0.01f, 100.0f, 35.0f, 16.0f / 9.0f);
+		floral::mat4x4f wvp = p * v;
+		mat->SetWVP(wvp);
+		mat->SetTransform(floral::construct_scaling3d(0.2f, 0.2f, 0.2f));
 		insigne::draw_surface<SolidSurface>(m_Surface, m_Material->GetHandle());
 	}
 
