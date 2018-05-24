@@ -55,7 +55,7 @@ namespace stone {
 	{
 		// graphics init
 		insigne::initialize_driver();
-		typedef type_list_1(ImGuiSurface)		SurfaceTypeList;
+		typedef type_list_2(ImGuiSurface, SolidSurface)		SurfaceTypeList;
 		insigne::initialize_render_thread<SurfaceTypeList>();
 		insigne::wait_for_initialization();
 
@@ -64,6 +64,7 @@ namespace stone {
 		m_Debugger->Initialize();
 		m_ShaderManager->Initialize();
 		m_ModelManager->Initialize();
+		m_Game->Initialize();
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)

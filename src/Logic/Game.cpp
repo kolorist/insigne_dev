@@ -30,6 +30,7 @@ namespace stone {
 		newVC->Initialize(shdl, mat);
 
 		newGO->AddComponent(newVC);
+		m_VisualComponents->push_back(newVC);
 	}
 
 	void Game::Update(f32 i_deltaMs)
@@ -42,7 +43,7 @@ namespace stone {
 	void Game::Render()
 	{
 		for (u32 i = 0; i < m_VisualComponents->get_size(); i++) {
-		(*m_VisualComponents)[i]->Render();
+			(*m_VisualComponents)[i]->Render();
 		}
 	}
 }
