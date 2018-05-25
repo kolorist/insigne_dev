@@ -21,6 +21,10 @@ namespace stone {
 			void								SetRotation(const floral::vec3f& i_rotWS)		{ m_RotationWS = i_rotWS; }
 			void								SetScaling(const floral::vec3f& i_sclWS)		{ m_ScalingWS = i_sclWS; }
 
+			const floral::vec3f					GetPosition()									{ return m_PositionWS; }
+			const floral::vec3f					GetRotation()									{ return m_RotationWS; }
+			const floral::vec3f					GetScaling()									{ return m_ScalingWS; }
+
 		private:
 			insigne::surface_handle_t			m_Surface;
 			IMaterial*							m_Material;

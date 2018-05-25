@@ -5,6 +5,7 @@
 #include "Graphics/PBRMaterial.h"
 #include "GameObject/GameObject.h"
 #include "GameObject/VisualComponent.h"
+#include "GameObject/PlateComponent.h"
 
 namespace stone {
 	Game::Game(IModelManager* i_modelManager, MaterialManager* i_materialManager)
@@ -19,19 +20,27 @@ namespace stone {
 
 	void Game::Initialize()
 	{
-		m_GameObjects = g_SceneResourceAllocator.allocate<GameObjectArray>(8, &g_SceneResourceAllocator);
-		m_VisualComponents = g_SceneResourceAllocator.allocate<VisualComponentArray>(8, &g_SceneResourceAllocator);
+		m_GameObjects = g_SceneResourceAllocator.allocate<GameObjectArray>(25, &g_SceneResourceAllocator);
+		m_VisualComponents = g_SceneResourceAllocator.allocate<VisualComponentArray>(25, &g_SceneResourceAllocator);
 
-		GameObject* newGO = g_SceneResourceAllocator.allocate<GameObject>();
-		VisualComponent* newVC = g_SceneResourceAllocator.allocate<VisualComponent>();
+		for (u32 i = 0; i < 5; i++)
+			for (u32 j = 0; j < 5; j++) {
+				GameObject* newGO = g_SceneResourceAllocator.allocate<GameObject>();
+				VisualComponent* newVC = g_SceneResourceAllocator.allocate<VisualComponent>();
+				PlateComponent* newPC = g_SceneResourceAllocator.allocate<PlateComponent>();
 
-		insigne::surface_handle_t shdl = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/stoneplate.cbobj");
-		IMaterial* mat = m_MaterialManager->CreateMaterial<PBRMaterial>("shaders/internal/fallback");
-		newVC->Initialize(shdl, mat);
+				insigne::surface_handle_t shdl = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/stoneplate.cbobj");
+				IMaterial* mat = m_MaterialManager->CreateMaterial<PBRMaterial>("shaders/internal/fallback");
+				newVC->Initialize(shdl, mat);
+				newVC->SetPosition(floral::vec3f(-0.8f + 0.4f * i, -0.3f, -0.8f + 0.4f * j));
+				newVC->SetScaling(floral::vec3f(0.175f, 0.175f, 0.175f));
+				newPC->Initialize(newVC, 1000.0f + (i * 5 + j) * 200.0f, 500.0f);
 
-		newGO->AddComponent(newVC);
-		m_VisualComponents->push_back(newVC);
-		m_GameObjects->push_back(newGO);
+				newGO->AddComponent(newVC);
+				newGO->AddComponent(newPC);
+				m_VisualComponents->push_back(newVC);
+				m_GameObjects->push_back(newGO);
+			}
 	}
 
 	void Game::Update(f32 i_deltaMs)
