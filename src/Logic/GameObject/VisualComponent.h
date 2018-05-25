@@ -17,8 +17,17 @@ namespace stone {
 
 			void								Initialize(insigne::surface_handle_t i_surfaceHdl, IMaterial* i_matHdl);
 
+			void								SetPosition(const floral::vec3f& i_posWS)		{ m_PositionWS = i_posWS; }
+			void								SetRotation(const floral::vec3f& i_rotWS)		{ m_RotationWS = i_rotWS; }
+			void								SetScaling(const floral::vec3f& i_sclWS)		{ m_ScalingWS = i_sclWS; }
+
 		private:
 			insigne::surface_handle_t			m_Surface;
 			IMaterial*							m_Material;
+
+			floral::vec3f						m_PositionWS;
+			floral::vec3f						m_RotationWS;
+			floral::vec3f						m_ScalingWS;
+			floral::mat4x4f						m_Transform;
 	};
 }

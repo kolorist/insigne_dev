@@ -25,12 +25,13 @@ namespace stone {
 		GameObject* newGO = g_SceneResourceAllocator.allocate<GameObject>();
 		VisualComponent* newVC = g_SceneResourceAllocator.allocate<VisualComponent>();
 
-		insigne::surface_handle_t shdl = m_ModelManager->CreateSingleSurface("gfx/envi/models/demo/cube.cbobj");
+		insigne::surface_handle_t shdl = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/stoneplate.cbobj");
 		IMaterial* mat = m_MaterialManager->CreateMaterial<PBRMaterial>("shaders/internal/fallback");
 		newVC->Initialize(shdl, mat);
 
 		newGO->AddComponent(newVC);
 		m_VisualComponents->push_back(newVC);
+		m_GameObjects->push_back(newGO);
 	}
 
 	void Game::Update(f32 i_deltaMs)

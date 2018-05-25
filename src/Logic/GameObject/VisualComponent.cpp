@@ -7,6 +7,9 @@
 
 namespace stone {
 	VisualComponent::VisualComponent()
+		: m_PositionWS(0.0f, 0.0f, 0.0f)
+		, m_RotationWS(0.0f, 0.0f, 0.0f)
+		, m_ScalingWS(1.0f, 1.0f, 1.0f)
 	{
 	}
 
@@ -16,7 +19,8 @@ namespace stone {
 
 	void VisualComponent::Update(f32 i_deltaMs)
 	{
-		// nothing
+		// transform update
+		m_Transform = floral::construct_translation3d(m_PositionWS) * floral::construct_scaling3d(m_ScalingWS);
 	}
 
 	void VisualComponent::Render()
@@ -29,7 +33,7 @@ namespace stone {
 		floral::mat4x4f p = floral::construct_perspective(0.01f, 100.0f, 35.0f, 16.0f / 9.0f);
 		floral::mat4x4f wvp = p * v;
 		mat->SetWVP(wvp);
-		mat->SetTransform(floral::construct_scaling3d(0.2f, 0.2f, 0.2f));
+		mat->SetTransform(m_Transform);
 		insigne::draw_surface<SolidSurface>(m_Surface, m_Material->GetHandle());
 	}
 
