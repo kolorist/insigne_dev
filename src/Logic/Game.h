@@ -7,11 +7,12 @@
 #include "GameObject/VisualComponent.h"
 #include "Graphics/IModelManager.h"
 #include "Graphics/MaterialManager.h"
+#include "Graphics/ITextureManager.h"
 
 namespace stone {
 	class Game {
 		public:
-			Game(IModelManager* i_modelManager, MaterialManager* i_materialManager);
+			Game(IModelManager* i_modelManager, MaterialManager* i_materialManager, ITextureManager* i_textureManager);
 			~Game();
 
 			void								Initialize();
@@ -30,5 +31,6 @@ namespace stone {
 		private:
 			IModelManager*						m_ModelManager;
 			MaterialManager*					m_MaterialManager;
+			ITextureManager*					m_TextureManager;
 	};
 }

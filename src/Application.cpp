@@ -26,7 +26,7 @@ namespace stone {
 		m_TextureManager = g_SystemAllocator.allocate<TextureManager>();
 		m_ModelManager = g_SystemAllocator.allocate<ModelManager>();
 		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
-		m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager);
+		m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager, m_TextureManager);
 	}
 
 	Application::~Application()

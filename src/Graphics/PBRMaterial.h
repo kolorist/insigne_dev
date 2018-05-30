@@ -14,9 +14,11 @@ namespace stone {
 
 			void								SetWVP(const floral::mat4x4f& i_wvp);
 			void								SetTransform(const floral::mat4x4f& i_xform);
+			void								SetTestTex(const insigne::texture_handle_t& i_tex);
 
 		private:
 			insigne::param_id					m_ParamWVP;
 			insigne::param_id					m_ParamXformMatrix;
+			insigne::param_id					m_TestTex;
 	};
 }

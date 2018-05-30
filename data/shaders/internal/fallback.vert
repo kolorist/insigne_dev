@@ -6,7 +6,10 @@ layout (location = 2) in mediump vec2 l_TexCoord;
 uniform highp mat4 iu_PerspectiveWVP;
 uniform highp mat4 iu_TransformMat;
 
+out mediump vec2 o_TexCoord;
+
 void main() {
 	highp vec4 pos_W = iu_TransformMat * vec4(l_Position_L, 1.0f);
+	o_TexCoord = l_TexCoord;
 	gl_Position = iu_PerspectiveWVP * pos_W;
 }
