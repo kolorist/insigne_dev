@@ -24,7 +24,7 @@ namespace stone {
 		m_GameObjects = g_SceneResourceAllocator.allocate<GameObjectArray>(25, &g_SceneResourceAllocator);
 		m_VisualComponents = g_SceneResourceAllocator.allocate<VisualComponentArray>(25, &g_SceneResourceAllocator);
 
-		insigne::texture_handle_t thdl = m_TextureManager->CreateTexture("gfx/go/textures/demo/albedo.cbtex");
+		insigne::texture_handle_t thdl = m_TextureManager->CreateTexture("gfx/go/textures/demo/limestone_albedo.cbtex");
 		for (u32 i = 0; i < 4; i++)
 			for (u32 j = 0; j < 4; j++) {
 				GameObject* newGO = g_SceneResourceAllocator.allocate<GameObject>();

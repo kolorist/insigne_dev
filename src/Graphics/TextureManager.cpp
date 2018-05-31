@@ -36,11 +36,14 @@ namespace stone {
 
 		s32 width = 1 << (mipsCount - 1);
 		s32 height = width;
+		size dataSize = ((1 << (2 * mipsCount)) - 1) / 3 * colorChannel;
 
 		voidptr texData = nullptr;
 		insigne::texture_handle_t texHdl = insigne::create_texture2d(width, height,
-				insigne::texture_format_e::rgba, width * height * 4, texData);
-		dataStream.read_bytes((p8)texData, width * height * 4);
+				insigne::texture_format_e::rgb,
+				insigne::filtering_e::linear_mipmap_linear, insigne::filtering_e::linear,
+				dataSize, texData, true);
+		dataStream.read_bytes((p8)texData, dataSize);
 
 		floral::close_file(texFile);
 		m_MemoryArena->free_all();
@@ -52,6 +55,9 @@ namespace stone {
 			const s32 i_width, const s32 i_height,
 			const insigne::texture_format_e i_texFormat)
 	{
-		return insigne::upload_texture2d(i_width, i_height, i_texFormat, i_pixels);
+		return insigne::upload_texture2d(i_width, i_height,
+				i_texFormat,
+				insigne::filtering_e::nearest, insigne::filtering_e::nearest,
+				i_pixels, false);
 	}
 }
