@@ -108,7 +108,7 @@ void main()
 	mediump vec3 v = normalize(v_ViewDir_W);	// does normalizing need to be done?
 	mediump vec3 h = normalize(l + v);
 	mediump vec3 n = normalize(v_Normal_W);
-#if 1
+#if 0
 	mediump float roughness = texture(iu_TexRoughness, v_TexCoord).r;
 	mediump float metallic = texture(iu_TexMetallic, v_TexCoord).r;
 	mediump vec3 baseColor = texture(iu_TexBaseColor, v_TexCoord).rgb;
@@ -134,7 +134,11 @@ void main()
 #else
 	//o_Color = vec4(fresnel_schlick_v3(v, h, vec3(iu_Metallic)), 1.0f);
 	//o_Color = vec4(vec3(fresnel_spherical_gaussian(v, h, iu_Metallic)), 1.0f);
-	o_Color = vec4(vec3(ndf_ggx(n, h, iu_Roughness)), 1.0f);
+	//o_Color = vec4(vec3(ndf_ggx(n, h, iu_Roughness)), 1.0f);
+	mediump vec3 roughness = texture(iu_TexRoughness, v_TexCoord).rgb;
+	mediump vec3 metallic = texture(iu_TexMetallic, v_TexCoord).rgb;
+	mediump vec3 baseColor = texture(iu_TexBaseColor, v_TexCoord).rgb;
+	o_Color = vec4(roughness, 1.0f);
 	//o_Color = vec4(vec3(visibility_implicit(l, v, n, h, iu_Roughness)), 1.0f);
 	//o_Color = vec4(vec3(visibility_torrance_sparrow(l, v, n, h, iu_Roughness)), 1.0f);
 	//o_Color = vec4(vec3(visibility_ggx_epicgames(l, v, n, h, iu_Roughness)), 1.0f);

@@ -14,11 +14,24 @@ namespace stone {
 
 			void								SetWVP(const floral::mat4x4f& i_wvp);
 			void								SetTransform(const floral::mat4x4f& i_xform);
-			void								SetTestTex(const insigne::texture_handle_t& i_tex);
+
+			void								SetBaseColorTex(const insigne::texture_handle_t& i_tex);
+			void								SetMetallicTex(const insigne::texture_handle_t& i_tex);
+			void								SetRoughnessTex(const insigne::texture_handle_t& i_tex);
+			void								SetLightDirection(const floral::vec3f& i_v);
+			void								SetLightIntensity(const floral::vec3f& i_v);
 
 		private:
+			// vertex shader
 			insigne::param_id					m_ParamWVP;
 			insigne::param_id					m_ParamXformMatrix;
-			insigne::param_id					m_TestTex;
+
+			// fragment shader
+			insigne::param_id					m_TexBaseColor;
+			insigne::param_id					m_TexMetallic;
+			insigne::param_id					m_TexRoughness;
+
+			insigne::param_id					m_LightDirection;
+			insigne::param_id					m_LightIntensity;
 	};
 }

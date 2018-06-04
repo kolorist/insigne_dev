@@ -34,15 +34,12 @@ namespace stone {
 		floral::mat4x4f wvp = p * v;
 		mat->SetWVP(wvp);
 		mat->SetTransform(m_Transform);
-		mat->SetTestTex(m_Texture);
 		insigne::draw_surface<SolidSurface>(m_Surface, m_Material->GetHandle());
 	}
 
-	void VisualComponent::Initialize(insigne::surface_handle_t i_surfaceHdl,
-			insigne::texture_handle_t i_tex, IMaterial* i_matHdl)
+	void VisualComponent::Initialize(insigne::surface_handle_t i_surfaceHdl, IMaterial* i_matHdl)
 	{
 		m_Surface = i_surfaceHdl;
 		m_Material = i_matHdl;
-		m_Texture = i_tex;
 	}
 }
