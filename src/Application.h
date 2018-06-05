@@ -5,6 +5,7 @@
 #include "Graphics/IModelManager.h"
 #include "Graphics/IShaderManager.h"
 #include "Graphics/MaterialManager.h"
+#include "Graphics/IPostFXManager.h"
 #include "System/Controller.h"
 #include "ImGuiDebug/Debugger.h"
 
@@ -33,6 +34,7 @@ namespace stone {
 			ITextureManager*					m_TextureManager;
 			IModelManager*						m_ModelManager;
 			MaterialManager*					m_MaterialManager;
+			IPostFXManager*						m_PostFXManager;
 			Debugger*							m_Debugger;
 	};
 }

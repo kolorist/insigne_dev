@@ -1,8 +1,12 @@
 #pragma once
 
+#include <floral.h>
+#include <insigne/commons.h>
+
 namespace stone {
-	class PostFXManager {
+	class IPostFXManager {
 		public:
-			void								Initialize() = 0;
+			virtual void						Initialize() = 0;
+			virtual const insigne::framebuffer_handle_t	GetMainFramebuffer() = 0;
 	};
 }

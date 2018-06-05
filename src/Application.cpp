@@ -9,6 +9,7 @@
 #include "Graphics/ShaderManager.h"
 #include "Graphics/TextureManager.h"
 #include "Graphics/ModelManager.h"
+#include "Graphics/PostFXManager.h"
 
 namespace stone {
 	Application::Application(Controller* i_controller)
@@ -25,6 +26,7 @@ namespace stone {
 		m_MaterialManager = g_SystemAllocator.allocate<MaterialManager>(m_ShaderManager);
 		m_TextureManager = g_SystemAllocator.allocate<TextureManager>();
 		m_ModelManager = g_SystemAllocator.allocate<ModelManager>();
+		m_PostFXManager = g_SystemAllocator.allocate<PostFXManager>();
 		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
 		m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager, m_TextureManager);
 	}
@@ -43,7 +45,8 @@ namespace stone {
 
 	void Application::RenderFrame(f32 i_deltaMs)
 	{
-		insigne::begin_frame();
+		insigne::framebuffer_handle_t mainFb = m_PostFXManager->GetMainFramebuffer();
+		insigne::begin_frame(mainFb);
 		m_Game->Render();
 		m_Debugger->Render(i_deltaMs);
 		insigne::end_frame();
@@ -64,6 +67,7 @@ namespace stone {
 		m_Debugger->Initialize();
 		m_ShaderManager->Initialize();
 		m_ModelManager->Initialize();
+		m_PostFXManager->Initialize();
 		m_Game->Initialize();
 	}
 
