@@ -46,9 +46,11 @@ namespace stone {
 	void Application::RenderFrame(f32 i_deltaMs)
 	{
 		insigne::framebuffer_handle_t mainFb = m_PostFXManager->GetMainFramebuffer();
-		insigne::begin_frame(mainFb);
+		//insigne::begin_frame(mainFb);
+		insigne::begin_frame();
 		m_Game->Render();
 		m_Debugger->Render(i_deltaMs);
+		//insigne::end_frame(mainFb);
 		insigne::end_frame();
 		insigne::dispatch_frame();
 	}
