@@ -138,7 +138,7 @@ void main()
 	mediump vec3 roughness = texture(iu_TexRoughness, v_TexCoord).rgb;
 	mediump vec3 metallic = texture(iu_TexMetallic, v_TexCoord).rgb;
 	mediump vec3 baseColor = texture(iu_TexBaseColor, v_TexCoord).rgb;
-	o_Color = vec4(roughness, 1.0f);
+	o_Color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 	//o_Color = vec4(vec3(visibility_implicit(l, v, n, h, iu_Roughness)), 1.0f);
 	//o_Color = vec4(vec3(visibility_torrance_sparrow(l, v, n, h, iu_Roughness)), 1.0f);
 	//o_Color = vec4(vec3(visibility_ggx_epicgames(l, v, n, h, iu_Roughness)), 1.0f);

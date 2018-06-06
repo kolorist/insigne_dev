@@ -13,10 +13,12 @@ namespace stone {
 		static void setup_states() {
 			using namespace insigne;
 			// setup states
+#if 0
 			renderer::set_blending<true_type>(blend_equation_e::func_add, factor_e::fact_src_alpha, factor_e::fact_one_minus_src_alpha);
 			//renderer::set_cull_face<true_type>(front_face_e::face_ccw);
 			renderer::set_depth_test<false_type>(compare_func_e::func_always);
 			renderer::set_depth_write<false_type>();
+#endif
 
 			// vertex attributes
 			renderer::enable_vertex_attrib(0);
@@ -42,10 +44,16 @@ namespace stone {
 	struct SolidSurface : insigne::renderable_surface_t<SolidSurface> {
 		static void setup_states() {
 			using namespace insigne;
+#if 0
 			renderer::set_blending<false_type>(blend_equation_e::func_add, factor_e::fact_src_alpha, factor_e::fact_one_minus_src_alpha);
 			//renderer::set_cull_face<true_type>(front_face_e::face_ccw);
 			renderer::set_depth_test<true_type>(compare_func_e::func_less_or_equal);
 			renderer::set_depth_write<true_type>();
+#else
+			//renderer::set_blending<false_type>(blend_equation_e::func_add, factor_e::fact_src_alpha, factor_e::fact_one_minus_src_alpha);
+			//renderer::set_depth_test<true_type>(compare_func_e::func_less_or_equal);
+			//renderer::set_depth_write<true_type>();
+#endif
 
 			// vertex attributes
 			renderer::enable_vertex_attrib(0);

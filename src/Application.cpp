@@ -40,19 +40,17 @@ namespace stone {
 	void Application::UpdateFrame(f32 i_deltaMs)
 	{
 		m_Game->Update(i_deltaMs);
-		m_Debugger->Update(i_deltaMs);
+		//m_Debugger->Update(i_deltaMs);
 	}
 
 	void Application::RenderFrame(f32 i_deltaMs)
 	{
 		insigne::framebuffer_handle_t mainFb = m_PostFXManager->GetMainFramebuffer();
-		//insigne::begin_frame(mainFb);
-		insigne::begin_frame();
+		insigne::begin_frame(mainFb);
 		m_Game->Render();
-		m_Debugger->Render(i_deltaMs);
-		//insigne::end_frame(mainFb);
-		insigne::end_frame();
-		insigne::dispatch_frame();
+		//m_Debugger->Render(i_deltaMs);
+		insigne::end_frame(mainFb);
+		insigne::dispatch_frame(mainFb);
 	}
 
 	// -----------------------------------------
@@ -60,7 +58,8 @@ namespace stone {
 	{
 		// graphics init
 		insigne::initialize_driver();
-		typedef type_list_2(ImGuiSurface, SolidSurface)		SurfaceTypeList;
+		//typedef type_list_2(ImGuiSurface, SolidSurface)		SurfaceTypeList;
+		typedef type_list_1(SolidSurface)		SurfaceTypeList;
 		insigne::initialize_render_thread<SurfaceTypeList>();
 		insigne::wait_for_initialization();
 

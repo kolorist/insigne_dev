@@ -30,7 +30,7 @@ namespace stone {
 				floral::vec3f(0.0f, 1.0f, 0.0f),
 				floral::vec3f(3.0f, 3.0f, 3.0f),
 				floral::vec3f(-3.0f, -3.0f, -3.0f));
-		floral::mat4x4f p = floral::construct_perspective(0.01f, 100.0f, 35.0f, 16.0f / 9.0f);
+		floral::mat4x4f p = floral::construct_perspective(0.01f, 10.0f, 35.0f, 16.0f / 9.0f);
 		floral::mat4x4f wvp = p * v;
 		mat->SetWVP(wvp);
 		mat->SetTransform(m_Transform);
