@@ -11,7 +11,13 @@
 #include "Graphics/ModelManager.h"
 #include "Graphics/PostFXManager.h"
 
+#include "Graphics/FBODebugMaterial.h"
+
 namespace stone {
+
+	static insigne::surface_handle_t			s_testSS;
+	static FBODebugMaterial*					s_mat;
+
 	Application::Application(Controller* i_controller)
 	{
 		i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
@@ -46,11 +52,18 @@ namespace stone {
 	void Application::RenderFrame(f32 i_deltaMs)
 	{
 		insigne::framebuffer_handle_t mainFb = m_PostFXManager->GetMainFramebuffer();
+		insigne::texture_handle_t tex0 = insigne::extract_color_attachment(mainFb, 0);
 		insigne::begin_frame(mainFb);
 		m_Game->Render();
 		//m_Debugger->Render(i_deltaMs);
 		insigne::end_frame(mainFb);
-		insigne::dispatch_frame(mainFb);
+
+		insigne::begin_frame();
+		//s_mat->SetColorTex0(tex0);
+		insigne::draw_surface<SSSurface>(s_testSS, s_mat->GetHandle());
+		insigne::end_frame();
+
+		insigne::dispatch_frame();
 	}
 
 	// -----------------------------------------
@@ -59,7 +72,7 @@ namespace stone {
 		// graphics init
 		insigne::initialize_driver();
 		//typedef type_list_2(ImGuiSurface, SolidSurface)		SurfaceTypeList;
-		typedef type_list_1(SolidSurface)		SurfaceTypeList;
+		typedef type_list_2(SolidSurface, SSSurface)		SurfaceTypeList;
 		insigne::initialize_render_thread<SurfaceTypeList>();
 		insigne::wait_for_initialization();
 
@@ -70,6 +83,21 @@ namespace stone {
 		m_ModelManager->Initialize();
 		m_PostFXManager->Initialize();
 		m_Game->Initialize();
+
+		//
+		s_mat = (FBODebugMaterial*)m_MaterialManager->CreateMaterial<FBODebugMaterial>("shaders/internal/ssquad");
+		SSVertex vs[4];
+		vs[0].Position = floral::vec2f(-1.0f, -1.0f);
+		vs[0].TexCoord = floral::vec2f(0.0f, 0.0f);
+		vs[1].Position = floral::vec2f(1.0f, -1.0f);
+		vs[1].TexCoord = floral::vec2f(1.0f, 0.0f);
+		vs[2].Position = floral::vec2f(1.0f, 1.0f);
+		vs[2].TexCoord = floral::vec2f(1.0f, 1.0f);
+		vs[3].Position = floral::vec2f(-1.0f, 1.0f);
+		vs[3].TexCoord = floral::vec2f(0.0f, 1.0f);
+		u32 indices[] = {0, 1, 2, 2, 3, 0};
+		s_testSS = insigne::upload_surface(&vs[0], sizeof(SSVertex) * 4, &indices[0], sizeof(u32) * 6,
+				sizeof(SSVertex), 4, 6);
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)

@@ -69,4 +69,29 @@ namespace stone {
 			renderer::describe_vertex_data(2, 2, data_type_e::elem_signed_float, false, sizeof(Vertex), (const voidptr)24);
 		}
 	};
+
+	struct SSVertex {
+		floral::vec2f							Position;
+		floral::vec2f							TexCoord;
+	};
+
+	struct SSSurface : insigne::renderable_surface_t<SSSurface> {
+		static void setup_states() {
+			using namespace insigne;
+			renderer::set_blending<false_type>(blend_equation_e::func_add, factor_e::fact_src_alpha, factor_e::fact_one_minus_src_alpha);
+			renderer::set_depth_test<false_type>(compare_func_e::func_less_or_equal);
+			renderer::set_depth_write<false_type>();
+
+
+			renderer::enable_vertex_attrib(0);
+			renderer::enable_vertex_attrib(1);
+		}
+
+		static void describe_vertex_data()
+		{
+			using namespace insigne;
+			renderer::describe_vertex_data(0, 2, data_type_e::elem_signed_float, false, sizeof(SSVertex), (const voidptr)0);
+			renderer::describe_vertex_data(1, 2, data_type_e::elem_signed_float, false, sizeof(SSVertex), (const voidptr)8);
+		}
+	};
 }

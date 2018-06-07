@@ -29,8 +29,8 @@ namespace stone {
 		insigne::texture_handle_t roughness = m_TextureManager->CreateTexture("gfx/go/textures/demo/limestone_roughness.cbtex");
 		insigne::texture_handle_t ao = m_TextureManager->CreateTexture("gfx/go/textures/demo/limestone_ao.cbtex");
 		insigne::texture_handle_t normal = m_TextureManager->CreateTexture("gfx/go/textures/demo/limestone_normal.cbtex");
-		for (u32 i = 0; i < 4; i++)
-			for (u32 j = 0; j < 4; j++) {
+		for (u32 i = 0; i < 1; i++)
+			for (u32 j = 0; j < 1; j++) {
 				GameObject* newGO = g_SceneResourceAllocator.allocate<GameObject>();
 				VisualComponent* newVC = g_SceneResourceAllocator.allocate<VisualComponent>();
 				PlateComponent* newPC = g_SceneResourceAllocator.allocate<PlateComponent>();
