@@ -46,24 +46,32 @@ namespace stone {
 	void Application::UpdateFrame(f32 i_deltaMs)
 	{
 		m_Game->Update(i_deltaMs);
-		//m_Debugger->Update(i_deltaMs);
+		m_Debugger->Update(i_deltaMs);
 	}
 
 	void Application::RenderFrame(f32 i_deltaMs)
 	{
 		insigne::framebuffer_handle_t mainFb = m_PostFXManager->GetMainFramebuffer();
 		insigne::texture_handle_t tex0 = insigne::extract_color_attachment(mainFb, 0);
-		insigne::begin_frame(mainFb);
-		m_Game->Render();
-		//m_Debugger->Render(i_deltaMs);
-		insigne::end_frame(mainFb);
 
 		insigne::begin_frame();
-		//s_mat->SetColorTex0(tex0);
-		insigne::draw_surface<SSSurface>(s_testSS, s_mat->GetHandle());
-		insigne::end_frame();
+		
+		// main color buffer population
+		insigne::begin_render_pass(mainFb);
+		m_Game->Render();
+		insigne::end_render_pass(mainFb);
+		insigne::dispatch_render_pass();
 
-		insigne::dispatch_frame();
+		insigne::begin_render_pass(-1);
+		s_mat->SetColorTex0(tex0);
+		insigne::draw_surface<SSSurface>(s_testSS, s_mat->GetHandle());
+		m_Debugger->Render(i_deltaMs);
+		insigne::end_render_pass(-1);
+		
+		insigne::mark_present_render();
+		insigne::dispatch_render_pass();
+
+		insigne::end_frame();
 	}
 
 	// -----------------------------------------
@@ -72,7 +80,7 @@ namespace stone {
 		// graphics init
 		insigne::initialize_driver();
 		//typedef type_list_2(ImGuiSurface, SolidSurface)		SurfaceTypeList;
-		typedef type_list_2(SolidSurface, SSSurface)		SurfaceTypeList;
+		typedef type_list_3(ImGuiSurface, SolidSurface, SSSurface)		SurfaceTypeList;
 		insigne::initialize_render_thread<SurfaceTypeList>();
 		insigne::wait_for_initialization();
 

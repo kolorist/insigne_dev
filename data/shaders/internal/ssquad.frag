@@ -9,5 +9,7 @@ uniform mediump sampler2D iu_ColorTex0;
 void main()
 {
 	mediump vec3 outColor = texture(iu_ColorTex0, o_TexCoord.st).rgb;
-	o_Color = vec4(vec3(1.0) - outColor, 1.0);
+	// gamma correktion
+	outColor = pow(outColor, vec3(0.45f));
+	o_Color = vec4(outColor, 1.0f);
 }
