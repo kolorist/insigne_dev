@@ -11,6 +11,7 @@ add_subdirectory (externals/refrain2)
 add_subdirectory (externals/calyx)
 add_subdirectory (externals/insigne)
 add_subdirectory (externals/imgui)
+add_subdirectory (externals/lotus)
 
 include_directories ("${PROJECT_SOURCE_DIR}/src")
 
@@ -52,6 +53,7 @@ target_link_libraries (${PROJECT_NAME}
 	calyx
 	insigne
 	imgui
+	lotus
 	comctl32)
 
 set_target_properties (${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${EXECUTABLE_FILE_NAME})

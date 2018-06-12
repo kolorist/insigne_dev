@@ -1,12 +1,10 @@
 #include "MemorySystem.h"
 
 #include <clover.h>
-
 #include <refrain2.h>
-
 #include <context.h>
-
 #include <insigne/memory.h>
+#include <lotus/memory.h>
 
 helich::memory_manager							g_MemoryManager;
 
@@ -33,6 +31,11 @@ namespace insigne {
 	freelist_allocator_t						g_stream_allocator;
 };
 
+// allocators for lotus
+namespace lotus {
+	linear_allocator_t							e_main_allocator;
+};
+
 namespace stone {
 	LinearAllocator								g_SystemAllocator;
 	LinearAllocator								g_PersistanceAllocator;
@@ -52,6 +55,7 @@ namespace helich {
 				memory_region<insigne::linear_allocator_t>	{ "insigne/persist",			SIZE_MB(64),	&insigne::g_persistance_allocator },
 				memory_region<insigne::arena_allocator_t>	{ "insigne/arena",				SIZE_MB(64),	&insigne::g_arena_allocator },
 				memory_region<insigne::freelist_allocator_t>{ "insigne/stream",				SIZE_MB(32),	&insigne::g_stream_allocator },
+				memory_region<lotus::linear_allocator_t>	{ "lotus/main",					SIZE_MB(32),	&lotus::e_main_allocator },
 				memory_region<stone::LinearAllocator>		{ "stone/system",				SIZE_MB(16),	&stone::g_SystemAllocator },
 				memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(128),	&stone::g_PersistanceAllocator },
 				memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(16),	&stone::g_PersistanceResourceAllocator },

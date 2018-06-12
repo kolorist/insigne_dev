@@ -3,8 +3,8 @@
 
 #include <floral.h>
 #include <clover.h>
-
 #include <platform/windows/event_defs.h>
+#include <lotus/profiler.h>
 
 #include "Memory/MemorySystem.h"
 #include "System/Controller.h"
@@ -20,6 +20,8 @@ namespace calyx {
 	void initialize()
 	{
 		using namespace stone;
+		lotus::init_capture_for_this_thread(0, "main_thread");
+
 		s_Controller = g_PersistanceAllocator.allocate<Controller>();
 		s_Application = g_PersistanceAllocator.allocate<Application>(s_Controller);
 		s_Controller->IOEvents.OnInitialize(1);

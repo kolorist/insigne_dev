@@ -1,6 +1,8 @@
 #include "Application.h"
 
 #include <floral.h>
+#include <lotus/events.h>
+#include <lotus/profiler.h>
 #include <insigne/driver.h>
 #include <insigne/render.h>
 
@@ -20,6 +22,15 @@ namespace stone {
 
 	Application::Application(Controller* i_controller)
 	{
+		const lotus::event* profileEvent1 = lotus::begin_event("test_event1");
+		lotus::end_event(profileEvent1);
+		const lotus::event* profileEvent2 = lotus::begin_event("test_event2");
+		{
+			const lotus::event* profileEvent1 = lotus::begin_event("test_event_inner1");
+			lotus::end_event(profileEvent1);
+		}
+		lotus::end_event(profileEvent2);
+
 		i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
 		i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
 		i_controller->IOEvents.OnCleanUp.bind<Application, &Application::OnCleanUp>(this);

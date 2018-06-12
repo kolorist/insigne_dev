@@ -26,3 +26,6 @@
 [submodule "externals/insigne"]
 	path = externals/insigne
 	url = z:/insigne.git
+[submodule "externals/lotus"]
+	path = externals/lotus
+	url = z:/lotus.git

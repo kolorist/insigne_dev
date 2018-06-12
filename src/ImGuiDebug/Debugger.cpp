@@ -78,6 +78,7 @@ namespace stone {
 	{
 		ImGui::Render();
 	}
+
 	// -----------------------------------------
 	void Debugger::RenderImGuiDrawLists(ImDrawData* i_drawData)
 	{
