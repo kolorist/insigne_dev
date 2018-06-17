@@ -22,15 +22,6 @@ namespace stone {
 
 	Application::Application(Controller* i_controller)
 	{
-		const lotus::event* profileEvent1 = lotus::begin_event("test_event1");
-		lotus::end_event(profileEvent1);
-		const lotus::event* profileEvent2 = lotus::begin_event("test_event2");
-		{
-			const lotus::event* profileEvent1 = lotus::begin_event("test_event_inner1");
-			lotus::end_event(profileEvent1);
-		}
-		lotus::end_event(profileEvent2);
-
 		i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
 		i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
 		i_controller->IOEvents.OnCleanUp.bind<Application, &Application::OnCleanUp>(this);
@@ -56,12 +47,21 @@ namespace stone {
 	// -----------------------------------------
 	void Application::UpdateFrame(f32 i_deltaMs)
 	{
-		m_Game->Update(i_deltaMs);
-		m_Debugger->Update(i_deltaMs);
+		PROFILE_SCOPE(UpdateFrame);
+		{
+			PROFILE_SCOPE(GameUpdate);
+			m_Game->Update(i_deltaMs);
+		}
+		{
+			PROFILE_SCOPE(DebuggerUpdate);
+			m_Debugger->Update(i_deltaMs);
+		}
+		lotus::__debug_event_queue_print();
 	}
 
 	void Application::RenderFrame(f32 i_deltaMs)
 	{
+		PROFILE_SCOPE(RenderFrame);
 		insigne::framebuffer_handle_t mainFb = m_PostFXManager->GetMainFramebuffer();
 		insigne::texture_handle_t tex0 = insigne::extract_color_attachment(mainFb, 0);
 
