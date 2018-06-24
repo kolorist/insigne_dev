@@ -1,6 +1,7 @@
 #include "Game.h"
 
 #include <insigne/commons.h>
+#include <lotus/profiler.h>
 
 #include "Graphics/PBRMaterial.h"
 #include "GameObject/GameObject.h"
@@ -65,6 +66,7 @@ namespace stone {
 	void Game::Render()
 	{
 		for (u32 i = 0; i < m_VisualComponents->get_size(); i++) {
+			PROFILE_SCOPE(VisualComponentRender);
 			(*m_VisualComponents)[i]->Render();
 		}
 	}

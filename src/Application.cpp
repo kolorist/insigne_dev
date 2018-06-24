@@ -1,6 +1,7 @@
 #include "Application.h"
 
 #include <floral.h>
+#include <clover.h>
 #include <lotus/events.h>
 #include <lotus/profiler.h>
 #include <insigne/driver.h>
@@ -22,6 +23,9 @@ namespace stone {
 
 	Application::Application(Controller* i_controller)
 	{
+		s_profileEvents[0].init(128u, &g_SystemAllocator);
+		s_profileEvents[1].init(256u, &g_SystemAllocator);
+
 		i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
 		i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
 		i_controller->IOEvents.OnCleanUp.bind<Application, &Application::OnCleanUp>(this);
@@ -56,7 +60,11 @@ namespace stone {
 			PROFILE_SCOPE(DebuggerUpdate);
 			m_Debugger->Update(i_deltaMs);
 		}
-		lotus::__debug_event_queue_print();
+
+		s_profileEvents[0].empty();
+		lotus::unpack_capture(s_profileEvents[0], 0);
+		s_profileEvents[1].empty();
+		lotus::unpack_capture(s_profileEvents[1], 1);
 	}
 
 	void Application::RenderFrame(f32 i_deltaMs)
@@ -68,16 +76,22 @@ namespace stone {
 		insigne::begin_frame();
 		
 		// main color buffer population
-		insigne::begin_render_pass(mainFb);
-		m_Game->Render();
-		insigne::end_render_pass(mainFb);
-		insigne::dispatch_render_pass();
+		{
+			PROFILE_SCOPE(MainColorBufferRender);
+			insigne::begin_render_pass(mainFb);
+			m_Game->Render();
+			insigne::end_render_pass(mainFb);
+			insigne::dispatch_render_pass();
+		}
 
-		insigne::begin_render_pass(-1);
-		s_mat->SetColorTex0(tex0);
-		insigne::draw_surface<SSSurface>(s_testSS, s_mat->GetHandle());
-		m_Debugger->Render(i_deltaMs);
-		insigne::end_render_pass(-1);
+		{
+			PROFILE_SCOPE(ColorCorrektPresent);
+			insigne::begin_render_pass(-1);
+			s_mat->SetColorTex0(tex0);
+			insigne::draw_surface<SSSurface>(s_testSS, s_mat->GetHandle());
+			m_Debugger->Render(i_deltaMs);
+			insigne::end_render_pass(-1);
+		}
 		
 		insigne::mark_present_render();
 		insigne::dispatch_render_pass();

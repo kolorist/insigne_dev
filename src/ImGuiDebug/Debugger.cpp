@@ -10,6 +10,8 @@ namespace stone {
 	static insigne::surface_handle_t			s_UISurface;
 	static DebugUIMaterial*						s_UIMaterial;
 
+	floral::fixed_array<lotus::unpacked_event, LinearAllocator>	s_profileEvents[4];
+
 	Debugger::Debugger(MaterialManager* i_materialManager, ITextureManager* i_textureManager)
 		: m_MouseX(0.0f)
 		, m_MouseY(0.0f)
@@ -71,7 +73,23 @@ namespace stone {
 		}
 		io.DeltaTime = i_deltaMs / 1000.0f;
 		ImGui::NewFrame();
-		ImGui::ShowTestWindow();
+		//ImGui::ShowTestWindow();
+		{
+			c8 windowName[50];
+			ImGui::Begin("Profiler");
+			for (sidx n = 0; n < 2; n++) {
+				sprintf(windowName, "Capture #%lld", n);
+				if (ImGui::CollapsingHeader(windowName)) {
+					for (u32 i = 0; i < s_profileEvents[n].get_size(); i++) {
+						lotus::unpacked_event& thisEvent = s_profileEvents[n][i];
+						ImGui::Indent(thisEvent.depth * 10.0f);
+						ImGui::Text("%-35s - %f", thisEvent.name, thisEvent.duration_ms);
+						ImGui::Unindent(thisEvent.depth * 10.0f);
+					}
+				}
+			}
+			ImGui::End();
+		}
 	}
 
 	void Debugger::Render(f32 i_deltaMs)

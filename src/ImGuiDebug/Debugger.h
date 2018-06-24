@@ -3,12 +3,15 @@
 #include <floral.h>
 #include <imgui.h>
 #include <insigne/commons.h>
+#include <lotus/events.h>
 
 #include "Graphics/MaterialManager.h"
 #include "Graphics/ITextureManager.h"
 
 namespace stone {
-	
+
+	extern floral::fixed_array<lotus::unpacked_event, LinearAllocator>	s_profileEvents[4];
+
 	class Debugger {
 		public:
 			Debugger(MaterialManager* i_materialManager, ITextureManager* i_textureManager);
