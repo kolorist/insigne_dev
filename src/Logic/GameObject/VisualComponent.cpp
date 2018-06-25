@@ -1,6 +1,7 @@
 #include "VisualComponent.h"
 
 #include <insigne/render.h>
+#include <lotus/profiler.h>
 
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/PBRMaterial.h"
@@ -19,6 +20,7 @@ namespace stone {
 
 	void VisualComponent::Update(f32 i_deltaMs)
 	{
+		PROFILE_SCOPE(UpdateVisualComponent);
 		// transform update
 		m_Transform = floral::construct_translation3d(m_PositionWS) * floral::construct_scaling3d(m_ScalingWS);
 	}

@@ -1,5 +1,7 @@
 #include "GameObject.h"
 
+#include <lotus/profiler.h>
+
 namespace stone {
 
 	GameObject::GameObject()
@@ -12,6 +14,7 @@ namespace stone {
 
 	void GameObject::Update(f32 i_deltaMs)
 	{
+		PROFILE_SCOPE(UpdateGameObject);
 		for (u32 i = 0; i < m_Components.get_size(); i++)
 			m_Components[i]->Update(i_deltaMs);
 	}

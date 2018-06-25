@@ -1,5 +1,7 @@
 #include "PlateComponent.h"
 
+#include <lotus/profiler.h>
+
 namespace stone {
 
 	PlateComponent::PlateComponent()
@@ -18,6 +20,7 @@ namespace stone {
 
 	void PlateComponent::Update(f32 i_deltaMs)
 	{
+		PROFILE_SCOPE(UpdatePlateComponent);
 		switch (m_MovementState) {
 			case MovementState::Ready:
 				{

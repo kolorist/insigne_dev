@@ -23,7 +23,7 @@ namespace stone {
 
 	Application::Application(Controller* i_controller)
 	{
-		s_profileEvents[0].init(128u, &g_SystemAllocator);
+		s_profileEvents[0].init(256u, &g_SystemAllocator);
 		s_profileEvents[1].init(256u, &g_SystemAllocator);
 
 		i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
@@ -85,7 +85,7 @@ namespace stone {
 		}
 
 		{
-			PROFILE_SCOPE(ColorCorrektPresent);
+			PROFILE_SCOPE(PFX_GammaCorrection);
 			insigne::begin_render_pass(-1);
 			s_mat->SetColorTex0(tex0);
 			insigne::draw_surface<SSSurface>(s_testSS, s_mat->GetHandle());
@@ -93,8 +93,11 @@ namespace stone {
 			insigne::end_render_pass(-1);
 		}
 		
-		insigne::mark_present_render();
-		insigne::dispatch_render_pass();
+		{
+			PROFILE_SCOPE(PresentRender);
+			insigne::mark_present_render();
+			insigne::dispatch_render_pass();
+		}
 
 		insigne::end_frame();
 	}
@@ -120,13 +123,13 @@ namespace stone {
 		//
 		s_mat = (FBODebugMaterial*)m_MaterialManager->CreateMaterial<FBODebugMaterial>("shaders/internal/ssquad");
 		SSVertex vs[4];
-		vs[0].Position = floral::vec2f(-1.0f, -1.0f);
+		vs[0].Position = floral::vec2f(-1.0f, -1.0f) * 0.5f;
 		vs[0].TexCoord = floral::vec2f(0.0f, 0.0f);
-		vs[1].Position = floral::vec2f(1.0f, -1.0f);
+		vs[1].Position = floral::vec2f(1.0f, -1.0f) * 0.5f;
 		vs[1].TexCoord = floral::vec2f(1.0f, 0.0f);
-		vs[2].Position = floral::vec2f(1.0f, 1.0f);
+		vs[2].Position = floral::vec2f(1.0f, 1.0f) * 0.5f;
 		vs[2].TexCoord = floral::vec2f(1.0f, 1.0f);
-		vs[3].Position = floral::vec2f(-1.0f, 1.0f);
+		vs[3].Position = floral::vec2f(-1.0f, 1.0f) * 0.5f;
 		vs[3].TexCoord = floral::vec2f(0.0f, 1.0f);
 		u32 indices[] = {0, 1, 2, 2, 3, 0};
 		s_testSS = insigne::upload_surface(&vs[0], sizeof(SSVertex) * 4, &indices[0], sizeof(u32) * 6,
