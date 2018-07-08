@@ -134,6 +134,9 @@ namespace stone {
 		u32 indices[] = {0, 1, 2, 2, 3, 0};
 		s_testSS = insigne::upload_surface(&vs[0], sizeof(SSVertex) * 4, &indices[0], sizeof(u32) * 6,
 				sizeof(SSVertex), 4, 6);
+
+		// test
+		insigne::texture_handle_t texHdl = m_TextureManager->CreateMipmapedProbe("gfx/envi/textures/demo/irrmap_grace.cbprb");
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)
