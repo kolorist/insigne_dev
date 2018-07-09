@@ -1,6 +1,7 @@
 #pragma once
 
 #include <floral.h>
+#include <insigne/commons.h>
 
 #include "Memory/MemorySystem.h"
 #include "GameObject/IGameObject.h"
@@ -27,6 +28,7 @@ namespace stone {
 		private:
 			GameObjectArray*					m_GameObjects;
 			VisualComponentArray*				m_VisualComponents;
+			insigne::surface_handle_t			m_SkyboxSurface;
 
 		private:
 			IModelManager*						m_ModelManager;

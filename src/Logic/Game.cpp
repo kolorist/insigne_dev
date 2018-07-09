@@ -54,6 +54,8 @@ namespace stone {
 				m_VisualComponents->push_back(newVC);
 				m_GameObjects->push_back(newGO);
 			}
+
+		m_SkyboxSurface = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/cube.cbobj");
 	}
 
 	void Game::Update(f32 i_deltaMs)
@@ -69,5 +71,9 @@ namespace stone {
 			PROFILE_SCOPE(VisualComponentRender);
 			(*m_VisualComponents)[i]->Render();
 		}
+
+		// then render the skybox
+		// actually, the order of calling rendering of insigne doesn't matter
+		
 	}
 }

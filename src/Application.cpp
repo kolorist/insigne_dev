@@ -107,8 +107,14 @@ namespace stone {
 	{
 		// graphics init
 		insigne::initialize_driver();
-		//typedef type_list_2(ImGuiSurface, SolidSurface)		SurfaceTypeList;
-		typedef type_list_3(ImGuiSurface, SolidSurface, SSSurface)		SurfaceTypeList;
+
+		// the rendering order is
+		// 1- SolidSurface
+		// 2- Skybox
+		// 3- ScreenSpaceSurface
+		// 4- ImGuiSurface
+		// thus the order of declaration must be reversed
+		typedef type_list_4(ImGuiSurface, SSSurface, SkyboxSurface, SolidSurface)		SurfaceTypeList;
 		insigne::initialize_render_thread<SurfaceTypeList>();
 		insigne::wait_for_initialization();
 

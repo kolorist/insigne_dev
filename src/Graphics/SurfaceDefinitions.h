@@ -72,6 +72,36 @@ namespace stone {
 		}
 	};
 
+	struct SkyboxSurface : insigne::renderable_surface_t<SkyboxSurface> {
+		static void setup_states() {
+			PROFILE_SCOPE(setup_states_SkyboxSurface);
+
+			using namespace insigne;
+			renderer::set_blending<false_type>(
+					blend_equation_e::func_add,
+					factor_e::fact_src_alpha,
+					factor_e::fact_one_minus_src_alpha);
+			//renderer::set_cull_face<true_type>(front_face_e::face_ccw);
+			renderer::set_depth_test<true_type>(compare_func_e::func_less_or_equal);
+			renderer::set_depth_write<true_type>();
+
+			// vertex attributes
+			renderer::enable_vertex_attrib(0);
+			renderer::enable_vertex_attrib(1);
+			renderer::enable_vertex_attrib(2);
+		}
+
+		static void describe_vertex_data()
+		{
+			PROFILE_SCOPE(describe_vertex_data_SkyboxSurface);
+
+			using namespace insigne;
+			renderer::describe_vertex_data(0, 3, data_type_e::elem_signed_float, false, sizeof(Vertex), (const voidptr)0);
+			renderer::describe_vertex_data(1, 3, data_type_e::elem_signed_float, false, sizeof(Vertex), (const voidptr)12);
+			renderer::describe_vertex_data(2, 2, data_type_e::elem_signed_float, false, sizeof(Vertex), (const voidptr)24);
+		}
+	};
+
 	struct SSVertex {
 		floral::vec2f							Position;
 		floral::vec2f							TexCoord;
