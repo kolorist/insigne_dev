@@ -77,6 +77,30 @@ namespace stone {
 		{
 			c8 windowName[50];
 			ImGui::Begin("Profiler");
+			if (ImGui::Button("Load Default Textures")) {
+				OnRequestLoadDefaultTextures();
+			}
+
+			if (ImGui::Button("Load Plate Material")) {
+				OnRequestLoadPlateMaterial();
+			}
+
+			if (ImGui::Button("Load Models")) {
+				OnRequestLoadModels();
+			}
+
+			if (ImGui::Button("Load and Apply Textures")) {
+				OnRequestLoadAndApplyTextures();
+			}
+
+			if (ImGui::Button("Load Skybox")) {
+				OnRequestLoadSkybox();
+			}
+
+			if (ImGui::Button("Load Shading Probes")) {
+				OnRequestLoadShadingProbes();
+			}
+
 			for (sidx n = 0; n < 2; n++) {
 				sprintf(windowName, "Capture #%lld", n);
 				if (ImGui::CollapsingHeader(windowName)) {

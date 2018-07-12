@@ -35,6 +35,14 @@ namespace stone {
 
 			MaterialManager*					m_MaterialManager;
 			ITextureManager*					m_TextureManager;
+
+		public:
+			floral::simple_callback<void>		OnRequestLoadDefaultTextures;
+			floral::simple_callback<void>		OnRequestLoadPlateMaterial;
+			floral::simple_callback<void>		OnRequestLoadModels;
+			floral::simple_callback<void>		OnRequestLoadAndApplyTextures;
+			floral::simple_callback<void>		OnRequestLoadSkybox;
+			floral::simple_callback<void>		OnRequestLoadShadingProbes;
 	};
 
 }
