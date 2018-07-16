@@ -5,6 +5,7 @@
 #include <lotus/profiler.h>
 
 #include "Graphics/PBRMaterial.h"
+#include "Graphics/SkyboxMaterial.h"
 #include "GameObject/GameObject.h"
 #include "GameObject/VisualComponent.h"
 #include "GameObject/PlateComponent.h"
@@ -109,6 +110,7 @@ namespace stone {
 
 	void Game::RequestLoadAndApplyTextures()
 	{
+		CLOVER_INFO("Request Load and Apply Texture...");
 		m_Albedo = m_TextureManager->CreateTexture("gfx/go/textures/demo/limestone_albedo.cbtex");
 		m_Metallic = m_TextureManager->CreateTexture("gfx/go/textures/demo/limestone_metalness.cbtex");
 		m_Rougness = m_TextureManager->CreateTexture("gfx/go/textures/demo/limestone_roughness.cbtex");
@@ -123,10 +125,16 @@ namespace stone {
 
 	void Game::RequestLoadSkybox()
 	{
+		CLOVER_INFO("Request Load Skybox...");
+		CLOVER_INFO("Loading Skybox material...");
+		m_SkyboxMaterial = m_MaterialManager->CreateMaterial<SkyboxMaterial>("shaders/lighting/skybox");
+		m_SkyboxAlbedo = m_TextureManager->CreateTextureCube("gfx/envi/textures/demo/grace_cross.cbskb");
+		CLOVER_INFO("Loading Skybox surface...");
 	}
 
 	void Game::RequestLoadShadingProbes()
 	{
+		CLOVER_INFO("Request Load Shading Probes...");
 		insigne::texture_handle_t texHdl = m_TextureManager->CreateMipmapedProbe("gfx/envi/textures/demo/irrmap_grace.cbprb");
 		insigne::texture_handle_t texHdl2 = m_TextureManager->CreateMipmapedProbe("gfx/envi/textures/demo/specmap_grace.cbprb");
 	}

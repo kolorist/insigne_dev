@@ -61,7 +61,11 @@ namespace stone {
 			insigne::texture_handle_t			m_AO;
 			insigne::texture_handle_t			m_Normal;
 
+			insigne::texture_handle_t			m_SkyboxAlbedo;
+
 			IMaterial*							m_PlateMaterial;
+			IMaterial*							m_SkyboxMaterial;
 			insigne::surface_handle_t			m_PlateModel;
+			insigne::surface_handle_t			m_SkyboxModel;
 	};
 }

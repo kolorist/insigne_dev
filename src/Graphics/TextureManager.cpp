@@ -53,7 +53,43 @@ namespace stone {
 
 	insigne::texture_handle_t TextureManager::CreateTextureCube(const_cstr i_texPath)
 	{
-		return 0;
+		floral::file_info texFile = floral::open_file(i_texPath);
+		floral::file_stream dataStream;
+
+		dataStream.buffer = (p8)m_MemoryArena->allocate(texFile.file_size);
+		floral::read_all_file(texFile, dataStream);
+
+		c8 magicChars[4];
+		dataStream.read_bytes(magicChars, 4);
+
+		s32 colorRange = 0;
+		s32 colorSpace = 0;
+		s32 colorChannel = 0;
+		f32 encodeGamma = 0.0f;
+		s32 mipsCount = 0;
+		dataStream.read<s32>(&colorRange);
+		dataStream.read<s32>(&colorSpace);
+		dataStream.read<s32>(&colorChannel);
+		dataStream.read<f32>(&encodeGamma);
+		dataStream.read<s32>(&mipsCount);
+
+		// TODO: hardcode!!!
+		s32 width = 256;
+		s32 height = width;
+		size dataSizeOneFace = width * height * colorChannel * sizeof(f32);
+
+		voidptr texData = nullptr;
+		insigne::texture_handle_t texHdl = insigne::create_texturecube(width, height,
+				insigne::texture_format_e::hdr_rgb,
+				insigne::filtering_e::linear, insigne::filtering_e::linear,
+				dataSizeOneFace, texData, false);
+		dataStream.read_bytes((p8)texData, dataSizeOneFace * 6);
+
+
+		floral::close_file(texFile);
+		m_MemoryArena->free_all();
+
+		return texHdl;
 	}
 
 	insigne::texture_handle_t TextureManager::CreateMipmapedProbe(const_cstr i_texPath)
