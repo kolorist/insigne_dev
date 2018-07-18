@@ -115,7 +115,7 @@ namespace stone {
 		// 3- ScreenSpaceSurface
 		// 4- ImGuiSurface
 		// thus the order of declaration must be reversed
-		typedef type_list_4(ImGuiSurface, SSSurface, SkyboxSurface, SolidSurface)		SurfaceTypeList;
+		typedef type_list_4(ImGuiSurface, SSSurface, SolidSurface, SkyboxSurface)		SurfaceTypeList;
 		insigne::initialize_render_thread<SurfaceTypeList>();
 		insigne::wait_for_initialization();
 

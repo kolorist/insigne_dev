@@ -6,6 +6,7 @@
 #include "Memory/MemorySystem.h"
 #include "GameObject/IGameObject.h"
 #include "GameObject/VisualComponent.h"
+#include "GameObject/SkyboxComponent.h"
 #include "Graphics/IModelManager.h"
 #include "Graphics/MaterialManager.h"
 #include "Graphics/ITextureManager.h"
@@ -38,10 +39,12 @@ namespace stone {
 		private:
 			typedef floral::fixed_array<IGameObject*, LinearAllocator>		GameObjectArray;
 			typedef floral::fixed_array<VisualComponent*, LinearAllocator>	VisualComponentArray;
+			typedef floral::fixed_array<SkyboxComponent*, LinearAllocator>	SkyboxComponentArray;
 
 		private:
 			GameObjectArray*					m_GameObjects;
 			VisualComponentArray*				m_VisualComponents;
+			SkyboxComponentArray*				m_SkyboxComponents;
 			insigne::surface_handle_t			m_SkyboxSurface;
 
 		private:

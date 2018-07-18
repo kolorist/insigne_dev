@@ -18,7 +18,7 @@ namespace stone {
 			using namespace insigne;
 			// setup states
 			renderer::set_blending<true_type>(blend_equation_e::func_add, factor_e::fact_src_alpha, factor_e::fact_one_minus_src_alpha);
-			//renderer::set_cull_face<true_type>(front_face_e::face_ccw);
+			renderer::set_cull_face<false_type>(face_side_e::front_side, front_face_e::face_ccw);
 			renderer::set_depth_test<false_type>(compare_func_e::func_always);
 			renderer::set_depth_write<false_type>();
 
@@ -51,7 +51,7 @@ namespace stone {
 
 			using namespace insigne;
 			renderer::set_blending<false_type>(blend_equation_e::func_add, factor_e::fact_src_alpha, factor_e::fact_one_minus_src_alpha);
-			//renderer::set_cull_face<true_type>(front_face_e::face_ccw);
+			renderer::set_cull_face<true_type>(face_side_e::back_side, front_face_e::face_ccw);
 			renderer::set_depth_test<true_type>(compare_func_e::func_less_or_equal);
 			renderer::set_depth_write<true_type>();
 
@@ -81,9 +81,9 @@ namespace stone {
 					blend_equation_e::func_add,
 					factor_e::fact_src_alpha,
 					factor_e::fact_one_minus_src_alpha);
-			//renderer::set_cull_face<true_type>(front_face_e::face_ccw);
-			renderer::set_depth_test<true_type>(compare_func_e::func_less_or_equal);
-			renderer::set_depth_write<true_type>();
+			renderer::set_cull_face<true_type>(face_side_e::front_side, front_face_e::face_ccw);
+			renderer::set_depth_test<false_type>(compare_func_e::func_always);
+			renderer::set_depth_write<false_type>();
 
 			// vertex attributes
 			renderer::enable_vertex_attrib(0);
@@ -113,6 +113,7 @@ namespace stone {
 
 			using namespace insigne;
 			renderer::set_blending<false_type>(blend_equation_e::func_add, factor_e::fact_src_alpha, factor_e::fact_one_minus_src_alpha);
+			renderer::set_cull_face<true_type>(face_side_e::back_side, front_face_e::face_ccw);
 			renderer::set_depth_test<false_type>(compare_func_e::func_less_or_equal);
 			renderer::set_depth_write<false_type>();
 

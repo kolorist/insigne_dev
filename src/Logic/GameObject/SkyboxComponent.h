@@ -19,5 +19,7 @@ namespace stone {
 		private:
 			insigne::surface_handle_t			m_Surface;
 			IMaterial*							m_Material;
+
+			floral::mat4x4f						m_Transform;
 	};
 }

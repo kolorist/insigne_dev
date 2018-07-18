@@ -61,7 +61,10 @@ namespace stone {
 
 		// then render the skybox
 		// actually, the order of calling rendering of insigne doesn't matter
-		
+		for (u32 i = 0; i < m_SkyboxComponents->get_size(); i++) {
+			PROFILE_SCOPE(SkyboxComponentRender);
+			(*m_SkyboxComponents)[i]->Render();
+		}
 	}
 
 	void Game::RequestLoadDefaultTextures()
@@ -85,8 +88,9 @@ namespace stone {
 	void Game::RequestLoadModels()
 	{
 		CLOVER_INFO("Request load models...");
-		m_GameObjects = g_SceneResourceAllocator.allocate<GameObjectArray>(25, &g_SceneResourceAllocator);
-		m_VisualComponents = g_SceneResourceAllocator.allocate<VisualComponentArray>(25, &g_SceneResourceAllocator);
+		m_GameObjects = g_SceneResourceAllocator.allocate<GameObjectArray>(32, &g_SceneResourceAllocator);
+		m_VisualComponents = g_SceneResourceAllocator.allocate<VisualComponentArray>(32, &g_SceneResourceAllocator);
+		m_SkyboxComponents = g_SceneResourceAllocator.allocate<SkyboxComponentArray>(4, &g_SceneResourceAllocator);
 
 		m_PlateModel = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/stoneplate.cbobj");
 
@@ -106,6 +110,7 @@ namespace stone {
 				m_VisualComponents->push_back(newVC);
 				m_GameObjects->push_back(newGO);
 			}
+
 	}
 
 	void Game::RequestLoadAndApplyTextures()
@@ -129,7 +134,24 @@ namespace stone {
 		CLOVER_INFO("Loading Skybox material...");
 		m_SkyboxMaterial = m_MaterialManager->CreateMaterial<SkyboxMaterial>("shaders/lighting/skybox");
 		m_SkyboxAlbedo = m_TextureManager->CreateTextureCube("gfx/envi/textures/demo/grace_cross.cbskb");
+
+		SkyboxMaterial* skbMat = (SkyboxMaterial*)m_SkyboxMaterial;
+		skbMat->SetBaseColorTex(m_SkyboxAlbedo);
+
 		CLOVER_INFO("Loading Skybox surface...");
+		m_SkyboxSurface = m_ModelManager->CreateSingleSurface("gfx/envi/models/demo/cube.cbobj");
+
+		// skybox gameobject
+		{
+			GameObject* newGO = g_SceneResourceAllocator.allocate<GameObject>();
+			SkyboxComponent* newSC = g_SceneResourceAllocator.allocate<SkyboxComponent>();
+
+			newSC->Initialize(m_SkyboxSurface, m_SkyboxMaterial);
+
+			newGO->AddComponent(newSC);
+			m_SkyboxComponents->push_back(newSC);
+			m_GameObjects->push_back(newGO);
+		}
 	}
 
 	void Game::RequestLoadShadingProbes()
