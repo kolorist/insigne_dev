@@ -17,6 +17,7 @@ namespace stone {
 		, m_MouseY(0.0f)
 		, m_MaterialManager(i_materialManager)
 		, m_TextureManager(i_textureManager)
+		, m_Camera(nullptr)
 	{
 		for (u32 i = 0; i < 2; i++) {
 			m_MousePressed[i] = false;
@@ -85,6 +86,10 @@ namespace stone {
 				OnRequestLoadPlateMaterial();
 			}
 
+			if (ImGui::Button("Construct Camera")) {
+				OnRequestConstructCamera();
+			}
+
 			if (ImGui::Button("Load Models")) {
 				OnRequestLoadModels();
 			}
@@ -99,6 +104,10 @@ namespace stone {
 
 			if (ImGui::Button("Load Shading Probes")) {
 				OnRequestLoadShadingProbes();
+			}
+
+			if (m_Camera) {
+				ImGui::Text("Camera is present!");
 			}
 
 			for (sidx n = 0; n < 2; n++) {

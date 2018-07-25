@@ -7,6 +7,7 @@
 #include "GameObject/IGameObject.h"
 #include "GameObject/VisualComponent.h"
 #include "GameObject/SkyboxComponent.h"
+#include "GameObject/CameraComponent.h"
 #include "Graphics/IModelManager.h"
 #include "Graphics/MaterialManager.h"
 #include "Graphics/ITextureManager.h"
@@ -31,6 +32,7 @@ namespace stone {
 		private:
 			void								RequestLoadDefaultTextures();
 			void								RequestLoadPlateMaterial();
+			void								RequestContructCamera();
 			void								RequestLoadModels();
 			void								RequestLoadAndApplyTextures();
 			void								RequestLoadSkybox();
@@ -51,6 +53,7 @@ namespace stone {
 			IModelManager*						m_ModelManager;
 			MaterialManager*					m_MaterialManager;
 			ITextureManager*					m_TextureManager;
+			CameraComponent*					m_CameraComponent;
 			Debugger*							m_Debugger;
 
 		private:

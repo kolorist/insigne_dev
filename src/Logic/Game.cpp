@@ -31,6 +31,7 @@ namespace stone {
 	{
 		m_Debugger->OnRequestLoadDefaultTextures.bind<Game, &Game::RequestLoadDefaultTextures>(this);
 		m_Debugger->OnRequestLoadPlateMaterial.bind<Game, &Game::RequestLoadPlateMaterial>(this);
+		m_Debugger->OnRequestConstructCamera.bind<Game, &Game::RequestContructCamera>(this);
 		m_Debugger->OnRequestLoadModels.bind<Game, &Game::RequestLoadModels>(this);
 		m_Debugger->OnRequestLoadAndApplyTextures.bind<Game, &Game::RequestLoadAndApplyTextures>(this);
 		m_Debugger->OnRequestLoadSkybox.bind<Game, &Game::RequestLoadSkybox>(this);
@@ -43,6 +44,8 @@ namespace stone {
 	{
 		if (!m_GameObjects)
 			return;
+
+		m_CameraComponent->Update(i_deltaMs);
 
 		for (u32 i = 0; i < m_GameObjects->get_size(); i++) {
 			(*m_GameObjects)[i]->Update(i_deltaMs);
@@ -83,6 +86,16 @@ namespace stone {
 		pbrMat->SetBaseColorTex(m_DefaultAlbedo);
 		pbrMat->SetMetallicTex(m_DefaultMetallic);
 		pbrMat->SetRoughnessTex(m_DefaultRoughness);
+	}
+
+	void Game::RequestContructCamera()
+	{
+		CLOVER_INFO("Request construct a camera...");
+		m_CameraComponent = g_SceneResourceAllocator.allocate<CameraComponent>();
+		m_CameraComponent->Initialize(0.01f, 100.0f, 45.0f, 16.0f / 9.0f);
+		m_CameraComponent->SetPosition(floral::vec3f(3.0f, 3.0f, 3.0f));
+		m_CameraComponent->SetLookAtDir(floral::vec3f(-3.0f, 0.0f, -3.0f));
+		m_Debugger->SetCamera(m_CameraComponent);
 	}
 
 	void Game::RequestLoadModels()
@@ -133,7 +146,7 @@ namespace stone {
 		CLOVER_INFO("Request Load Skybox...");
 		CLOVER_INFO("Loading Skybox material...");
 		m_SkyboxMaterial = m_MaterialManager->CreateMaterial<SkyboxMaterial>("shaders/lighting/skybox");
-		m_SkyboxAlbedo = m_TextureManager->CreateTextureCube("gfx/envi/textures/demo/grace_cross.cbskb");
+		m_SkyboxAlbedo = m_TextureManager->CreateTextureCube("gfx/envi/textures/demo/ditch_river.cbskb");
 
 		SkyboxMaterial* skbMat = (SkyboxMaterial*)m_SkyboxMaterial;
 		skbMat->SetBaseColorTex(m_SkyboxAlbedo);

@@ -85,7 +85,6 @@ namespace stone {
 				dataSizeOneFace, texData, false);
 		dataStream.read_bytes((p8)texData, dataSizeOneFace * 6);
 
-
 		floral::close_file(texFile);
 		m_MemoryArena->free_all();
 

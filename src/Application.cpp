@@ -130,13 +130,13 @@ namespace stone {
 		//
 		s_mat = (FBODebugMaterial*)m_MaterialManager->CreateMaterial<FBODebugMaterial>("shaders/internal/ssquad");
 		SSVertex vs[4];
-		vs[0].Position = floral::vec2f(-1.0f, -1.0f) * 0.5f;
+		vs[0].Position = floral::vec2f(-1.0f, -1.0f);
 		vs[0].TexCoord = floral::vec2f(0.0f, 0.0f);
-		vs[1].Position = floral::vec2f(1.0f, -1.0f) * 0.5f;
+		vs[1].Position = floral::vec2f(1.0f, -1.0f);
 		vs[1].TexCoord = floral::vec2f(1.0f, 0.0f);
-		vs[2].Position = floral::vec2f(1.0f, 1.0f) * 0.5f;
+		vs[2].Position = floral::vec2f(1.0f, 1.0f);
 		vs[2].TexCoord = floral::vec2f(1.0f, 1.0f);
-		vs[3].Position = floral::vec2f(-1.0f, 1.0f) * 0.5f;
+		vs[3].Position = floral::vec2f(-1.0f, 1.0f);
 		vs[3].TexCoord = floral::vec2f(0.0f, 1.0f);
 		u32 indices[] = {0, 1, 2, 2, 3, 0};
 		s_testSS = insigne::upload_surface(&vs[0], sizeof(SSVertex) * 4, &indices[0], sizeof(u32) * 6,

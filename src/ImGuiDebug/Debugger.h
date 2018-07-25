@@ -7,6 +7,7 @@
 
 #include "Graphics/MaterialManager.h"
 #include "Graphics/ITextureManager.h"
+#include "Logic/GameObject/CameraComponent.h"
 
 namespace stone {
 
@@ -25,6 +26,8 @@ namespace stone {
 			void								OnCursorMove(u32 i_x, u32 i_y);
 			void								OnCursorInteract(bool i_pressed, u32 i_buttonId);
 
+			void								SetCamera(CameraComponent* i_camera) { m_Camera = i_camera; }
+
 		private:
 			static void							RenderImGuiDrawLists(ImDrawData* i_drawData);
 
@@ -33,12 +36,15 @@ namespace stone {
 			bool								m_MousePressed[2];
 			bool								m_MouseHeldThisFrame[2];
 
+			CameraComponent*					m_Camera;
+
 			MaterialManager*					m_MaterialManager;
 			ITextureManager*					m_TextureManager;
 
 		public:
 			floral::simple_callback<void>		OnRequestLoadDefaultTextures;
 			floral::simple_callback<void>		OnRequestLoadPlateMaterial;
+			floral::simple_callback<void>		OnRequestConstructCamera;
 			floral::simple_callback<void>		OnRequestLoadModels;
 			floral::simple_callback<void>		OnRequestLoadAndApplyTextures;
 			floral::simple_callback<void>		OnRequestLoadSkybox;
