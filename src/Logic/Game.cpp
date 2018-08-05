@@ -9,6 +9,8 @@
 #include "GameObject/GameObject.h"
 #include "GameObject/VisualComponent.h"
 #include "GameObject/PlateComponent.h"
+#include "GameObject/CameraComponent.h"
+#include "GameObject/SkyboxComponent.h"
 #include "ImGuiDebug/Debugger.h"
 
 namespace stone {
@@ -42,31 +44,33 @@ namespace stone {
 
 	void Game::Update(f32 i_deltaMs)
 	{
-		if (!m_GameObjects)
-			return;
+		if (m_CameraComponent) {
+			m_CameraComponent->Update(nullptr, i_deltaMs);
+		}
 
-		m_CameraComponent->Update(i_deltaMs);
-
-		for (u32 i = 0; i < m_GameObjects->get_size(); i++) {
-			(*m_GameObjects)[i]->Update(i_deltaMs);
+		if (m_GameObjects) {
+			for (u32 i = 0; i < m_GameObjects->get_size(); i++) {
+				(*m_GameObjects)[i]->Update(m_CameraComponent->GetCamera(), i_deltaMs);
+			}
 		}
 	}
 
 	void Game::Render()
 	{
-		if (!m_VisualComponents)
-			return;
-
-		for (u32 i = 0; i < m_VisualComponents->get_size(); i++) {
-			PROFILE_SCOPE(VisualComponentRender);
-			(*m_VisualComponents)[i]->Render();
+		if (m_VisualComponents) {
+			for (u32 i = 0; i < m_VisualComponents->get_size(); i++) {
+				PROFILE_SCOPE(VisualComponentRender);
+				(*m_VisualComponents)[i]->Render(m_CameraComponent->GetCamera());
+			}
 		}
 
 		// then render the skybox
 		// actually, the order of calling rendering of insigne doesn't matter
-		for (u32 i = 0; i < m_SkyboxComponents->get_size(); i++) {
-			PROFILE_SCOPE(SkyboxComponentRender);
-			(*m_SkyboxComponents)[i]->Render();
+		if (m_SkyboxComponents) {
+			for (u32 i = 0; i < m_SkyboxComponents->get_size(); i++) {
+				PROFILE_SCOPE(SkyboxComponentRender);
+				(*m_SkyboxComponents)[i]->Render(m_CameraComponent->GetCamera());
+			}
 		}
 	}
 
@@ -93,9 +97,9 @@ namespace stone {
 		CLOVER_INFO("Request construct a camera...");
 		m_CameraComponent = g_SceneResourceAllocator.allocate<CameraComponent>();
 		m_CameraComponent->Initialize(0.01f, 100.0f, 45.0f, 16.0f / 9.0f);
-		m_CameraComponent->SetPosition(floral::vec3f(3.0f, 3.0f, 3.0f));
-		m_CameraComponent->SetLookAtDir(floral::vec3f(-3.0f, 0.0f, -3.0f));
-		m_Debugger->SetCamera(m_CameraComponent);
+		m_CameraComponent->SetPosition(floral::vec3f(3.0f, 1.0f, 3.0f));
+		m_CameraComponent->SetLookAtDir(floral::vec3f(-3.0f, -1.0f, -3.0f));
+		m_Debugger->SetCamera(m_CameraComponent->GetCamera());
 	}
 
 	void Game::RequestLoadModels()

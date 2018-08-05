@@ -11,7 +11,7 @@ namespace stone {
 			CameraComponent();
 			~CameraComponent();
 
-			void								Update(f32 i_deltaMs);
+			void								Update(Camera* i_camera, f32 i_deltaMs);
 			void								Render();
 
 			void								Initialize(const f32 i_nearPlane, const f32 i_far, const f32 i_fov, const f32 i_ratio);

@@ -3,6 +3,7 @@
 #include <insigne/render.h>
 #include <lotus/profiler.h>
 
+#include "Graphics/Camera.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/PBRMaterial.h"
 
@@ -18,23 +19,17 @@ namespace stone {
 	{
 	}
 
-	void VisualComponent::Update(f32 i_deltaMs)
+	void VisualComponent::Update(Camera* i_camera, f32 i_deltaMs)
 	{
 		PROFILE_SCOPE(UpdateVisualComponent);
 		// transform update
 		m_Transform = floral::construct_translation3d(m_PositionWS) * floral::construct_scaling3d(m_ScalingWS);
 	}
 
-	void VisualComponent::Render()
+	void VisualComponent::Render(Camera* i_camera)
 	{
 		PBRMaterial* mat = reinterpret_cast<PBRMaterial*>(m_Material);
-		floral::mat4x4f v = floral::construct_lookat(
-				floral::vec3f(0.0f, 1.0f, 0.0f),
-				floral::vec3f(3.0f, 3.0f, 3.0f),
-				floral::vec3f(-3.0f, -3.0f, -3.0f));
-		floral::mat4x4f p = floral::construct_perspective(0.01f, 10.0f, 70.0f, 16.0f / 9.0f);
-		floral::mat4x4f wvp = p * v;
-		mat->SetWVP(wvp);
+		mat->SetWVP(i_camera->WVPMatrix);
 		mat->SetTransform(m_Transform);
 		insigne::draw_surface<SolidSurface>(m_Surface, m_Material->GetHandle());
 	}

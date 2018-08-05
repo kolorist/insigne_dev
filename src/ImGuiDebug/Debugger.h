@@ -5,11 +5,14 @@
 #include <insigne/commons.h>
 #include <lotus/events.h>
 
-#include "Graphics/MaterialManager.h"
-#include "Graphics/ITextureManager.h"
-#include "Logic/GameObject/CameraComponent.h"
+#include "Memory/MemorySystem.h"
+
 
 namespace stone {
+
+	struct Camera;
+	class MaterialManager;
+	class ITextureManager;
 
 	extern floral::fixed_array<lotus::unpacked_event, LinearAllocator>	s_profileEvents[4];
 
@@ -26,7 +29,7 @@ namespace stone {
 			void								OnCursorMove(u32 i_x, u32 i_y);
 			void								OnCursorInteract(bool i_pressed, u32 i_buttonId);
 
-			void								SetCamera(CameraComponent* i_camera) { m_Camera = i_camera; }
+			void								SetCamera(Camera* i_camera) { m_Camera = i_camera; }
 
 		private:
 			static void							RenderImGuiDrawLists(ImDrawData* i_drawData);
@@ -36,7 +39,7 @@ namespace stone {
 			bool								m_MousePressed[2];
 			bool								m_MouseHeldThisFrame[2];
 
-			CameraComponent*					m_Camera;
+			Camera*								m_Camera;
 
 			MaterialManager*					m_MaterialManager;
 			ITextureManager*					m_TextureManager;

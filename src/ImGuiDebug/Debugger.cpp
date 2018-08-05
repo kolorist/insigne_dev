@@ -3,6 +3,9 @@
 #include <context.h>
 
 #include "DebugUIMaterial.h"
+#include "Graphics/Camera.h"
+#include "Graphics/MaterialManager.h"
+#include "Graphics/ITextureManager.h"
 #include "Graphics/SurfaceDefinitions.h"
 
 namespace stone {
@@ -107,7 +110,40 @@ namespace stone {
 			}
 
 			if (m_Camera) {
-				ImGui::Text("Camera is present!");
+				if (ImGui::CollapsingHeader("Camera Debug")) {
+					ImGui::LabelText("position", "(%f; %f; %f)", m_Camera->Position.x, m_Camera->Position.y, m_Camera->Position.z);
+					ImGui::LabelText("look_at_direction", "(%f; %f; %f)", m_Camera->LookAtDir.x, m_Camera->LookAtDir.y, m_Camera->LookAtDir.z);
+					ImGui::LabelText("aspect_ratio", "%f", m_Camera->AspectRatio);
+					ImGui::LabelText("plane", "%f - %f", m_Camera->NearPlane, m_Camera->FarPlane);
+					ImGui::LabelText("field_of_view", "%f", m_Camera->FOV);
+					ImGui::Text("view_matrix:");
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->ViewMatrix[0][0], m_Camera->ViewMatrix[0][1], m_Camera->ViewMatrix[0][2], m_Camera->ViewMatrix[0][3]);
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->ViewMatrix[1][0], m_Camera->ViewMatrix[1][1], m_Camera->ViewMatrix[1][2], m_Camera->ViewMatrix[1][3]);
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->ViewMatrix[2][0], m_Camera->ViewMatrix[2][1], m_Camera->ViewMatrix[2][2], m_Camera->ViewMatrix[2][3]);
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->ViewMatrix[3][0], m_Camera->ViewMatrix[3][1], m_Camera->ViewMatrix[3][2], m_Camera->ViewMatrix[3][3]);
+					ImGui::Text("projection_matrix:");
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->ProjectionMatrix[0][0], m_Camera->ProjectionMatrix[0][1], m_Camera->ProjectionMatrix[0][2], m_Camera->ProjectionMatrix[0][3]);
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->ProjectionMatrix[1][0], m_Camera->ProjectionMatrix[1][1], m_Camera->ProjectionMatrix[1][2], m_Camera->ProjectionMatrix[1][3]);
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->ProjectionMatrix[2][0], m_Camera->ProjectionMatrix[2][1], m_Camera->ProjectionMatrix[2][2], m_Camera->ProjectionMatrix[2][3]);
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->ProjectionMatrix[3][0], m_Camera->ProjectionMatrix[3][1], m_Camera->ProjectionMatrix[3][2], m_Camera->ProjectionMatrix[3][3]);
+					ImGui::Text("wvp_matrix:");
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->WVPMatrix[0][0], m_Camera->WVPMatrix[0][1], m_Camera->WVPMatrix[0][2], m_Camera->WVPMatrix[0][3]);
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->WVPMatrix[1][0], m_Camera->WVPMatrix[1][1], m_Camera->WVPMatrix[1][2], m_Camera->WVPMatrix[1][3]);
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->WVPMatrix[2][0], m_Camera->WVPMatrix[2][1], m_Camera->WVPMatrix[2][2], m_Camera->WVPMatrix[2][3]);
+					ImGui::Text("%4.2f; %4.2f; %4.2f; %4.2f",
+							m_Camera->WVPMatrix[3][0], m_Camera->WVPMatrix[3][1], m_Camera->WVPMatrix[3][2], m_Camera->WVPMatrix[3][3]);
+				}
 			}
 
 			for (sidx n = 0; n < 2; n++) {

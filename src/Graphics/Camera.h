@@ -2,6 +2,8 @@
 
 #include <floral.h>
 
+namespace stone {
+
 struct Camera {
 	floral::vec3f								Position;
 	floral::vec3f								LookAtDir;
@@ -14,3 +16,5 @@ struct Camera {
 	floral::mat4x4f								ProjectionMatrix;
 	floral::mat4x4f								WVPMatrix;
 };
+
+}

@@ -12,11 +12,11 @@ namespace stone {
 	{
 	}
 
-	void GameObject::Update(f32 i_deltaMs)
+	void GameObject::Update(Camera* i_camera, f32 i_deltaMs)
 	{
 		PROFILE_SCOPE(UpdateGameObject);
 		for (u32 i = 0; i < m_Components.get_size(); i++)
-			m_Components[i]->Update(i_deltaMs);
+			m_Components[i]->Update(i_camera, i_deltaMs);
 	}
 
 	void GameObject::AddComponent(IComponent* i_comp)

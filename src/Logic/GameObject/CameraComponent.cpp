@@ -19,7 +19,7 @@ namespace stone {
 		m_isDirty = true;
 	}
 
-	void CameraComponent::Update(f32 i_deltaMs)
+	void CameraComponent::Update(Camera* i_camera, f32 i_deltaMs)
 	{
 		if (m_isDirty) {
 			m_Camera.ViewMatrix = floral::construct_lookat(

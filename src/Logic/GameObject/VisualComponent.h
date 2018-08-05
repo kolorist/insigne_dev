@@ -7,13 +7,15 @@
 #include "Graphics/IMaterial.h"
 
 namespace stone {
+	struct Camera;
+
 	class VisualComponent : public Component {
 		public:
 			VisualComponent();
 			~VisualComponent();
 
-			void								Update(f32 i_deltaMs);
-			void								Render();
+			void								Update(Camera* i_camera, f32 i_deltaMs);
+			void								Render(Camera* i_camera);
 
 			void								Initialize(insigne::surface_handle_t i_surfaceHdl, IMaterial* i_matHdl);
 

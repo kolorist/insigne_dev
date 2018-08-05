@@ -5,9 +5,6 @@
 
 #include "Memory/MemorySystem.h"
 #include "GameObject/IGameObject.h"
-#include "GameObject/VisualComponent.h"
-#include "GameObject/SkyboxComponent.h"
-#include "GameObject/CameraComponent.h"
 #include "Graphics/IModelManager.h"
 #include "Graphics/MaterialManager.h"
 #include "Graphics/ITextureManager.h"
@@ -15,6 +12,9 @@
 namespace stone {
 	class Debugger;
 	class IMaterial;
+	class CameraComponent;
+	class VisualComponent;
+	class SkyboxComponent;
 }
 
 namespace stone {

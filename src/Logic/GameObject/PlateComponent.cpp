@@ -18,7 +18,7 @@ namespace stone {
 	{
 	}
 
-	void PlateComponent::Update(f32 i_deltaMs)
+	void PlateComponent::Update(Camera* i_camera, f32 i_deltaMs)
 	{
 		PROFILE_SCOPE(UpdatePlateComponent);
 		switch (m_MovementState) {

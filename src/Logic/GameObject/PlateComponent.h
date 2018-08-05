@@ -7,6 +7,8 @@
 #include "VisualComponent.h"
 
 namespace stone {
+	struct Camera;
+
 	class PlateComponent : public Component {
 		public:
 			enum class MovementState {
@@ -20,7 +22,7 @@ namespace stone {
 			PlateComponent();
 			~PlateComponent();
 
-			void								Update(f32 i_deltaMs);
+			void								Update(Camera* i_camera, f32 i_deltaMs);
 
 			void								Initialize(VisualComponent* i_visualComponent, const f32 i_readyDur, const f32 i_leadInDur);
 
