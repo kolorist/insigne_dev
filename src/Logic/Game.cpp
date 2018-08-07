@@ -90,6 +90,8 @@ namespace stone {
 		pbrMat->SetBaseColorTex(m_DefaultAlbedo);
 		pbrMat->SetMetallicTex(m_DefaultMetallic);
 		pbrMat->SetRoughnessTex(m_DefaultRoughness);
+		pbrMat->SetLightDirection(floral::vec3f(-3.0f, -3.0f, 0.0f));
+		pbrMat->SetLightIntensity(floral::vec3f(10.0f, 10.0f, 10.0f));
 	}
 
 	void Game::RequestContructCamera()

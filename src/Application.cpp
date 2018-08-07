@@ -38,7 +38,7 @@ namespace stone {
 		m_MaterialManager = g_SystemAllocator.allocate<MaterialManager>(m_ShaderManager);
 		m_TextureManager = g_SystemAllocator.allocate<TextureManager>();
 		m_ModelManager = g_SystemAllocator.allocate<ModelManager>();
-		m_PostFXManager = g_SystemAllocator.allocate<PostFXManager>();
+		m_PostFXManager = g_SystemAllocator.allocate<PostFXManager>(m_MaterialManager);
 		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
 		m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager, m_TextureManager,
 				m_Debugger);

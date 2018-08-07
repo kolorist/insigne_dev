@@ -116,7 +116,6 @@ void main()
 	mediump vec3 f0 = vec3(0.04f);
 	f0 = mix(f0, baseColor, metallic);
 
-
 	mediump float alpha = roughness * roughness;
 	mediump float LoN = max(dot(l, n), 0.0f);
 	mediump float VoN = max(dot(v, n), 0.0f);
