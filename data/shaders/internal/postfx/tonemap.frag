@@ -9,12 +9,8 @@ uniform mediump float iu_Exposure;
 
 void main()
 {
-	mediump float gamma = 2.2;
-	mediump vec3 hdrColor = texture(iu_ColorTex0, o_TexCoord).rgb;
+	mediump vec4 hdrColor = texture(iu_ColorTex0, o_TexCoord).rgba;
 	
 	// exposure tone mapping
-	mediump vec3 mapped = vec3(1.0) - exp(-hdrColor * iu_Exposure);
-	// gamma correction
-	mapped = pow(mapped, vec3(1.0 / gamma));
-	o_Color = vec4(mapped, 1.0);
+	o_Color = vec4(1.0) - exp(-hdrColor * iu_Exposure);
 }

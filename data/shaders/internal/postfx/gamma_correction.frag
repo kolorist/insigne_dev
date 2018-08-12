@@ -12,6 +12,6 @@ void main()
 	mediump vec3 orgColor = texture(iu_ColorTex0, o_TexCoord).rgb;
 
 	// gamma correction
-	mapped = pow(orgColor, vec3(1.0 / gamma));
+	mediump vec3 mapped = pow(orgColor, vec3(1.0 / gamma));
 	o_Color = vec4(mapped, 1.0);
 }

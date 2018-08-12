@@ -19,6 +19,7 @@ namespace stone {
 			void								Initialize() override;
 			const insigne::framebuffer_handle_t	GetMainFramebuffer() override	{ return m_MainFramebuffer; }
 			void								Render() override;
+			void								RenderFinalPass() override;
 
 		private:
 			MaterialManager*					m_MaterialManager;

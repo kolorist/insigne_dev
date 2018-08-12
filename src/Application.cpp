@@ -85,14 +85,22 @@ namespace stone {
 			insigne::dispatch_render_pass();
 		}
 
+		// postfx
+		{
+			PROFILE_SCOPE(PostFX);
+			m_PostFXManager->Render();
+		}
+
+		// final pass
+		insigne::begin_render_pass(-1);
 		{
 			PROFILE_SCOPE(PFX_GammaCorrection);
-			insigne::begin_render_pass(-1);
-			s_mat->SetColorTex0(tex0);
-			insigne::draw_surface<SSSurface>(s_testSS, s_mat->GetHandle());
-			m_Debugger->Render(i_deltaMs);
-			insigne::end_render_pass(-1);
+			m_PostFXManager->RenderFinalPass();
+			//s_mat->SetColorTex0(tex0);
+			//insigne::draw_surface<SSSurface>(s_testSS, s_mat->GetHandle());
 		}
+		m_Debugger->Render(i_deltaMs);
+		insigne::end_render_pass(-1);
 		
 		{
 			PROFILE_SCOPE(PresentRender);
