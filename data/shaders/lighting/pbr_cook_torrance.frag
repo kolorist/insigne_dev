@@ -16,6 +16,9 @@ uniform sampler2D iu_TexBaseColor;
 uniform sampler2D iu_TexMetallic;
 uniform sampler2D iu_TexRoughness;
 
+uniform samplerCube iu_IrrMap;
+uniform samplerCube iu_SpecMap;
+
 // fresnel
 mediump float fresnel_schlick(in mediump vec3 v, in mediump vec3 n, in mediump float f0)
 {
@@ -104,11 +107,11 @@ mediump vec3 blend_material(in mediump vec3 diff, in mediump vec3 spec, in mediu
 
 void main()
 {
-	mediump vec3 l = normalize(iu_LightDirection);
-	mediump vec3 v = normalize(v_ViewDir_W);	// does normalizing need to be done?
+	mediump vec3 l = normalize(iu_LightDirection);	// points to the light source
+	mediump vec3 v = normalize(v_ViewDir_W);		// points to the camera
 	mediump vec3 h = normalize(l + v);
 	mediump vec3 n = normalize(v_Normal_W);
-#if 0
+#if 1
 	mediump float roughness = texture(iu_TexRoughness, v_TexCoord).r;
 	mediump float metallic = texture(iu_TexMetallic, v_TexCoord).r;
 	mediump vec3 baseColor = texture(iu_TexBaseColor, v_TexCoord).rgb;
@@ -136,7 +139,8 @@ void main()
 	//o_Color = vec4(vec3(ndf_ggx(n, h, iu_Roughness)), 1.0f);
 	mediump vec3 roughness = texture(iu_TexRoughness, v_TexCoord).rgb;
 	mediump vec3 metallic = texture(iu_TexMetallic, v_TexCoord).rgb;
-	mediump vec3 baseColor = texture(iu_TexBaseColor, v_TexCoord).rgb;
+	//mediump vec3 baseColor = texture(iu_TexBaseColor, v_TexCoord).rgb;
+	mediump vec3 baseColor = texture(iu_SpecMap, n).rgb;
 	o_Color = vec4(baseColor, 1.0f);
 	//o_Color = vec4(vec3(visibility_implicit(l, v, n, h, iu_Roughness)), 1.0f);
 	//o_Color = vec4(vec3(visibility_torrance_sparrow(l, v, n, h, iu_Roughness)), 1.0f);

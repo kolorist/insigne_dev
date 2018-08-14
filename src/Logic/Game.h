@@ -73,5 +73,7 @@ namespace stone {
 			IMaterial*							m_SkyboxMaterial;
 			insigne::surface_handle_t			m_PlateModel;
 			insigne::surface_handle_t			m_SkyboxModel;
+
+			floral::vec3f						m_LightPosition;
 	};
 }

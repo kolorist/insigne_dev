@@ -18,11 +18,15 @@ namespace stone {
 		m_TexRoughness = insigne::get_material_param<insigne::texture_handle_t>(m_MaterialHandle, "iu_TexRoughness");
 		m_LightDirection = insigne::get_material_param<floral::vec3f>(m_MaterialHandle, "iu_LightDirection");
 		m_LightIntensity = insigne::get_material_param<floral::vec3f>(m_MaterialHandle, "iu_LightIntensity");
+		m_CameraPosition = insigne::get_material_param<floral::vec3f>(m_MaterialHandle, "iu_CameraPos");
+
+		m_IrrMap = insigne::get_material_param_texcube(m_MaterialHandle, "iu_IrrMap");
+		m_SpecMap = insigne::get_material_param_texcube(m_MaterialHandle, "iu_SpecMap");
 	}
 
 	insigne::shader_param_list_t* PBRMaterial::BuildShaderParamList()
 	{
-		insigne::shader_param_list_t* paramList = insigne::allocate_shader_param_list(8);
+		insigne::shader_param_list_t* paramList = insigne::allocate_shader_param_list(12);
 		// vertex shader
 		paramList->push_back(insigne::shader_param_t("iu_PerspectiveWVP", insigne::param_data_type_e::param_mat4));
 		paramList->push_back(insigne::shader_param_t("iu_TransformMat", insigne::param_data_type_e::param_mat4));
@@ -33,6 +37,10 @@ namespace stone {
 		paramList->push_back(insigne::shader_param_t("iu_TexRoughness", insigne::param_data_type_e::param_sampler2d));
 		paramList->push_back(insigne::shader_param_t("iu_LightDirection", insigne::param_data_type_e::param_vec3));
 		paramList->push_back(insigne::shader_param_t("iu_LightIntensity", insigne::param_data_type_e::param_vec3));
+		paramList->push_back(insigne::shader_param_t("iu_CameraPos", insigne::param_data_type_e::param_vec3));
+
+		paramList->push_back(insigne::shader_param_t("iu_IrrMap", insigne::param_data_type_e::param_sampler_cube));
+		paramList->push_back(insigne::shader_param_t("iu_SpecMap", insigne::param_data_type_e::param_sampler_cube));
 
 		return paramList;
 	}
@@ -71,6 +79,21 @@ namespace stone {
 	void PBRMaterial::SetLightIntensity(const floral::vec3f& i_v)
 	{
 		insigne::set_material_param(m_MaterialHandle, m_LightIntensity, i_v);
+	}
+
+	void PBRMaterial::SetCameraPosition(const floral::vec3f& i_v)
+	{
+		insigne::set_material_param(m_MaterialHandle, m_CameraPosition, i_v);
+	}
+
+	void PBRMaterial::SetIrradianceMap(const insigne::texture_handle_t& i_tex)
+	{
+		insigne::set_material_param_texcube(m_MaterialHandle, m_IrrMap, i_tex);
+	}
+
+	void PBRMaterial::SetSpecularMap(const insigne::texture_handle_t& i_tex)
+	{
+		insigne::set_material_param_texcube(m_MaterialHandle, m_SpecMap, i_tex);
 	}
 
 }

@@ -15,7 +15,7 @@ void main() {
 	highp vec4 pos_W = iu_TransformMat * vec4(l_Position_L, 1.0f);
 	mediump vec4 normal_W = iu_TransformMat * vec4(l_Normal_L, 0.0f);
 	v_Normal_W = normalize(normal_W.xyz);
-	v_ViewDir_W = -normalize(pos_W.xyz - iu_CameraPos);
+	v_ViewDir_W = normalize(iu_CameraPos - pos_W.xyz);
 	v_TexCoord = l_TexCoord;
 	gl_Position = iu_PerspectiveWVP * pos_W;
 }

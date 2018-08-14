@@ -20,6 +20,10 @@ namespace stone {
 			void								SetRoughnessTex(const insigne::texture_handle_t& i_tex);
 			void								SetLightDirection(const floral::vec3f& i_v);
 			void								SetLightIntensity(const floral::vec3f& i_v);
+			void								SetCameraPosition(const floral::vec3f& i_v);
+
+			void								SetIrradianceMap(const insigne::texture_handle_t& i_tex);
+			void								SetSpecularMap(const insigne::texture_handle_t& i_tex);
 
 		private:
 			// vertex shader
@@ -33,5 +37,9 @@ namespace stone {
 
 			insigne::param_id					m_LightDirection;
 			insigne::param_id					m_LightIntensity;
+			insigne::param_id					m_CameraPosition;
+
+			insigne::param_id					m_IrrMap;
+			insigne::param_id					m_SpecMap;
 	};
 }

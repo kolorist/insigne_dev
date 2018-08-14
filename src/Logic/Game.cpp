@@ -48,6 +48,15 @@ namespace stone {
 			m_CameraComponent->Update(nullptr, i_deltaMs);
 		}
 
+		static f32 timeElapsed = 0.0f;
+		timeElapsed += i_deltaMs;
+
+		if (m_PlateMaterial) {
+			PBRMaterial* pbrMat = (PBRMaterial*)m_PlateMaterial;
+			m_LightPosition = floral::vec3f(30.0f * sinf(timeElapsed / 1000.0f), 30.0f, 30.0f * cosf(timeElapsed / 1000.0f));
+			pbrMat->SetLightDirection(m_LightPosition);
+		}
+
 		if (m_GameObjects) {
 			for (u32 i = 0; i < m_GameObjects->get_size(); i++) {
 				(*m_GameObjects)[i]->Update(m_CameraComponent->GetCamera(), i_deltaMs);
@@ -90,7 +99,10 @@ namespace stone {
 		pbrMat->SetBaseColorTex(m_DefaultAlbedo);
 		pbrMat->SetMetallicTex(m_DefaultMetallic);
 		pbrMat->SetRoughnessTex(m_DefaultRoughness);
-		pbrMat->SetLightDirection(floral::vec3f(-3.0f, -3.0f, 0.0f));
+		m_LightPosition = floral::vec3f(3.0f, 3.0f, 0.0f);
+		pbrMat->SetLightDirection(m_LightPosition);
+		floral::vec3f camPos = floral::vec3f(3.0f, 1.0f, 3.0f);
+		pbrMat->SetCameraPosition(camPos);
 		pbrMat->SetLightIntensity(floral::vec3f(10.0f, 10.0f, 10.0f));
 	}
 
@@ -99,8 +111,9 @@ namespace stone {
 		CLOVER_INFO("Request construct a camera...");
 		m_CameraComponent = g_SceneResourceAllocator.allocate<CameraComponent>();
 		m_CameraComponent->Initialize(0.01f, 100.0f, 45.0f, 16.0f / 9.0f);
-		m_CameraComponent->SetPosition(floral::vec3f(3.0f, 1.0f, 3.0f));
-		m_CameraComponent->SetLookAtDir(floral::vec3f(-3.0f, -1.0f, -3.0f));
+		floral::vec3f camPos = floral::vec3f(3.0f, 1.0f, 3.0f);
+		m_CameraComponent->SetPosition(camPos);
+		m_CameraComponent->SetLookAtDir(-camPos);
 		m_Debugger->SetCamera(m_CameraComponent->GetCamera());
 	}
 
@@ -111,7 +124,7 @@ namespace stone {
 		m_VisualComponents = g_SceneResourceAllocator.allocate<VisualComponentArray>(32, &g_SceneResourceAllocator);
 		m_SkyboxComponents = g_SceneResourceAllocator.allocate<SkyboxComponentArray>(4, &g_SceneResourceAllocator);
 
-		m_PlateModel = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/stoneplate.cbobj");
+		m_PlateModel = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/uv_sphere_pbr.cbobj");
 
 		for (u32 i = 0; i < 5; i++)
 			for (u32 j = 0; j < 5; j++) {
@@ -178,6 +191,10 @@ namespace stone {
 		CLOVER_INFO("Request Load Shading Probes...");
 		insigne::texture_handle_t texHdl = m_TextureManager->CreateMipmapedProbe("gfx/envi/textures/demo/irrmap_grace.cbprb");
 		insigne::texture_handle_t texHdl2 = m_TextureManager->CreateMipmapedProbe("gfx/envi/textures/demo/specmap_grace.cbprb");
+
+		PBRMaterial* pbrMat = (PBRMaterial*)m_PlateMaterial;
+		pbrMat->SetIrradianceMap(texHdl);
+		pbrMat->SetSpecularMap(texHdl2);
 	}
 
 }
