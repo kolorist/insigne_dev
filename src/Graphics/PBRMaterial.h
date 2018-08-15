@@ -24,6 +24,7 @@ namespace stone {
 
 			void								SetIrradianceMap(const insigne::texture_handle_t& i_tex);
 			void								SetSpecularMap(const insigne::texture_handle_t& i_tex);
+			void								SetSplitSumLUTTex(const insigne::texture_handle_t& i_tex);
 
 		private:
 			// vertex shader
@@ -41,5 +42,6 @@ namespace stone {
 
 			insigne::param_id					m_IrrMap;
 			insigne::param_id					m_SpecMap;
+			insigne::param_id					m_SplitSumLUTTex;
 	};
 }

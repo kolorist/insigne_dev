@@ -18,6 +18,7 @@ uniform sampler2D iu_TexRoughness;
 
 uniform samplerCube iu_IrrMap;
 uniform samplerCube iu_SpecMap;
+uniform sampler2D iu_SplitSumLUT;
 
 // fresnel
 mediump float fresnel_schlick(in mediump vec3 v, in mediump vec3 n, in mediump float f0)
@@ -30,6 +31,13 @@ mediump vec3 fresnel_schlick_v3(in mediump vec3 v, in mediump vec3 n, in mediump
 {
 	mediump float VoN = max(dot(v, n), 0.0f);
 	return (f0 + (1.0f - f0) * pow(1.0f - VoN, 5.0f));
+}
+
+// for ibl
+mediump vec3 fresnel_schlick_v3_roughness(in mediump vec3 v, in mediump vec3 n, in mediump vec3 f0, in mediump float roughness)
+{
+	mediump float VoN = max(dot(v, n), 0.0f);
+	return (f0 + (max(vec3(1.0f - roughness), f0) - f0) * pow(1.0f - VoN, 5.0f));
 }
 
 mediump float fresnel_spherical_gaussian(in mediump vec3 v, in mediump vec3 n, in mediump float f0)
@@ -110,7 +118,8 @@ void main()
 	mediump vec3 l = normalize(iu_LightDirection);	// points to the light source
 	mediump vec3 v = normalize(v_ViewDir_W);		// points to the camera
 	mediump vec3 h = normalize(l + v);
-	mediump vec3 n = normalize(v_Normal_W);
+	mediump vec3 n = normalize(v_Normal_W);\
+	mediump vec3 r = reflect(-v, n);
 #if 1
 	mediump float roughness = texture(iu_TexRoughness, v_TexCoord).r;
 	mediump float metallic = texture(iu_TexMetallic, v_TexCoord).r;
@@ -119,6 +128,7 @@ void main()
 	mediump vec3 f0 = vec3(0.04f);
 	f0 = mix(f0, baseColor, metallic);
 
+	// PBR
 	mediump float alpha = roughness * roughness;
 	mediump float LoN = max(dot(l, n), 0.0f);
 	mediump float VoN = max(dot(v, n), 0.0f);
@@ -132,7 +142,25 @@ void main()
 	mediump vec3 kd = vec3(1.0f) - ks;
 	kd *= (1.0f - metallic);
 	mediump vec3 Lo = (kd * baseColor / 3.14159f + brdf) * iu_LightIntensity * LoN;
-	o_Color = vec4(Lo + baseColor * 0.03f, 1.0f);
+
+	// IBL
+	mediump vec3 F_ibl = fresnel_schlick_v3_roughness(v, n, f0, roughness);
+	//mediump vec3 F_ibl = fresnel_schlick_v3(v, n, f0);
+	mediump vec3 kS_ibl = F_ibl;
+	mediump vec3 kD_ibl = vec3(1.0f) - kS_ibl;
+	kD_ibl *= 1.0 - metallic;
+	
+	mediump vec3 irradiance = texture(iu_IrrMap, n).rgb;
+	mediump vec3 diffuseIBL = irradiance * baseColor;
+	
+	mediump vec3 prefilteredEnvColor = textureLod(iu_SpecMap, r, roughness * 9.0f).rgb;
+	mediump float nov = min(max(dot(n, v), 0.0f), 0.99);
+	mediump vec2 precomputedEnvBRDF = texture(iu_SplitSumLUT, vec2(nov, 1.0f - roughness)).rg;
+	mediump vec3 specularIBL = prefilteredEnvColor * (F_ibl * precomputedEnvBRDF.x + precomputedEnvBRDF.y);
+	
+	mediump vec3 ambientIBL = kD_ibl * diffuseIBL + specularIBL;
+
+	o_Color = vec4(Lo + ambientIBL, 1.0f);
 #else
 	//o_Color = vec4(fresnel_schlick_v3(v, h, vec3(iu_Metallic)), 1.0f);
 	//o_Color = vec4(vec3(fresnel_spherical_gaussian(v, h, iu_Metallic)), 1.0f);

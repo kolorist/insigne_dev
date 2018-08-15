@@ -22,6 +22,7 @@ namespace stone {
 
 		m_IrrMap = insigne::get_material_param_texcube(m_MaterialHandle, "iu_IrrMap");
 		m_SpecMap = insigne::get_material_param_texcube(m_MaterialHandle, "iu_SpecMap");
+		m_SplitSumLUTTex = insigne::get_material_param<insigne::texture_handle_t>(m_MaterialHandle, "iu_SplitSumLUT");
 	}
 
 	insigne::shader_param_list_t* PBRMaterial::BuildShaderParamList()
@@ -41,6 +42,7 @@ namespace stone {
 
 		paramList->push_back(insigne::shader_param_t("iu_IrrMap", insigne::param_data_type_e::param_sampler_cube));
 		paramList->push_back(insigne::shader_param_t("iu_SpecMap", insigne::param_data_type_e::param_sampler_cube));
+		paramList->push_back(insigne::shader_param_t("iu_SplitSumLUT", insigne::param_data_type_e::param_sampler2d));
 
 		return paramList;
 	}
@@ -94,6 +96,11 @@ namespace stone {
 	void PBRMaterial::SetSpecularMap(const insigne::texture_handle_t& i_tex)
 	{
 		insigne::set_material_param_texcube(m_MaterialHandle, m_SpecMap, i_tex);
+	}
+
+	void PBRMaterial::SetSplitSumLUTTex(const insigne::texture_handle_t& i_tex)
+	{
+		insigne::set_material_param(m_MaterialHandle, m_SplitSumLUTTex, i_tex);
 	}
 
 }

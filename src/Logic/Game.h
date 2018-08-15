@@ -37,6 +37,7 @@ namespace stone {
 			void								RequestLoadAndApplyTextures();
 			void								RequestLoadSkybox();
 			void								RequestLoadShadingProbes();
+			void								RequestLoadSplitSumLUTTexture();
 
 		private:
 			typedef floral::fixed_array<IGameObject*, LinearAllocator>		GameObjectArray;

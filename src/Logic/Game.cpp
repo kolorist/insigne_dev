@@ -38,6 +38,7 @@ namespace stone {
 		m_Debugger->OnRequestLoadAndApplyTextures.bind<Game, &Game::RequestLoadAndApplyTextures>(this);
 		m_Debugger->OnRequestLoadSkybox.bind<Game, &Game::RequestLoadSkybox>(this);
 		m_Debugger->OnRequestLoadShadingProbes.bind<Game, &Game::RequestLoadShadingProbes>(this);
+		m_Debugger->OnRequestLoadLUTTexture.bind<Game, &Game::RequestLoadSplitSumLUTTexture>(this);
 
 		m_SkyboxSurface = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/cube.cbobj");
 	}
@@ -165,7 +166,7 @@ namespace stone {
 		CLOVER_INFO("Request Load Skybox...");
 		CLOVER_INFO("Loading Skybox material...");
 		m_SkyboxMaterial = m_MaterialManager->CreateMaterial<SkyboxMaterial>("shaders/lighting/skybox");
-		m_SkyboxAlbedo = m_TextureManager->CreateTextureCube("gfx/envi/textures/demo/ditch_river.cbskb");
+		m_SkyboxAlbedo = m_TextureManager->CreateTextureCube("gfx/envi/textures/demo/grace_cross.cbskb");
 
 		SkyboxMaterial* skbMat = (SkyboxMaterial*)m_SkyboxMaterial;
 		skbMat->SetBaseColorTex(m_SkyboxAlbedo);
@@ -195,6 +196,15 @@ namespace stone {
 		PBRMaterial* pbrMat = (PBRMaterial*)m_PlateMaterial;
 		pbrMat->SetIrradianceMap(texHdl);
 		pbrMat->SetSpecularMap(texHdl2);
+	}
+
+	void Game::RequestLoadSplitSumLUTTexture()
+	{
+		CLOVER_INFO("Request Load Split Sum LUT...");
+		insigne::texture_handle_t lutTex = m_TextureManager->CreateLUTTexture(256, 256);
+
+		PBRMaterial* pbrMat = (PBRMaterial*)m_PlateMaterial;
+		pbrMat->SetSplitSumLUTTex(lutTex);
 	}
 
 }

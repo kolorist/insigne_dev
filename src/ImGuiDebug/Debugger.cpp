@@ -109,6 +109,10 @@ namespace stone {
 				OnRequestLoadShadingProbes();
 			}
 
+			if (ImGui::Button("Load Split Sum LUT")) {
+				OnRequestLoadLUTTexture();
+			}
+
 			if (m_Camera) {
 				if (ImGui::CollapsingHeader("Camera Debug")) {
 					ImGui::LabelText("position", "(%f; %f; %f)", m_Camera->Position.x, m_Camera->Position.y, m_Camera->Position.z);
