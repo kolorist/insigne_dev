@@ -125,7 +125,7 @@ namespace stone {
 		m_VisualComponents = g_SceneResourceAllocator.allocate<VisualComponentArray>(32, &g_SceneResourceAllocator);
 		m_SkyboxComponents = g_SceneResourceAllocator.allocate<SkyboxComponentArray>(4, &g_SceneResourceAllocator);
 
-		m_PlateModel = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/uv_sphere_pbr.cbobj");
+		m_PlateModel = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/stoneplate.cbobj");
 
 		for (u32 i = 0; i < 5; i++)
 			for (u32 j = 0; j < 5; j++) {
