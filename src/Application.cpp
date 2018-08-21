@@ -42,6 +42,8 @@ namespace stone {
 		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
 		m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager, m_TextureManager,
 				m_Debugger);
+
+		insigne::shader_handle_t test = m_ShaderManager->LoadShader("gfx/shd/pbr_cook_torrance.shd");
 	}
 
 	Application::~Application()

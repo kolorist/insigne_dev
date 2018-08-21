@@ -16,7 +16,8 @@ add_subdirectory (externals/lotus)
 include_directories ("${PROJECT_SOURCE_DIR}/src")
 
 file (GLOB_RECURSE file_list
-	"${PROJECT_SOURCE_DIR}/src/*.cpp")
+	"${PROJECT_SOURCE_DIR}/src/*.cpp"
+	"${PROJECT_SOURCE_DIR}/src/*.c")
 
 add_definitions(
 	-D_CRT_SECURE_NO_WARNINGS)
