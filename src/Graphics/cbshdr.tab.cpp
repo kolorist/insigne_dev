@@ -71,7 +71,7 @@ extern int yyparse();
 
 void yyerror(const char* i_errorStr);
 
-#line 75 "cbshdr.tab.c" /* yacc.c:339  */
+#line 75 "cbshdr.tab.cpp" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -130,7 +130,7 @@ union YYSTYPE
 	float										floatValue;
 	char*										stringValue;
 
-#line 134 "cbshdr.tab.c" /* yacc.c:355  */
+#line 134 "cbshdr.tab.cpp" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -147,7 +147,7 @@ int yyparse (void);
 
 /* Copy the second part of user declarations.  */
 
-#line 151 "cbshdr.tab.c" /* yacc.c:358  */
+#line 151 "cbshdr.tab.cpp" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -1234,59 +1234,59 @@ yyreduce:
         case 3:
 #line 36 "cbshdr.y" /* yacc.c:1648  */
     { printf("cymbi shader version %1.1f\n", (yyvsp[0].floatValue)); }
-#line 1238 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1238 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 4:
 #line 40 "cbshdr.y" /* yacc.c:1648  */
     { printf("vs: '%s' | fs: '%s'\n", (yyvsp[-2].stringValue), (yyvsp[0].stringValue)); }
-#line 1244 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1244 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 5:
 #line 41 "cbshdr.y" /* yacc.c:1648  */
     { printf("fs: '%s' | vs: '%s'\n", (yyvsp[-2].stringValue), (yyvsp[0].stringValue)); }
-#line 1250 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1250 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 6:
 #line 45 "cbshdr.y" /* yacc.c:1648  */
     { printf("begin params list:\n"); }
-#line 1256 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1256 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 10:
 #line 58 "cbshdr.y" /* yacc.c:1648  */
     { printf("texture 2d: %s\n", (yyvsp[0].stringValue)); }
-#line 1262 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1262 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 11:
 #line 59 "cbshdr.y" /* yacc.c:1648  */
     { printf("texture cube: %s\n", (yyvsp[0].stringValue)); }
-#line 1268 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1268 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 12:
 #line 60 "cbshdr.y" /* yacc.c:1648  */
     { printf("mat4: %s\n", (yyvsp[0].stringValue)); }
-#line 1274 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1274 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 13:
 #line 61 "cbshdr.y" /* yacc.c:1648  */
     { printf("vec3: %s\n", (yyvsp[0].stringValue)); }
-#line 1280 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1280 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 14:
 #line 65 "cbshdr.y" /* yacc.c:1648  */
     { printf("end params list"); }
-#line 1286 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1286 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
 
-#line 1290 "cbshdr.tab.c" /* yacc.c:1648  */
+#line 1290 "cbshdr.tab.cpp" /* yacc.c:1648  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires

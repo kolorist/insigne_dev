@@ -4,9 +4,7 @@
 
 #include <insigne/render.h>
 
-extern "C" {
-	int yylex_cbshdr(const char* i_input);
-}
+int yylex_cbshdr(const char* i_input);
 
 namespace stone {
 
