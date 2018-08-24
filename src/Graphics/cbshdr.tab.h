@@ -39,6 +39,12 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 1 "cbshdr.y" /* yacc.c:1910  */
+
+#include "CBRenderDescs.h"
+
+#line 48 "cbshdr.tab.h" /* yacc.c:1910  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -54,8 +60,8 @@ extern int yydebug;
     P_MAT4 = 264,
     P_VEC3 = 265,
     END_SPARAMS = 266,
-    FLOAT = 267,
-    STRING = 268
+    FLOAT_VALUE = 267,
+    STRING_VALUE = 268
   };
 #endif
 
@@ -64,12 +70,12 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 10 "cbshdr.y" /* yacc.c:1910  */
+#line 20 "cbshdr.y" /* yacc.c:1910  */
 
 	float										floatValue;
 	char*										stringValue;
 
-#line 73 "cbshdr.tab.h" /* yacc.c:1910  */
+#line 79 "cbshdr.tab.h" /* yacc.c:1910  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -81,5 +87,11 @@ typedef union YYSTYPE YYSTYPE;
 extern YYSTYPE yylval;
 
 int yyparse (void);
+/* "%code provides" blocks.  */
+#line 5 "cbshdr.y" /* yacc.c:1910  */
+
+void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc);
+
+#line 96 "cbshdr.tab.h" /* yacc.c:1910  */
 
 #endif /* !YY_YY_CBSHDR_TAB_H_INCLUDED  */

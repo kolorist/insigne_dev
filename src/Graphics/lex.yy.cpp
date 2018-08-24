@@ -483,12 +483,14 @@ int yy_flex_debug = 0;
 char *yytext;
 #line 1 "cbshdr.l"
 #line 2 "cbshdr.l"
-#include <stdio.h>
+#include <floral.h>
 
 #include "cbshdr.tab.h"
-#line 489 "lex.yy.cpp"
-#define YY_NO_UNISTD_H 1
+
+#include "CBRenderDescs.h"
 #line 491 "lex.yy.cpp"
+#define YY_NO_UNISTD_H 1
+#line 493 "lex.yy.cpp"
 
 #define INITIAL 0
 
@@ -705,9 +707,9 @@ YY_DECL
 		}
 
 	{
-#line 11 "cbshdr.l"
+#line 13 "cbshdr.l"
 
-#line 710 "lex.yy.cpp"
+#line 712 "lex.yy.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -763,70 +765,70 @@ do_action:	/* This label is used only to access EOF actions. */
 case 1:
 /* rule 1 can match eol */
 YY_RULE_SETUP
-#line 12 "cbshdr.l"
+#line 14 "cbshdr.l"
 ;
 	YY_BREAK
 case 2:
 YY_RULE_SETUP
-#line 14 "cbshdr.l"
+#line 16 "cbshdr.l"
 { return CBSHDR; }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 15 "cbshdr.l"
+#line 17 "cbshdr.l"
 { return VS; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 16 "cbshdr.l"
+#line 18 "cbshdr.l"
 { return FS; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 18 "cbshdr.l"
+#line 20 "cbshdr.l"
 { return SPARAMS; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 19 "cbshdr.l"
+#line 21 "cbshdr.l"
 { return P_TEX2D; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 20 "cbshdr.l"
+#line 22 "cbshdr.l"
 { return P_TEXCUBE; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 21 "cbshdr.l"
+#line 23 "cbshdr.l"
 { return P_MAT4; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 22 "cbshdr.l"
+#line 24 "cbshdr.l"
 { return P_VEC3; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 23 "cbshdr.l"
+#line 25 "cbshdr.l"
 { return END_SPARAMS; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 25 "cbshdr.l"
-{ yylval.floatValue = atof(yytext); return FLOAT; }
+#line 27 "cbshdr.l"
+{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 26 "cbshdr.l"
-{ yylval.stringValue = strdup(yytext); return STRING; }
+#line 28 "cbshdr.l"
+{ yylval.stringValue = strdup(yytext); return STRING_VALUE; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 27 "cbshdr.l"
+#line 29 "cbshdr.l"
 ECHO;
 	YY_BREAK
-#line 829 "lex.yy.cpp"
+#line 831 "lex.yy.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1832,12 +1834,12 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 27 "cbshdr.l"
+#line 29 "cbshdr.l"
 
 
-int yylex_cbshdr(const char* i_input) {
+int yylex_cbshdr(const char* i_input, cymbi::ShaderDesc& o_shaderDesc) {
 	YY_BUFFER_STATE buffer = yy_scan_string(i_input);
-	yyparse();
+	yyparse_shader(o_shaderDesc);
 	yy_delete_buffer(buffer);
 	return 0;
 }

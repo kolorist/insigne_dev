@@ -4,7 +4,10 @@
 
 #include <insigne/render.h>
 
-int yylex_cbshdr(const char* i_input);
+#include "CBRenderDescs.h"
+
+// parser
+int yylex_cbshdr(const char* i_input, cymbi::ShaderDesc& o_shaderDesc);
 
 namespace stone {
 
@@ -61,7 +64,8 @@ const insigne::shader_handle_t ShaderManager::LoadShader(const_cstr i_cbShaderPa
 	floral::read_all_file(shaderFile, cbShaderSource);
 	floral::close_file(shaderFile);
 
-	yylex_cbshdr(cbShaderSource);
+	cymbi::ShaderDesc shaderDesc;
+	yylex_cbshdr(cbShaderSource, shaderDesc);
 
 	return 0;
 }

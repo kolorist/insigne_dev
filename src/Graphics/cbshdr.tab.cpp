@@ -62,16 +62,18 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 1 "cbshdr.y" /* yacc.c:339  */
+#line 9 "cbshdr.y" /* yacc.c:339  */
 
 #include <stdio.h>
+#include <floral.h>
 
-extern int yylex();
-extern int yyparse();
+#include <insigne/commons.h>
+
+extern int yylex();								// from flex
 
 void yyerror(const char* i_errorStr);
 
-#line 75 "cbshdr.tab.cpp" /* yacc.c:339  */
+#line 77 "cbshdr.tab.cpp" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -100,6 +102,12 @@ void yyerror(const char* i_errorStr);
 #if YYDEBUG
 extern int yydebug;
 #endif
+/* "%code requires" blocks.  */
+#line 1 "cbshdr.y" /* yacc.c:355  */
+
+#include "CBRenderDescs.h"
+
+#line 111 "cbshdr.tab.cpp" /* yacc.c:355  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -115,8 +123,8 @@ extern int yydebug;
     P_MAT4 = 264,
     P_VEC3 = 265,
     END_SPARAMS = 266,
-    FLOAT = 267,
-    STRING = 268
+    FLOAT_VALUE = 267,
+    STRING_VALUE = 268
   };
 #endif
 
@@ -125,12 +133,12 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 10 "cbshdr.y" /* yacc.c:355  */
+#line 20 "cbshdr.y" /* yacc.c:355  */
 
 	float										floatValue;
 	char*										stringValue;
 
-#line 134 "cbshdr.tab.cpp" /* yacc.c:355  */
+#line 142 "cbshdr.tab.cpp" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -142,12 +150,21 @@ typedef union YYSTYPE YYSTYPE;
 extern YYSTYPE yylval;
 
 int yyparse (void);
+/* "%code provides" blocks.  */
+#line 5 "cbshdr.y" /* yacc.c:355  */
+
+void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc);
+
+#line 159 "cbshdr.tab.cpp" /* yacc.c:355  */
 
 #endif /* !YY_YY_CBSHDR_TAB_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
+#line 24 "cbshdr.y" /* yacc.c:358  */
 
-#line 151 "cbshdr.tab.cpp" /* yacc.c:358  */
+cymbi::ShaderDesc*								g_CurrentTarget = nullptr;
+
+#line 168 "cbshdr.tab.cpp" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -445,8 +462,8 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    32,    32,    36,    40,    41,    45,    49,    53,    54,
-      58,    59,    60,    61,    65
+       0,    45,    45,    49,    53,    54,    58,    62,    66,    67,
+      71,    72,    73,    74,    78
 };
 #endif
 
@@ -456,8 +473,8 @@ static const yytype_uint8 yyrline[] =
 static const char *const yytname[] =
 {
   "$end", "error", "$undefined", "CBSHDR", "VS", "FS", "SPARAMS",
-  "P_TEX2D", "P_TEXCUBE", "P_MAT4", "P_VEC3", "END_SPARAMS", "FLOAT",
-  "STRING", "$accept", "cbshdr", "version", "shader_paths",
+  "P_TEX2D", "P_TEXCUBE", "P_MAT4", "P_VEC3", "END_SPARAMS", "FLOAT_VALUE",
+  "STRING_VALUE", "$accept", "cbshdr", "version", "shader_paths",
   "params_header", "params_body", "param_decls", "param_decl",
   "param_footer", YY_NULLPTR
 };
@@ -1232,61 +1249,61 @@ yyreduce:
   switch (yyn)
     {
         case 3:
-#line 36 "cbshdr.y" /* yacc.c:1648  */
+#line 49 "cbshdr.y" /* yacc.c:1648  */
     { printf("cymbi shader version %1.1f\n", (yyvsp[0].floatValue)); }
-#line 1238 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 1255 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 4:
-#line 40 "cbshdr.y" /* yacc.c:1648  */
-    { printf("vs: '%s' | fs: '%s'\n", (yyvsp[-2].stringValue), (yyvsp[0].stringValue)); }
-#line 1244 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 53 "cbshdr.y" /* yacc.c:1648  */
+    { g_CurrentTarget->vertexShaderPath = floral::path((yyvsp[-2].stringValue)); g_CurrentTarget->fragmentShaderPath = floral::path((yyvsp[0].stringValue)); }
+#line 1261 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 5:
-#line 41 "cbshdr.y" /* yacc.c:1648  */
-    { printf("fs: '%s' | vs: '%s'\n", (yyvsp[-2].stringValue), (yyvsp[0].stringValue)); }
-#line 1250 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 54 "cbshdr.y" /* yacc.c:1648  */
+    { g_CurrentTarget->vertexShaderPath = floral::path((yyvsp[0].stringValue)); g_CurrentTarget->fragmentShaderPath = floral::path((yyvsp[-2].stringValue)); }
+#line 1267 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 6:
-#line 45 "cbshdr.y" /* yacc.c:1648  */
+#line 58 "cbshdr.y" /* yacc.c:1648  */
     { printf("begin params list:\n"); }
-#line 1256 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 1273 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 10:
-#line 58 "cbshdr.y" /* yacc.c:1648  */
-    { printf("texture 2d: %s\n", (yyvsp[0].stringValue)); }
-#line 1262 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 71 "cbshdr.y" /* yacc.c:1648  */
+    { g_CurrentTarget->shaderParams.push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_sampler2d)); }
+#line 1279 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 11:
-#line 59 "cbshdr.y" /* yacc.c:1648  */
+#line 72 "cbshdr.y" /* yacc.c:1648  */
     { printf("texture cube: %s\n", (yyvsp[0].stringValue)); }
-#line 1268 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 1285 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 12:
-#line 60 "cbshdr.y" /* yacc.c:1648  */
+#line 73 "cbshdr.y" /* yacc.c:1648  */
     { printf("mat4: %s\n", (yyvsp[0].stringValue)); }
-#line 1274 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 1291 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 13:
-#line 61 "cbshdr.y" /* yacc.c:1648  */
+#line 74 "cbshdr.y" /* yacc.c:1648  */
     { printf("vec3: %s\n", (yyvsp[0].stringValue)); }
-#line 1280 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 1297 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 14:
-#line 65 "cbshdr.y" /* yacc.c:1648  */
+#line 78 "cbshdr.y" /* yacc.c:1648  */
     { printf("end params list"); }
-#line 1286 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 1303 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
 
-#line 1290 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 1307 "cbshdr.tab.cpp" /* yacc.c:1648  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1514,9 +1531,15 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 68 "cbshdr.y" /* yacc.c:1907  */
+#line 81 "cbshdr.y" /* yacc.c:1907  */
 
 
 void yyerror(const char* i_errorStr) {
 	printf("bison parse error! message: %s\n", i_errorStr);
+}
+
+void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc) {
+	g_CurrentTarget = &o_shaderDesc;
+	yyparse();
+	g_CurrentTarget = nullptr;
 }

@@ -1,8 +1,18 @@
+%code requires {
+#include "CBRenderDescs.h"
+}
+
+%code provides {
+void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc);
+}
+
 %{
 #include <stdio.h>
+#include <floral.h>
 
-extern int yylex();
-extern int yyparse();
+#include <insigne/commons.h>
+
+extern int yylex();								// from flex
 
 void yyerror(const char* i_errorStr);
 %}
@@ -11,6 +21,9 @@ void yyerror(const char* i_errorStr);
 	float										floatValue;
 	char*										stringValue;
 }
+%{
+cymbi::ShaderDesc*								g_CurrentTarget = nullptr;
+%}
 
 %token CBSHDR
 %token VS
@@ -23,8 +36,8 @@ void yyerror(const char* i_errorStr);
 %token P_VEC3
 %token END_SPARAMS
 
-%token <floatValue>								FLOAT
-%token <stringValue>							STRING
+%token <floatValue>								FLOAT_VALUE
+%token <stringValue>							STRING_VALUE
 
 %%
 
@@ -33,12 +46,12 @@ cbshdr:
 		;
 
 version:
-		CBSHDR FLOAT							{ printf("cymbi shader version %1.1f\n", $2); }
+		CBSHDR FLOAT_VALUE						{ printf("cymbi shader version %1.1f\n", $2); }
 		;
 
 shader_paths:
-		VS STRING FS STRING						{ printf("vs: '%s' | fs: '%s'\n", $2, $4); }
-		| FS STRING VS STRING					{ printf("fs: '%s' | vs: '%s'\n", $2, $4); }
+		VS STRING_VALUE FS STRING_VALUE						{ g_CurrentTarget->vertexShaderPath = floral::path($2); g_CurrentTarget->fragmentShaderPath = floral::path($4); }
+		| FS STRING_VALUE VS STRING_VALUE					{ g_CurrentTarget->vertexShaderPath = floral::path($4); g_CurrentTarget->fragmentShaderPath = floral::path($2); }
 		;
 
 params_header:
@@ -55,10 +68,10 @@ param_decls:
 		;
 
 param_decl:
-		P_TEX2D STRING							{ printf("texture 2d: %s\n", $2); }
-		| P_TEXCUBE STRING						{ printf("texture cube: %s\n", $2); }
-		| P_MAT4 STRING							{ printf("mat4: %s\n", $2); }
-		| P_VEC3 STRING							{ printf("vec3: %s\n", $2); }
+		P_TEX2D STRING_VALUE							{ g_CurrentTarget->shaderParams.push_back(insigne::shader_param_t($2, insigne::param_data_type_e::param_sampler2d)); }
+		| P_TEXCUBE STRING_VALUE						{ printf("texture cube: %s\n", $2); }
+		| P_MAT4 STRING_VALUE							{ printf("mat4: %s\n", $2); }
+		| P_VEC3 STRING_VALUE							{ printf("vec3: %s\n", $2); }
 		;
 
 param_footer:
@@ -69,4 +82,10 @@ param_footer:
 
 void yyerror(const char* i_errorStr) {
 	printf("bison parse error! message: %s\n", i_errorStr);
+}
+
+void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc) {
+	g_CurrentTarget = &o_shaderDesc;
+	yyparse();
+	g_CurrentTarget = nullptr;
 }
