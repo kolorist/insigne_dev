@@ -30,8 +30,8 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_YY_CBSHDR_TAB_H_INCLUDED
-# define YY_YY_CBSHDR_TAB_H_INCLUDED
+#ifndef YY_YY_CBMAT_TAB_H_INCLUDED
+# define YY_YY_CBMAT_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -39,30 +39,23 @@
 #if YYDEBUG
 extern int yydebug;
 #endif
-/* "%code requires" blocks.  */
-#line 1 "cbshdr.y" /* yacc.c:1910  */
-
-#include "CBRenderDescs.h"
-
-#line 48 "cbshdr.tab.h" /* yacc.c:1910  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    CBSHDR = 258,
-    VS = 259,
-    FS = 260,
-    SPARAMS = 261,
-    P_TEX2D = 262,
-    P_TEXCUBE = 263,
-    P_MAT4 = 264,
-    P_VEC3 = 265,
-    P_FLOAT = 266,
-    END_SPARAMS = 267,
-    FLOAT_VALUE = 268,
-    STRING_VALUE = 269
+    CBMAT = 258,
+    CBSHDR_PATH = 259,
+    MPARAMS = 260,
+    P_TEX2D = 261,
+    P_TEXCUBE = 262,
+    P_MAT4 = 263,
+    P_VEC3 = 264,
+    P_FLOAT = 265,
+    END_MPARAMS = 266,
+    FLOAT_VALUE = 267,
+    STRING_VALUE = 268
   };
 #endif
 
@@ -71,12 +64,12 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 19 "cbshdr.y" /* yacc.c:1910  */
+#line 9 "cbmat.y" /* yacc.c:1910  */
 
 	float										floatValue;
 	char*										stringValue;
 
-#line 80 "cbshdr.tab.h" /* yacc.c:1910  */
+#line 73 "cbmat.tab.h" /* yacc.c:1910  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -88,11 +81,5 @@ typedef union YYSTYPE YYSTYPE;
 extern YYSTYPE yylval;
 
 int yyparse (void);
-/* "%code provides" blocks.  */
-#line 5 "cbshdr.y" /* yacc.c:1910  */
 
-void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc);
-
-#line 97 "cbshdr.tab.h" /* yacc.c:1910  */
-
-#endif /* !YY_YY_CBSHDR_TAB_H_INCLUDED  */
+#endif /* !YY_YY_CBMAT_TAB_H_INCLUDED  */

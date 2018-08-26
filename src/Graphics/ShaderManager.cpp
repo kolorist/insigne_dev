@@ -65,9 +65,27 @@ const insigne::shader_handle_t ShaderManager::LoadShader(const_cstr i_cbShaderPa
 	floral::close_file(shaderFile);
 
 	cymbi::ShaderDesc shaderDesc;
+	// build shader param list
+	shaderDesc.shaderParams = insigne::allocate_shader_param_list(32);
 	yylex_cbshdr(cbShaderSource, shaderDesc);
 
-	return 0;
+	shaderFile = floral::open_file(shaderDesc.vertexShaderPath);
+	cstr vertSource = (cstr)m_MemoryArena->allocate(shaderFile.file_size + 1);
+	memset(vertSource, 0, shaderFile.file_size);
+	floral::read_all_file(shaderFile, vertSource);
+	floral::close_file(shaderFile);
+
+	shaderFile = floral::open_file(shaderDesc.fragmentShaderPath);
+	cstr fragSource = (cstr)m_MemoryArena->allocate(shaderFile.file_size + 1);
+	memset(fragSource, 0, shaderFile.file_size);
+	floral::read_all_file(shaderFile, fragSource);
+	floral::close_file(shaderFile);
+
+	insigne::shader_handle_t newShader = insigne::compile_shader(vertSource, fragSource, shaderDesc.shaderParams);
+
+	m_MemoryArena->free_all();
+
+	return newShader;
 }
 
 }

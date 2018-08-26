@@ -43,7 +43,6 @@ namespace stone {
 		m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager, m_TextureManager,
 				m_Debugger);
 
-		insigne::shader_handle_t test = m_ShaderManager->LoadShader("gfx/shd/pbr_cook_torrance.shd");
 	}
 
 	Application::~Application()
@@ -151,6 +150,8 @@ namespace stone {
 		u32 indices[] = {0, 1, 2, 2, 3, 0};
 		s_testSS = insigne::upload_surface(&vs[0], sizeof(SSVertex) * 4, &indices[0], sizeof(u32) * 6,
 				sizeof(SSVertex), 4, 6);
+
+		insigne::shader_handle_t test = m_ShaderManager->LoadShader("gfx/shd/pbr_cook_torrance.shd");
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)

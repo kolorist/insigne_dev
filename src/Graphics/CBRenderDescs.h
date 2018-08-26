@@ -15,11 +15,11 @@ struct ShaderDesc {
 	floral::path								vertexShaderPath;
 	floral::path								fragmentShaderPath;
 
-	floral::inplace_array<insigne::shader_param_t, 32u> shaderParams;
+	insigne::shader_param_list_t*				shaderParams;
 };
 
 struct MaterialDesc {
-	floral::path								shaderPath;
+	floral::path								cbShaderPath;
 };
 
 }

@@ -62,17 +62,15 @@
 
 
 /* Copy the first part of user declarations.  */
-#line 9 "cbshdr.y" /* yacc.c:339  */
+#line 1 "cbmat.y" /* yacc.c:339  */
 
 #include <floral.h>
-
-#include <insigne/commons.h>
 
 extern int yylex();								// from flex
 
 void yyerror(const char* i_errorStr);
 
-#line 76 "cbshdr.tab.cpp" /* yacc.c:339  */
+#line 74 "cbmat.tab.cpp" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -91,9 +89,9 @@ void yyerror(const char* i_errorStr);
 #endif
 
 /* In a future release of Bison, this section will be replaced
-   by #include "cbshdr.tab.h".  */
-#ifndef YY_YY_CBSHDR_TAB_H_INCLUDED
-# define YY_YY_CBSHDR_TAB_H_INCLUDED
+   by #include "cbmat.tab.h".  */
+#ifndef YY_YY_CBMAT_TAB_H_INCLUDED
+# define YY_YY_CBMAT_TAB_H_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -101,30 +99,23 @@ void yyerror(const char* i_errorStr);
 #if YYDEBUG
 extern int yydebug;
 #endif
-/* "%code requires" blocks.  */
-#line 1 "cbshdr.y" /* yacc.c:355  */
-
-#include "CBRenderDescs.h"
-
-#line 110 "cbshdr.tab.cpp" /* yacc.c:355  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    CBSHDR = 258,
-    VS = 259,
-    FS = 260,
-    SPARAMS = 261,
-    P_TEX2D = 262,
-    P_TEXCUBE = 263,
-    P_MAT4 = 264,
-    P_VEC3 = 265,
-    P_FLOAT = 266,
-    END_SPARAMS = 267,
-    FLOAT_VALUE = 268,
-    STRING_VALUE = 269
+    CBMAT = 258,
+    CBSHDR_PATH = 259,
+    MPARAMS = 260,
+    P_TEX2D = 261,
+    P_TEXCUBE = 262,
+    P_MAT4 = 263,
+    P_VEC3 = 264,
+    P_FLOAT = 265,
+    END_MPARAMS = 266,
+    FLOAT_VALUE = 267,
+    STRING_VALUE = 268
   };
 #endif
 
@@ -133,12 +124,12 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 19 "cbshdr.y" /* yacc.c:355  */
+#line 9 "cbmat.y" /* yacc.c:355  */
 
 	float										floatValue;
 	char*										stringValue;
 
-#line 142 "cbshdr.tab.cpp" /* yacc.c:355  */
+#line 133 "cbmat.tab.cpp" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -150,21 +141,12 @@ typedef union YYSTYPE YYSTYPE;
 extern YYSTYPE yylval;
 
 int yyparse (void);
-/* "%code provides" blocks.  */
-#line 5 "cbshdr.y" /* yacc.c:355  */
 
-void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc);
-
-#line 159 "cbshdr.tab.cpp" /* yacc.c:355  */
-
-#endif /* !YY_YY_CBSHDR_TAB_H_INCLUDED  */
+#endif /* !YY_YY_CBMAT_TAB_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
-#line 23 "cbshdr.y" /* yacc.c:358  */
 
-cymbi::ShaderDesc*								g_CurrentTarget = nullptr;
-
-#line 168 "cbshdr.tab.cpp" /* yacc.c:358  */
+#line 150 "cbmat.tab.cpp" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -406,21 +388,21 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  5
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   28
+#define YYLAST   22
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  15
+#define YYNTOKENS  14
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  9
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  15
+#define YYNRULES  12
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  33
+#define YYNSTATES  26
 
 /* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
    by yylex, with out-of-bounds checking.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   269
+#define YYMAXUTOK   268
 
 #define YYTRANSLATE(YYX)                                                \
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -455,15 +437,15 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9,    10,    11,    12,    13,    14
+       5,     6,     7,     8,     9,    10,    11,    12,    13
 };
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    45,    45,    49,    53,    54,    58,    62,    66,    67,
-      71,    72,    73,    74,    75,    79
+       0,    31,    31,    35,    39,    43,    47,    51,    52,    56,
+      57,    58,    62
 };
 #endif
 
@@ -472,10 +454,10 @@ static const yytype_uint8 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "CBSHDR", "VS", "FS", "SPARAMS",
-  "P_TEX2D", "P_TEXCUBE", "P_MAT4", "P_VEC3", "P_FLOAT", "END_SPARAMS",
-  "FLOAT_VALUE", "STRING_VALUE", "$accept", "cbshdr", "version",
-  "shader_paths", "params_header", "params_body", "param_decls",
+  "$end", "error", "$undefined", "CBMAT", "CBSHDR_PATH", "MPARAMS",
+  "P_TEX2D", "P_TEXCUBE", "P_MAT4", "P_VEC3", "P_FLOAT", "END_MPARAMS",
+  "FLOAT_VALUE", "STRING_VALUE", "$accept", "cbmat", "version",
+  "cbshdr_path", "params_header", "params_body", "param_decls",
   "param_decl", "param_footer", YY_NULLPTR
 };
 #endif
@@ -486,14 +468,14 @@ static const char *const yytname[] =
 static const yytype_uint16 yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
-     265,   266,   267,   268,   269
+     265,   266,   267,   268
 };
 # endif
 
-#define YYPACT_NINF -8
+#define YYPACT_NINF -10
 
 #define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-8)))
+  (!!((Yystate) == (-10)))
 
 #define YYTABLE_NINF -1
 
@@ -504,10 +486,9 @@ static const yytype_uint16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-       4,    -5,     9,     1,    -8,    -8,    -4,    -3,     6,     8,
-      10,    -8,    -7,     2,     3,     5,     7,    11,    12,    13,
-      16,    -7,    -8,    -8,    -8,    -8,    -8,    -8,    -8,    -8,
-      -8,    -8,    -8
+      -1,    -9,     5,     2,   -10,   -10,    -5,     4,   -10,   -10,
+      -6,    -3,    -2,     0,    -4,    -6,   -10,     1,     3,     6,
+     -10,   -10,   -10,   -10,   -10,   -10
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -515,22 +496,21 @@ static const yytype_int8 yypact[] =
      means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       0,     0,     0,     0,     3,     1,     0,     0,     0,     0,
-       0,     6,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     7,     9,     4,     5,    10,    11,    12,    13,    14,
-      15,     2,     8
+       0,     0,     0,     0,     3,     1,     0,     0,     4,     5,
+       0,     0,     0,     0,     0,     6,     8,     0,     0,     0,
+      12,     2,     7,     9,    10,    11
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-      -8,    -8,    -8,    -8,    -8,    -8,    -8,    -6,    -8
+     -10,   -10,   -10,   -10,   -10,   -10,   -10,     7,   -10
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     2,     3,     8,    12,    20,    21,    22,    31
+      -1,     2,     3,     7,    10,    14,    15,    16,    21
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -538,40 +518,39 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_uint8 yytable[] =
 {
-      15,    16,    17,    18,    19,     6,     7,     1,     4,     5,
-       9,    10,    11,    13,    14,    32,    23,    24,     0,    25,
-       0,    26,     0,     0,     0,    27,    28,    29,    30
+      11,    12,     1,     4,    13,     5,     6,    20,     8,     9,
+      17,    18,     0,    19,    23,     0,    24,     0,     0,    25,
+       0,     0,    22
 };
 
 static const yytype_int8 yycheck[] =
 {
-       7,     8,     9,    10,    11,     4,     5,     3,    13,     0,
-      14,    14,     6,     5,     4,    21,    14,    14,    -1,    14,
-      -1,    14,    -1,    -1,    -1,    14,    14,    14,    12
+       6,     7,     3,    12,    10,     0,     4,    11,    13,     5,
+      13,    13,    -1,    13,    13,    -1,    13,    -1,    -1,    13,
+      -1,    -1,    15
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,     3,    16,    17,    13,     0,     4,     5,    18,    14,
-      14,     6,    19,     5,     4,     7,     8,     9,    10,    11,
-      20,    21,    22,    14,    14,    14,    14,    14,    14,    14,
-      12,    23,    22
+       0,     3,    15,    16,    12,     0,     4,    17,    13,     5,
+      18,     6,     7,    10,    19,    20,    21,    13,    13,    13,
+      11,    22,    21,    13,    13,    13
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    15,    16,    17,    18,    18,    19,    20,    21,    21,
-      22,    22,    22,    22,    22,    23
+       0,    14,    15,    16,    17,    18,    19,    20,    20,    21,
+      21,    21,    22
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
-       0,     2,     5,     2,     4,     4,     1,     1,     2,     1,
-       2,     2,     2,     2,     2,     1
+       0,     2,     5,     2,     2,     1,     1,     2,     1,     3,
+       3,     3,     1
 };
 
 
@@ -1249,49 +1228,31 @@ yyreduce:
   switch (yyn)
     {
         case 4:
-#line 53 "cbshdr.y" /* yacc.c:1648  */
-    { g_CurrentTarget->vertexShaderPath = floral::path((yyvsp[-2].stringValue)); g_CurrentTarget->fragmentShaderPath = floral::path((yyvsp[0].stringValue)); }
-#line 1255 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 39 "cbmat.y" /* yacc.c:1648  */
+    {}
+#line 1234 "cbmat.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 5:
-#line 54 "cbshdr.y" /* yacc.c:1648  */
-    { g_CurrentTarget->vertexShaderPath = floral::path((yyvsp[0].stringValue)); g_CurrentTarget->fragmentShaderPath = floral::path((yyvsp[-2].stringValue)); }
-#line 1261 "cbshdr.tab.cpp" /* yacc.c:1648  */
+  case 9:
+#line 56 "cbmat.y" /* yacc.c:1648  */
+    {}
+#line 1240 "cbmat.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 10:
-#line 71 "cbshdr.y" /* yacc.c:1648  */
-    { g_CurrentTarget->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_sampler2d)); }
-#line 1267 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 57 "cbmat.y" /* yacc.c:1648  */
+    {}
+#line 1246 "cbmat.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 11:
-#line 72 "cbshdr.y" /* yacc.c:1648  */
-    { g_CurrentTarget->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_sampler_cube)); }
-#line 1273 "cbshdr.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 12:
-#line 73 "cbshdr.y" /* yacc.c:1648  */
-    { g_CurrentTarget->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_mat4)); }
-#line 1279 "cbshdr.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 13:
-#line 74 "cbshdr.y" /* yacc.c:1648  */
-    { g_CurrentTarget->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_vec3)); }
-#line 1285 "cbshdr.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 14:
-#line 75 "cbshdr.y" /* yacc.c:1648  */
-    { g_CurrentTarget->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_float)); }
-#line 1291 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 58 "cbmat.y" /* yacc.c:1648  */
+    {}
+#line 1252 "cbmat.tab.cpp" /* yacc.c:1648  */
     break;
 
 
-#line 1295 "cbshdr.tab.cpp" /* yacc.c:1648  */
+#line 1256 "cbmat.tab.cpp" /* yacc.c:1648  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1519,15 +1480,9 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 82 "cbshdr.y" /* yacc.c:1907  */
+#line 65 "cbmat.y" /* yacc.c:1907  */
 
 
 void yyerror(const char* i_errorStr) {
 	printf("bison parse error! message: %s\n", i_errorStr);
-}
-
-void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc) {
-	g_CurrentTarget = &o_shaderDesc;
-	yyparse();
-	g_CurrentTarget = nullptr;
 }

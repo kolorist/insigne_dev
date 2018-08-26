@@ -1,4 +1,4 @@
-_cbshdr 0.1
+_version 0.1
 
 _vs shaders/lighting/pbr_cook_torrance.vert
 _fs shaders/lighting/pbr_cook_torrance.frag

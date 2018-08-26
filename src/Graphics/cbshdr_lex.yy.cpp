@@ -1,6 +1,6 @@
-#line 1 "lex.yy.cpp"
+#line 1 "cbshdr_lex.yy.cpp"
 
-#line 3 "lex.yy.cpp"
+#line 3 "cbshdr_lex.yy.cpp"
 
 #define  YY_INT_ALIGNED short int
 
@@ -491,9 +491,9 @@ char *yytext;
 #include "cbshdr.tab.h"
 
 #include "CBRenderDescs.h"
-#line 494 "lex.yy.cpp"
+#line 494 "cbshdr_lex.yy.cpp"
 #define YY_NO_UNISTD_H 1
-#line 496 "lex.yy.cpp"
+#line 496 "cbshdr_lex.yy.cpp"
 
 #define INITIAL 0
 
@@ -712,7 +712,7 @@ YY_DECL
 	{
 #line 13 "cbshdr.l"
 
-#line 715 "lex.yy.cpp"
+#line 715 "cbshdr_lex.yy.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -836,7 +836,7 @@ YY_RULE_SETUP
 #line 30 "cbshdr.l"
 ECHO;
 	YY_BREAK
-#line 839 "lex.yy.cpp"
+#line 839 "cbshdr_lex.yy.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 

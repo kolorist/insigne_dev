@@ -1,1 +1,9 @@
-_vs shaders/lighting/pbr_cook_torrance.vert
+_version 0.1
+
+_cbshdr gfx/shd/pbr_cook_torrance.shd
+
+_mparams
+	_p_tex2d	iu_TexBaseColor					gfx/go/textures/demo/test_albedo.cbtex
+	_p_tex2d	iu_TexMetallic					gfx/go/textures/demo/test_attrib.cbtex
+	_p_tex2d	iu_TexRoughness					gfx/go/textures/demo/test_attrib.cbtex
+_end_mparams
