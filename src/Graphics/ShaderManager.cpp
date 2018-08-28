@@ -56,7 +56,7 @@ const insigne::shader_handle_t ShaderManager::LoadShader(const_cstr i_shaderPath
 	return newShader;
 }
 
-const insigne::shader_handle_t ShaderManager::LoadShader(const_cstr i_cbShaderPath)
+const insigne::shader_handle_t ShaderManager::LoadShader(const floral::path& i_cbShaderPath)
 {
 	floral::file_info shaderFile = floral::open_file(i_cbShaderPath);
 	cstr cbShaderSource = (cstr)m_MemoryArena->allocate(shaderFile.file_size + 1);

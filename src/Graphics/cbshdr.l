@@ -13,7 +13,8 @@
 %%
 [ \t\n]											;
 
-_version										{ return CBSHDR; }
+_version										{ return VERSION; }
+_cbshdr											{ return CBSHDR_PATH; }
 _vs												{ return VS; }
 _fs												{ return FS; }
 
@@ -36,3 +37,9 @@ int yylex_cbshdr(const char* i_input, cymbi::ShaderDesc& o_shaderDesc) {
 	return 0;
 }
 
+int yylex_cbmat(const char* i_input, cymbi::MaterialDesc& o_matDesc) {
+	YY_BUFFER_STATE buffer = yy_scan_string(i_input);
+	yyparse_material(o_matDesc);
+	yy_delete_buffer(buffer);
+	return 0;
+}

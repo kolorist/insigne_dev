@@ -3,10 +3,12 @@
 #include <floral.h>
 
 #include "IShaderManager.h"
+#include "IMaterialManager.h"
+#include "Memory/MemorySystem.h"
 
 namespace stone {
 
-	class MaterialManager {
+	class MaterialManager : public IMaterialManager{
 		public:
 			MaterialManager(IShaderManager* i_shaderManager);
 			~MaterialManager();
@@ -15,8 +17,12 @@ namespace stone {
 			template <typename TMaterial>
 			TMaterial*							CreateMaterial(const_cstr i_matPath);
 
+			insigne::material_handle_t			CreateMaterialFromFile(const floral::path& i_matPath) override final;
+
 		private:
 			IShaderManager*						m_ShaderManager;
+
+			LinearArena*						m_MemoryArena;
 	};
 
 }

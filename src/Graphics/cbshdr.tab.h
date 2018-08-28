@@ -51,18 +51,19 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    CBSHDR = 258,
-    VS = 259,
-    FS = 260,
-    SPARAMS = 261,
-    P_TEX2D = 262,
-    P_TEXCUBE = 263,
-    P_MAT4 = 264,
-    P_VEC3 = 265,
-    P_FLOAT = 266,
-    END_SPARAMS = 267,
-    FLOAT_VALUE = 268,
-    STRING_VALUE = 269
+    VERSION = 258,
+    CBSHDR_PATH = 259,
+    VS = 260,
+    FS = 261,
+    SPARAMS = 262,
+    P_TEX2D = 263,
+    P_TEXCUBE = 264,
+    P_MAT4 = 265,
+    P_VEC3 = 266,
+    P_FLOAT = 267,
+    END_SPARAMS = 268,
+    FLOAT_VALUE = 269,
+    STRING_VALUE = 270
   };
 #endif
 
@@ -71,12 +72,12 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 19 "cbshdr.y" /* yacc.c:1910  */
+#line 21 "cbshdr.y" /* yacc.c:1910  */
 
 	float										floatValue;
 	char*										stringValue;
 
-#line 80 "cbshdr.tab.h" /* yacc.c:1910  */
+#line 81 "cbshdr.tab.h" /* yacc.c:1910  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -92,7 +93,8 @@ int yyparse (void);
 #line 5 "cbshdr.y" /* yacc.c:1910  */
 
 void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc);
+void yyparse_material(cymbi::MaterialDesc& o_matDesc);
 
-#line 97 "cbshdr.tab.h" /* yacc.c:1910  */
+#line 99 "cbshdr.tab.h" /* yacc.c:1910  */
 
 #endif /* !YY_YY_CBSHDR_TAB_H_INCLUDED  */

@@ -151,7 +151,8 @@ namespace stone {
 		s_testSS = insigne::upload_surface(&vs[0], sizeof(SSVertex) * 4, &indices[0], sizeof(u32) * 6,
 				sizeof(SSVertex), 4, 6);
 
-		insigne::shader_handle_t test = m_ShaderManager->LoadShader("gfx/shd/pbr_cook_torrance.shd");
+		//insigne::shader_handle_t test = m_ShaderManager->LoadShader("gfx/shd/pbr_cook_torrance.shd");
+		insigne::material_handle_t testMat = m_MaterialManager->CreateMaterialFromFile(floral::path("gfx/mat/pbr_solid_fill.mat"));
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)
