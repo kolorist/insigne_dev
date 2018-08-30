@@ -178,7 +178,11 @@ void Debugger::Render(f32 i_deltaMs)
 void Debugger::RenderImGuiDrawLists(ImDrawData* i_drawData)
 {
 	ImGuiIO& io = ImGui::GetIO();
+	s32 fbWidth = (s32)(io.DisplaySize.x * 1.0f); //io.DisplayFramebufferScale.x);
+	s32 fbHeight = (s32)(io.DisplaySize.y * 1.0f); //io.DisplayFramebufferScale.y);
+
 	i_drawData->ScaleClipRects(ImVec2(1.0f, 1.0f));
+
 	for (s32 i = 0; i < i_drawData->CmdListsCount; i++) {
 		const ImDrawList* cmdList = i_drawData->CmdLists[i];
 		const ImDrawIdx* idxBufferOffset = 0;
@@ -191,6 +195,15 @@ void Debugger::RenderImGuiDrawLists(ImDrawData* i_drawData)
 			if (drawCmd->UserCallback) {
 				drawCmd->UserCallback(cmdList, drawCmd);
 			} else {
+				s32 x0 = drawCmd->ClipRect.x;	// topleft
+				s32 y0 = drawCmd->ClipRect.y;
+				s32 w = drawCmd->ClipRect.z - drawCmd->ClipRect.x;
+				s32 h = drawCmd->ClipRect.w - drawCmd->ClipRect.y;
+
+				// lower left
+				y0 = fbHeight - (y0 + h);
+				insigne::set_scissor_test<ImGuiSurface>(
+						true, x0, y0, w, h);
 				insigne::draw_surface_segmented<ImGuiSurface>(s_UISurface,
 					s_UIMaterial->GetHandle(),
 					(s32)drawCmd->ElemCount, (voidptr)idxBufferOffset);
