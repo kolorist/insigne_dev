@@ -49,15 +49,15 @@ namespace helich {
 		using namespace helich;
 		g_MemoryManager.initialize(
 				memory_region<calyx::stack_allocator_t> 	{ "calyx/subsystems",			SIZE_MB(16),	&calyx::g_allocators.subsystems_allocator },
-				memory_region<clover::LinearAllocator>		{ "clover/allocator",			SIZE_MB(32),	&clover::g_LinearAllocator },
+				memory_region<clover::LinearAllocator>		{ "clover/allocator",			SIZE_MB(16),	&clover::g_LinearAllocator },
 				memory_region<refrain2::FreelistAllocator>	{ "refrain2/task",				SIZE_MB(4),		&refrain2::g_TaskAllocator },
-				memory_region<refrain2::FreelistAllocator>	{ "refrain2/taskdata",			SIZE_MB(32),	&refrain2::g_TaskDataAllocator },
-				memory_region<insigne::linear_allocator_t>	{ "insigne/persist",			SIZE_MB(64),	&insigne::g_persistance_allocator },
+				memory_region<refrain2::FreelistAllocator>	{ "refrain2/taskdata",			SIZE_MB(16),	&refrain2::g_TaskDataAllocator },
+				memory_region<insigne::linear_allocator_t>	{ "insigne/persist",			SIZE_MB(512),	&insigne::g_persistance_allocator },
 				memory_region<insigne::arena_allocator_t>	{ "insigne/arena",				SIZE_MB(64),	&insigne::g_arena_allocator },
-				memory_region<insigne::freelist_allocator_t>{ "insigne/stream",				SIZE_MB(32),	&insigne::g_stream_allocator },
+				memory_region<insigne::freelist_allocator_t>{ "insigne/stream",				SIZE_MB(64),	&insigne::g_stream_allocator },
 				memory_region<lotus::linear_allocator_t>	{ "lotus/main",					SIZE_MB(32),	&lotus::e_main_allocator },
 				memory_region<stone::LinearAllocator>		{ "stone/system",				SIZE_MB(16),	&stone::g_SystemAllocator },
-				memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(128),	&stone::g_PersistanceAllocator },
+				memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(64),	&stone::g_PersistanceAllocator },
 				memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(16),	&stone::g_PersistanceResourceAllocator },
 				memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(16),	&stone::g_SceneResourceAllocator }
 				);

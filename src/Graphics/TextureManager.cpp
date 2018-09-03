@@ -5,15 +5,32 @@
 namespace stone {
 	TextureManager::TextureManager()
 	{
-		m_MemoryArena = g_PersistanceAllocator.allocate_arena<LinearArena>(SIZE_MB(64));
+		m_MemoryArena = g_PersistanceAllocator.allocate_arena<LinearArena>(SIZE_MB(32));
 	}
 
 	TextureManager::~TextureManager()
 	{
 	}
 
+	void TextureManager::Initialize(const u32 i_maxTexturesCount)
+	{
+		m_CachedTextures.init(i_maxTexturesCount, &g_PersistanceAllocator);
+	}
+
+
+	insigne::texture_handle_t TextureManager::CreateTexture(const floral::path& i_texPath)
+	{
+		return CreateTexture(i_texPath.pm_PathStr);
+	}
+
 	insigne::texture_handle_t TextureManager::CreateTexture(const_cstr i_texPath)
 	{
+		floral::crc_string textureKey(i_texPath);
+		for (u32 i = 0; i < m_CachedTextures.get_size(); i++) {
+			if (m_CachedTextures[i].key == textureKey)
+				return m_CachedTextures[i].textureHandle;
+		}
+
 		floral::file_info texFile = floral::open_file(i_texPath);
 		floral::file_stream dataStream;
 
@@ -51,8 +68,19 @@ namespace stone {
 		return texHdl;
 	}
 
+	insigne::texture_handle_t TextureManager::CreateTextureCube(const floral::path& i_texPath)
+	{
+		return CreateTextureCube(i_texPath.pm_PathStr);
+	}
+
 	insigne::texture_handle_t TextureManager::CreateTextureCube(const_cstr i_texPath)
 	{
+		floral::crc_string textureKey(i_texPath);
+		for (u32 i = 0; i < m_CachedTextures.get_size(); i++) {
+			if (m_CachedTextures[i].key == textureKey)
+				return m_CachedTextures[i].textureHandle;
+		}
+
 		floral::file_info texFile = floral::open_file(i_texPath);
 		floral::file_stream dataStream;
 
@@ -93,6 +121,12 @@ namespace stone {
 
 	insigne::texture_handle_t TextureManager::CreateMipmapedProbe(const_cstr i_texPath)
 	{
+		floral::crc_string textureKey(i_texPath);
+		for (u32 i = 0; i < m_CachedTextures.get_size(); i++) {
+			if (m_CachedTextures[i].key == textureKey)
+				return m_CachedTextures[i].textureHandle;
+		}
+
 		floral::file_info texFile = floral::open_file(i_texPath);
 		floral::file_stream dataStream;
 

@@ -4,13 +4,14 @@
 
 #include "IShaderManager.h"
 #include "IMaterialManager.h"
+#include "ITextureManager.h"
 #include "Memory/MemorySystem.h"
 
 namespace stone {
 
 	class MaterialManager : public IMaterialManager{
 		public:
-			MaterialManager(IShaderManager* i_shaderManager);
+			MaterialManager(IShaderManager* i_shaderManager, ITextureManager* i_textureManager);
 			~MaterialManager();
 
 		public:
@@ -21,6 +22,7 @@ namespace stone {
 
 		private:
 			IShaderManager*						m_ShaderManager;
+			ITextureManager*					m_TextureManager;
 
 			LinearArena*						m_MemoryArena;
 	};

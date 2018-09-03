@@ -5,11 +5,29 @@
 
 namespace cymbi {
 
-struct SurfaceDesc {
+struct Vertex3D {
+	floral::vec3f								position;
+	floral::vec3f								normal;
+	floral::vec2f								texCoord;
 };
 
-struct ModelDesc {
+template <typename TAllocator>
+struct SurfaceDesc {
+	c8											name[256];
+
+	floral::path								materialPath;
+	floral::fixed_array<Vertex3D, TAllocator>	vertices;
+	floral::fixed_array<u32, TAllocator>		indices;
 };
+
+template <typename TAllocator>
+struct ModelDesc {
+	c8											name[256];
+
+	floral::fixed_array<SurfaceDesc, TAllocator>	surfaces;
+};
+
+// ---------------------------------------------
 
 struct ShaderDesc {
 	floral::path								vertexShaderPath;

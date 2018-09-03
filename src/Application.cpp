@@ -35,8 +35,8 @@ namespace stone {
 		i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
 
 		m_ShaderManager = g_SystemAllocator.allocate<ShaderManager>();
-		m_MaterialManager = g_SystemAllocator.allocate<MaterialManager>(m_ShaderManager);
 		m_TextureManager = g_SystemAllocator.allocate<TextureManager>();
+		m_MaterialManager = g_SystemAllocator.allocate<MaterialManager>(m_ShaderManager, m_TextureManager);
 		m_ModelManager = g_SystemAllocator.allocate<ModelManager>();
 		m_PostFXManager = g_SystemAllocator.allocate<PostFXManager>(m_MaterialManager);
 		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
@@ -115,6 +115,11 @@ namespace stone {
 	// -----------------------------------------
 	void Application::OnInitialize(int i_param)
 	{
+		// insigne settings
+		insigne::g_renderer_settings.frame_allocator_size_mb = 64u;
+		insigne::g_renderer_settings.draw_command_buffer_size = 64u;
+		insigne::g_renderer_settings.generic_command_buffer_size = 128u;
+		
 		// graphics init
 		insigne::initialize_driver();
 
@@ -131,6 +136,7 @@ namespace stone {
 		insigne::set_clear_color(0.3f, 0.4f, 0.5f, 1.0f);
 
 		m_Debugger->Initialize();
+		m_TextureManager->Initialize(32);
 		m_ShaderManager->Initialize();
 		m_ModelManager->Initialize();
 		m_PostFXManager->Initialize();
