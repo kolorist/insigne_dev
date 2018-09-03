@@ -24,7 +24,7 @@ template <typename TAllocator>
 struct ModelDesc {
 	c8											name[256];
 
-	floral::fixed_array<SurfaceDesc, TAllocator>	surfaces;
+	floral::fixed_array<SurfaceDesc<TAllocator>, TAllocator>	surfaces;
 };
 
 // ---------------------------------------------
