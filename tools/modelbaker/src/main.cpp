@@ -12,8 +12,10 @@ int main(void)
 
 	yylex_cbobj("# Blender v2.78 (sub 0) OBJ File: 'cornell_box.blend'\n"
 			"# www.blender.org\n"
+			"#\n"
 			"mtllib cornell_box.mtl\n"
 			"g Plane.004\n"
+			"ss\n"
 			"v 1.000000 2.000000 1.000000\n"
 			"v -1.000000 2.000000 1.000000\n"
 			"v 1.000000 2.000000 -1.000000\n"
