@@ -51,6 +51,9 @@ any_string .*
 "off"											{ printf("off\n"); }
 
 "f"{junk_characters}							{ BEGIN(face); printf("face\n"); }
+"v"{junk_characters}							{ BEGIN(vertex_position); printf("vertex pos\n"); }
+"vn"{junk_characters}							{ BEGIN(vertex_normal); printf("vertex normal\n"); }
+"vt"{junk_characters}							{ BEGIN(vertex_texcoord); printf("vertex texcoord\n"); }
 
 {float_number}									{ printf("float number: %s\n", yytext); }
 {int_number}									{ printf("int number: %s\n", yytext); }
