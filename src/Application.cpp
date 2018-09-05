@@ -37,7 +37,7 @@ namespace stone {
 		m_ShaderManager = g_SystemAllocator.allocate<ShaderManager>();
 		m_TextureManager = g_SystemAllocator.allocate<TextureManager>();
 		m_MaterialManager = g_SystemAllocator.allocate<MaterialManager>(m_ShaderManager, m_TextureManager);
-		m_ModelManager = g_SystemAllocator.allocate<ModelManager>();
+		m_ModelManager = g_SystemAllocator.allocate<ModelManager>(m_MaterialManager);
 		m_PostFXManager = g_SystemAllocator.allocate<PostFXManager>(m_MaterialManager);
 		m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
 		m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager, m_TextureManager,
@@ -158,7 +158,7 @@ namespace stone {
 				sizeof(SSVertex), 4, 6);
 
 		//insigne::shader_handle_t test = m_ShaderManager->LoadShader("gfx/shd/pbr_cook_torrance.shd");
-		insigne::material_handle_t testMat = m_MaterialManager->CreateMaterialFromFile(floral::path("gfx/mat/pbr_solid_fill.mat"));
+		//insigne::material_handle_t testMat = m_MaterialManager->CreateMaterialFromFile(floral::path("gfx/mat/pbr_solid_fill.mat"));
 	}
 
 	void Application::OnFrameStep(f32 i_deltaMs)

@@ -43,14 +43,19 @@ insigne::material_handle_t MaterialManager::CreateMaterialFromFile(const floral:
 	}
 
 	for (u32 i = 0; i < matDesc.texCubeParams.get_size(); i++) {
-		insigne::texture_handle_t texHdl = m_TextureManager->CreateTextureCube(matDesc.texCubeParams[i].value);
-		insigne::param_id texParamId = insigne::get_material_param<insigne::texture_handle_t>(matHdl, matDesc.texCubeParams[i].name);
+		insigne::texture_handle_t texHdl = m_TextureManager->CreateMipmapedProbe(matDesc.texCubeParams[i].value);
+		insigne::param_id texParamId = insigne::get_material_param_texcube(matHdl, matDesc.texCubeParams[i].name);
 		insigne::set_material_param_texcube(matHdl, texParamId, texHdl);
 	}
 
 	for (u32 i = 0; i < matDesc.floatParams.get_size(); i++) {
 		insigne::param_id pId = insigne::get_material_param<f32>(matHdl, matDesc.floatParams[i].name);
 		insigne::set_material_param(matHdl, pId, matDesc.floatParams[i].value);
+	}
+
+	for (u32 i = 0; i < matDesc.vec3Params.get_size(); i++) {
+		insigne::param_id pId = insigne::get_material_param<floral::vec3f>(matHdl, matDesc.vec3Params[i].name);
+		insigne::set_material_param(matHdl, pId, matDesc.vec3Params[i].value);
 	}
 
 	return matHdl;

@@ -303,6 +303,10 @@ void OBJModelBaker::BakeToFile()
 	u32 totalPrimNodesPos = m_CbObjFile.tellp();
 	m_CbObjFile.write((c8*)&totalPrimNodes, sizeof(u32));
 
+	u32 totalMeshNodes = 0;
+	u32 totalMeshNodePos = m_CbObjFile.tellp();
+	m_CbObjFile.write((c8*)&totalMeshNodes, sizeof(u32));
+
 	// header: root geometry node
 	const_cstr fileName = tmpPath.pm_FileNameNoExt;
 	u32 lenRootGeoName = strlen(fileName);
@@ -372,6 +376,7 @@ void OBJModelBaker::BakeToFile()
 			m_MeshOffsetsToData->PushBack(m_CbObjFile.tellp());
 			m_CbObjFile.write((c8*)&offsetToData, sizeof(u32));
 			totalPrimNodes++;							// increase total prim nodes
+			totalMeshNodes++;
 			std::cout << "prim #" << totalPrimNodes << ": (mesh " << m_CurrentMeshIdx << " material) " << useMtl << std::endl;
 			m_CurrentMeshIdx++;
 			// mesh node's children count, always zero
@@ -389,8 +394,11 @@ void OBJModelBaker::BakeToFile()
 	m_CbObjFile.write((c8*)&eldestChildrenNum, sizeof(u32));
 	// update header: total prim nodes
 	std::cout << "-- total primitive nodes: " << totalPrimNodes << std::endl;
+	std::cout << "-- total mesh nodes: " << totalMeshNodes << std::endl;
 	m_CbObjFile.seekp(totalPrimNodesPos, std::ios_base::beg);
 	m_CbObjFile.write((c8*)&totalPrimNodes, sizeof(u32));
+	m_CbObjFile.seekp(totalMeshNodePos, std::ios_base::beg);
+	m_CbObjFile.write((c8*)&totalMeshNodes, sizeof(u32));
 	// go back to continue writing
 	m_CbObjFile.seekp(currPos, std::ios_base::beg);
 

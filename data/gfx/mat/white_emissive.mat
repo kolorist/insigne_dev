@@ -1,0 +1,8 @@
+_version 0.1
+
+_cbshdr gfx/shd/emissive.shd
+
+_sparams
+	_p_vec3		iu_BaseColor					1.0 1.0 1.0
+	_p_float	iu_Strength						100.0
+_end_sparams

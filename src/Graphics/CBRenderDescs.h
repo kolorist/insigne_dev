@@ -48,6 +48,7 @@ struct MaterialDesc {
 	floral::inplace_array<ParamNVP<floral::path>, 4u>	tex2DParams;
 	floral::inplace_array<ParamNVP<floral::path>, 4u>	texCubeParams;
 	floral::inplace_array<ParamNVP<f32>, 8u>			floatParams;
+	floral::inplace_array<ParamNVP<floral::vec3f>, 8u>	vec3Params;
 };
 
 }

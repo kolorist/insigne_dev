@@ -94,6 +94,13 @@ param_defs:
 param_def:
 		 P_TEX2D STRING_VALUE STRING_VALUE		{ add_nvp($2, floral::path($3), g_CurrentTargetMaterial->tex2DParams); }
 		 | P_TEXCUBE STRING_VALUE STRING_VALUE	{ add_nvp($2, floral::path($3), g_CurrentTargetMaterial->texCubeParams); }
+		 | P_VEC3 STRING_VALUE FLOAT_VALUE FLOAT_VALUE FLOAT_VALUE {
+				floral::vec3f v($3, $4, $5);
+				add_nvp($2,v, g_CurrentTargetMaterial->vec3Params);
+			}
+		 | P_FLOAT STRING_VALUE FLOAT_VALUE {
+				add_nvp($2, $3, g_CurrentTargetMaterial->floatParams);
+			}
 
 param_footer:
 		END_SPARAMS

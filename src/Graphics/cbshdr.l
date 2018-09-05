@@ -26,7 +26,7 @@ _p_vec3											{ return P_VEC3; }
 _p_float										{ return P_FLOAT; }
 _end_sparams									{ return END_SPARAMS; }
 
-[0-9]+\.[0-9]+									{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
+([\+|-])?[0-9]+\.[0-9]+							{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
 [a-zA-Z0-9\/\.\_]+								{ yylval.stringValue = strdup(yytext); return STRING_VALUE; }
 %%
 

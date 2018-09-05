@@ -1,0 +1,13 @@
+_version 0.1
+
+_cbshdr gfx/shd/pbr_solid.shd
+
+_sparams
+	_p_vec3		iu_BaseColor					1.0 0.0 0.0
+	_p_float	iu_Metallic						0.02
+	_p_float	iu_Roughness					0.9
+	_p_texcube	iu_IrrMap						gfx/envi/textures/demo/irrmap_grace.cbprb
+	_p_texcube	iu_SpecMap						gfx/envi/textures/demo/specmap_grace.cbprb
+	
+	_p_tex2d	iu_SplitSumLUT					split_sum_lut
+_end_sparams

@@ -25,6 +25,7 @@ class TextureManager : public ITextureManager {
 		insigne::texture_handle_t				CreateTexture(const_cstr i_texPath) override;
 		insigne::texture_handle_t				CreateTextureCube(const floral::path& i_texPath) override;
 		insigne::texture_handle_t				CreateTextureCube(const_cstr i_texPath) override;
+		insigne::texture_handle_t				CreateMipmapedProbe(const floral::path& i_texPath) override;
 		insigne::texture_handle_t				CreateMipmapedProbe(const_cstr i_texPath) override;
 		insigne::texture_handle_t				CreateTexture(const voidptr i_pixels,
 													const s32 i_width, const s32 i_height,

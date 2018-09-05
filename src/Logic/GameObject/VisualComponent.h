@@ -7,35 +7,34 @@
 #include "Graphics/IMaterial.h"
 
 namespace stone {
-	struct Camera;
 
-	class VisualComponent : public Component {
-		public:
-			VisualComponent();
-			~VisualComponent();
+struct Camera;
+struct Model;
 
-			void								Update(Camera* i_camera, f32 i_deltaMs);
-			void								Render(Camera* i_camera);
+class VisualComponent : public Component {
+	public:
+		VisualComponent();
+		~VisualComponent();
 
-			void								Initialize(insigne::surface_handle_t i_surfaceHdl, IMaterial* i_matHdl);
+		void								Update(Camera* i_camera, f32 i_deltaMs);
+		void								Render(Camera* i_camera);
 
-			void								SetPosition(const floral::vec3f& i_posWS)		{ m_PositionWS = i_posWS; }
-			void								SetRotation(const floral::vec3f& i_rotWS)		{ m_RotationWS = i_rotWS; }
-			void								SetScaling(const floral::vec3f& i_sclWS)		{ m_ScalingWS = i_sclWS; }
+		void								Initialize(Model* i_model);
 
-			const floral::vec3f					GetPosition()									{ return m_PositionWS; }
-			const floral::vec3f					GetRotation()									{ return m_RotationWS; }
-			const floral::vec3f					GetScaling()									{ return m_ScalingWS; }
+		void								SetPosition(const floral::vec3f& i_posWS)		{ m_PositionWS = i_posWS; }
+		void								SetRotation(const floral::vec3f& i_rotWS)		{ m_RotationWS = i_rotWS; }
+		void								SetScaling(const floral::vec3f& i_sclWS)		{ m_ScalingWS = i_sclWS; }
 
-			IMaterial*							GetMaterial()									{ return m_Material; }
+		const floral::vec3f					GetPosition()									{ return m_PositionWS; }
+		const floral::vec3f					GetRotation()									{ return m_RotationWS; }
+		const floral::vec3f					GetScaling()									{ return m_ScalingWS; }
 
-		private:
-			insigne::surface_handle_t			m_Surface;
-			IMaterial*							m_Material;
+	private:
+		floral::vec3f						m_PositionWS;
+		floral::vec3f						m_RotationWS;
+		floral::vec3f						m_ScalingWS;
+		floral::mat4x4f						m_Transform;
 
-			floral::vec3f						m_PositionWS;
-			floral::vec3f						m_RotationWS;
-			floral::vec3f						m_ScalingWS;
-			floral::mat4x4f						m_Transform;
-	};
+		Model*									m_Model;
+};
 }

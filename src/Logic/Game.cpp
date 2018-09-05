@@ -13,6 +13,8 @@
 #include "GameObject/SkyboxComponent.h"
 #include "ImGuiDebug/Debugger.h"
 
+#include "Graphics/RenderData.h"
+
 namespace stone {
 	Game::Game(IModelManager* i_modelManager, MaterialManager* i_materialManager, ITextureManager* i_textureManager,
 			Debugger* i_debugger)
@@ -41,6 +43,7 @@ namespace stone {
 		m_Debugger->OnRequestLoadLUTTexture.bind<Game, &Game::RequestLoadSplitSumLUTTexture>(this);
 
 		m_SkyboxSurface = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/cube.cbobj");
+
 	}
 
 	void Game::Update(f32 i_deltaMs)
@@ -112,9 +115,9 @@ namespace stone {
 		CLOVER_INFO("Request construct a camera...");
 		m_CameraComponent = g_SceneResourceAllocator.allocate<CameraComponent>();
 		m_CameraComponent->Initialize(0.01f, 100.0f, 45.0f, 16.0f / 9.0f);
-		floral::vec3f camPos = floral::vec3f(3.0f, 1.0f, 3.0f);
+		floral::vec3f camPos = floral::vec3f(3.0f, 0.5f, 0.3f);
 		m_CameraComponent->SetPosition(camPos);
-		m_CameraComponent->SetLookAtDir(-camPos);
+		m_CameraComponent->SetLookAtDir(floral::vec3f(0.0f, 0.2f, 0.0f)-camPos);
 		m_Debugger->SetCamera(m_CameraComponent->GetCamera());
 	}
 
@@ -125,21 +128,24 @@ namespace stone {
 		m_VisualComponents = g_SceneResourceAllocator.allocate<VisualComponentArray>(32, &g_SceneResourceAllocator);
 		m_SkyboxComponents = g_SceneResourceAllocator.allocate<SkyboxComponentArray>(4, &g_SceneResourceAllocator);
 
-		m_PlateModel = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/uv_sphere_pbr.cbobj");
+		Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/envi/models/demo/cornell_box.cbobj"));
 
-		for (u32 i = 0; i < 5; i++)
-			for (u32 j = 0; j < 5; j++) {
+		//for (u32 i = 0; i < 5; i++)
+			//for (u32 j = 0; j < 5; j++)
+		u32 i = 0, j = 0;
+		{
 				GameObject* newGO = g_SceneResourceAllocator.allocate<GameObject>();
 				VisualComponent* newVC = g_SceneResourceAllocator.allocate<VisualComponent>();
-				PlateComponent* newPC = g_SceneResourceAllocator.allocate<PlateComponent>();
+				//PlateComponent* newPC = g_SceneResourceAllocator.allocate<PlateComponent>();
 
-				newVC->Initialize(m_PlateModel, m_PlateMaterial);
-				newVC->SetPosition(floral::vec3f(-0.8f + 0.4f * i, -0.3f, -0.8f + 0.4f * j));
-				newVC->SetScaling(floral::vec3f(0.175f, 0.175f, 0.175f));
-				newPC->Initialize(newVC, 1000.0f + (i * 5 + j) * 200.0f, 500.0f);
+				newVC->Initialize(cornellBox);
+				//newVC->SetPosition(floral::vec3f(-0.8f + 0.4f * i, -1.0f, -0.8f + 0.4f * j));
+				newVC->SetPosition(floral::vec3f(0.0f, -0.3f, 0.0f));
+				newVC->SetScaling(floral::vec3f(0.5f, 0.5f, 0.5f));
+				//newPC->Initialize(newVC, 1000.0f + (i * 5 + j) * 200.0f, 500.0f);
 
 				newGO->AddComponent(newVC);
-				newGO->AddComponent(newPC);
+				//newGO->AddComponent(newPC);
 				m_VisualComponents->push_back(newVC);
 				m_GameObjects->push_back(newGO);
 			}

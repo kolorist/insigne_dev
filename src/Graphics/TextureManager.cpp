@@ -65,6 +65,8 @@ namespace stone {
 		floral::close_file(texFile);
 		m_MemoryArena->free_all();
 
+		m_CachedTextures.push_back(TextureRegister{ floral::crc_string(i_texPath), texHdl });
+
 		return texHdl;
 	}
 
@@ -116,7 +118,14 @@ namespace stone {
 		floral::close_file(texFile);
 		m_MemoryArena->free_all();
 
+		m_CachedTextures.push_back(TextureRegister{ floral::crc_string(i_texPath), texHdl });
+
 		return texHdl;
+	}
+
+	insigne::texture_handle_t TextureManager::CreateMipmapedProbe(const floral::path& i_texPath)
+	{
+		return CreateMipmapedProbe(i_texPath.pm_PathStr);
 	}
 
 	insigne::texture_handle_t TextureManager::CreateMipmapedProbe(const_cstr i_texPath)
@@ -161,6 +170,8 @@ namespace stone {
 
 		floral::close_file(texFile);
 		m_MemoryArena->free_all();
+
+		m_CachedTextures.push_back(TextureRegister{ floral::crc_string(i_texPath), texHdl });
 
 		return texHdl;
 	}
@@ -279,6 +290,8 @@ namespace stone {
 				insigne::filtering_e::linear, insigne::filtering_e::linear,
 				i_width * i_height * sizeof(hdrpixrg), texData, false);
 		GenerateSplitSumLUT((hdrpixrg*)texData, i_width, i_height);
+
+		m_CachedTextures.push_back(TextureRegister{ floral::crc_string("split_sum_lut"), texHdl });
 
 		return texHdl;
 	}
