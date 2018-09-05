@@ -86,7 +86,7 @@ const bool OBJModelBaker::ParseMaterialUsage(const_cstr line, const u32 index, c
 	u32 currIndex = index;
 	while (line[currIndex] == ' ') currIndex++;
 	c8 buff[128];
-	sprintf_s(buff, "%s/%s", "materials", &line[currIndex]);
+	sprintf_s(buff, "%s", &line[currIndex]);
 	strcpy_s(matName, 256, buff);
 	REMOVE_LINE_ENDING(matName);
 	return true;
@@ -346,6 +346,8 @@ void OBJModelBaker::BakeToFile()
 			m_CbObjFile.write(groupName, groupStrLen * sizeof(c8));
 			totalPrimNodes++;							// increase total prim nodes
 			std::cout << "prim #" << totalPrimNodes << ": (group) " << groupName << std::endl;
+			strcpy(m_CurrentGroup, groupName);
+			m_CurrentMeshIdx = 0;
 			// group geometry node offset to data, always 0xFFFFFFFF
 			eldestChildrenNum++;
 			u32 offsetToData = 0xFFFFFFFF;
@@ -370,7 +372,8 @@ void OBJModelBaker::BakeToFile()
 			m_MeshOffsetsToData->PushBack(m_CbObjFile.tellp());
 			m_CbObjFile.write((c8*)&offsetToData, sizeof(u32));
 			totalPrimNodes++;							// increase total prim nodes
-			std::cout << "prim #" << totalPrimNodes << ": (mesh) " << useMtl << std::endl;
+			std::cout << "prim #" << totalPrimNodes << ": (mesh " << m_CurrentMeshIdx << " material) " << useMtl << std::endl;
+			m_CurrentMeshIdx++;
 			// mesh node's children count, always zero
 			u32 meshNodeChildrenCount = 0;
 			m_CbObjFile.write((c8*)&meshNodeChildrenCount, sizeof(u32));
@@ -419,13 +422,16 @@ void OBJModelBaker::BakeToFile()
 			//sprintf_s(m_MtlLibPath, "%s%s", fileDir.c_str(), mtlLibName);
 			//CYMBI_LOG_VERBOSE("OBJ: mtllib = {0} @ '{1}'", mtlLibName, m_MtlLibPath);
 		}
-		else if (CHECK_TOKEN(line[index], k_WFGroup)) {
+		else if (CHECK_TOKEN(line[index], k_WFGroup) || CHECK_TOKEN(line[index], k_WFObject)) {
 			if (faceReading) {
 				faceReading = false;
 				DoBakeMesh(compiledVertices, compiledIndices);
 			}
 			c8 groupName[256];
 			ParseGroup(line, index + strlen(k_WFGroup), groupName);
+			strcpy(m_CurrentGroup, groupName);
+			m_CurrentMeshIdx = 0;
+			printf("baking group '%s':\n", m_CurrentGroup);
 			m_CurrSegStartId = m_NextSegStartId;
 			m_NextSegStartId = compiledVertices->get_size();
 			//CYMBI_LOG_VERBOSE("OBJ: indices building range[{0} - {1}]", m_CurrSegStartId, m_NetxSegStartId);
@@ -529,7 +535,7 @@ void OBJModelBaker::DoBakeMesh(DynamicArray<Vertex>* compiledVertices, DynamicAr
 		accNorm = vec3f(0.0f, 0.0f, 0.0f);
 	}
 	*/
-	printf("baked mesh '%-40s' with (%-6d vertices + %-6d indices)\n", m_CurrentMtl, compiledVertices->get_size(), compiledIndices->get_size());
+	printf("baked mesh %d with material '%-40s': (%-6d vertices + %-6d indices)\n", m_CurrentMeshIdx, m_CurrentMtl, compiledVertices->get_size(), compiledIndices->get_size());
 	u32 vertexFormat = 0;
 	m_CbObjFile.write((c8*)&vertexFormat, sizeof(u32));
 	u32 verticesLen = compiledVertices->get_size();
@@ -538,6 +544,7 @@ void OBJModelBaker::DoBakeMesh(DynamicArray<Vertex>* compiledVertices, DynamicAr
 	m_CbObjFile.write((c8*)&(*compiledVertices)[0], verticesLen * sizeof(Vertex));
 	m_CbObjFile.write((c8*)&indicesLen, sizeof(u32));
 	m_CbObjFile.write((c8*)&(*compiledIndices)[0], indicesLen * sizeof(u32));
+	m_CurrentMeshIdx++;
 }
 
 }

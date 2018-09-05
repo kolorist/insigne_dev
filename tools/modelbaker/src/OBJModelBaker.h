@@ -81,6 +81,8 @@ class OBJModelBaker {
 		u32										m_NextSegStartId;
 		c8										m_MtlLibPath[256];
 		c8										m_CurrentMtl[256];
+		c8										m_CurrentGroup[256];
+		u32										m_CurrentMeshIdx;
 		DynamicArray<u32>*						m_MeshOffsetsToData;
 
 	private:
