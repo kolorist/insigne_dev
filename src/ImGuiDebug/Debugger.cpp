@@ -85,35 +85,36 @@ void Debugger::Update(f32 i_deltaMs)
 		ImGui::Begin("Profiler");
 		ImGui::LabelText("Submit Frame Idx", "%d", insigne::g_global_counters.current_submit_frame_idx);
 		ImGui::LabelText("Render Frame Idx", "%d", insigne::g_global_counters.current_render_frame_idx);
-		if (ImGui::Button("Load Default Textures")) {
+
+		if (ImGui::Button("1. Load Default Textures")) {
 			OnRequestLoadDefaultTextures();
 		}
 
-		if (ImGui::Button("Load Plate Material")) {
+		if (ImGui::Button("2. Load Plate Material")) {
 			OnRequestLoadPlateMaterial();
 		}
 
-		if (ImGui::Button("Construct Camera")) {
+		if (ImGui::Button("3. Construct Camera")) {
 			OnRequestConstructCamera();
 		}
 
-		if (ImGui::Button("Load Models")) {
+		if (ImGui::Button("6. Load Models")) {
 			OnRequestLoadModels();
 		}
 
-		if (ImGui::Button("Load and Apply Textures")) {
+		if (ImGui::Button("7. Load and Apply Textures")) {
 			OnRequestLoadAndApplyTextures();
 		}
 
-		if (ImGui::Button("Load Skybox")) {
+		if (ImGui::Button("8. Load Skybox")) {
 			OnRequestLoadSkybox();
 		}
 
-		if (ImGui::Button("Load Shading Probes")) {
+		if (ImGui::Button("5. Load Shading Probes")) {
 			OnRequestLoadShadingProbes();
 		}
 
-		if (ImGui::Button("Load Split Sum LUT")) {
+		if (ImGui::Button("4. Load Split Sum LUT")) {
 			OnRequestLoadLUTTexture();
 		}
 
@@ -195,10 +196,10 @@ void Debugger::RenderImGuiDrawLists(ImDrawData* i_drawData)
 			if (drawCmd->UserCallback) {
 				drawCmd->UserCallback(cmdList, drawCmd);
 			} else {
-				s32 x0 = drawCmd->ClipRect.x;	// topleft
-				s32 y0 = drawCmd->ClipRect.y;
-				s32 w = drawCmd->ClipRect.z - drawCmd->ClipRect.x;
-				s32 h = drawCmd->ClipRect.w - drawCmd->ClipRect.y;
+				s32 x0 = (s32)drawCmd->ClipRect.x;	// topleft
+				s32 y0 = (s32)drawCmd->ClipRect.y;
+				s32 w = (s32)(drawCmd->ClipRect.z - drawCmd->ClipRect.x);
+				s32 h = (s32)(drawCmd->ClipRect.w - drawCmd->ClipRect.y);
 
 				// lower left
 				y0 = fbHeight - (y0 + h);
