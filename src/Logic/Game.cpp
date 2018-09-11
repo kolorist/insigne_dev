@@ -11,16 +11,18 @@
 #include "GameObject/PlateComponent.h"
 #include "GameObject/CameraComponent.h"
 #include "GameObject/SkyboxComponent.h"
+#include "Graphics/ProbesBaker.h"
 #include "ImGuiDebug/Debugger.h"
 
 #include "Graphics/RenderData.h"
 
 namespace stone {
 	Game::Game(IModelManager* i_modelManager, MaterialManager* i_materialManager, ITextureManager* i_textureManager,
-			Debugger* i_debugger)
+			IProbesBaker* i_probesBaker, Debugger* i_debugger)
 		: m_ModelManager(i_modelManager)
 		, m_MaterialManager(i_materialManager)
 		, m_TextureManager(i_textureManager)
+		, m_ProbesBaker(i_probesBaker)
 		, m_Debugger(i_debugger)
 		, m_GameObjects(nullptr)
 		, m_VisualComponents(nullptr)
@@ -211,6 +213,12 @@ namespace stone {
 
 		PBRMaterial* pbrMat = (PBRMaterial*)m_PlateMaterial;
 		pbrMat->SetSplitSumLUTTex(lutTex);
+	}
+
+	void Game::RequestInitProbesBaker()
+	{
+		CLOVER_INFO("Request initializing probes baker...");
+		m_ProbesBaker->Initialize();
 	}
 
 }

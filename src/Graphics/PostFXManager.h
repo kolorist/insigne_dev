@@ -7,29 +7,30 @@
 
 namespace stone {
 
-	class ToneMappingMaterial;
-	class GammaCorrectionMaterial;
-	class MaterialManager;
-	
-	class PostFXManager : public IPostFXManager {
-		public:
-			PostFXManager(MaterialManager* i_materialManager);
-			~PostFXManager();
+class ToneMappingMaterial;
+class GammaCorrectionMaterial;
+class MaterialManager;
 
-			void								Initialize() override;
-			const insigne::framebuffer_handle_t	GetMainFramebuffer() override	{ return m_MainFramebuffer; }
-			void								Render() override;
-			void								RenderFinalPass() override;
+class PostFXManager : public IPostFXManager {
+	public:
+		PostFXManager(MaterialManager* i_materialManager);
+		~PostFXManager();
 
-		private:
-			MaterialManager*					m_MaterialManager;
+		void								Initialize() override;
+		const insigne::framebuffer_handle_t	GetMainFramebuffer() override	{ return m_MainFramebuffer; }
+		void								Render() override;
+		void								RenderFinalPass() override;
 
-			insigne::framebuffer_handle_t		m_MainFramebuffer;
+	private:
+		MaterialManager*					m_MaterialManager;
 
-			ToneMappingMaterial*				m_TonemapMaterial;
-			insigne::framebuffer_handle_t		m_TonemapBuffer;
+		insigne::framebuffer_handle_t		m_MainFramebuffer;
 
-			GammaCorrectionMaterial*			m_GammaCorrectionMaterial;
-			insigne::framebuffer_handle_t		m_GammaCorrectionBuffer;
-	};
+		ToneMappingMaterial*				m_TonemapMaterial;
+		insigne::framebuffer_handle_t		m_TonemapBuffer;
+
+		GammaCorrectionMaterial*			m_GammaCorrectionMaterial;
+		insigne::framebuffer_handle_t		m_GammaCorrectionBuffer;
+};
+
 }

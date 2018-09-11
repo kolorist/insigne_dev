@@ -10,31 +10,36 @@
 #include "ImGuiDebug/Debugger.h"
 
 namespace stone {
-	class Application {
-		public:
-			Application(Controller* i_controller);
-			~Application();
 
-		private:
-			void								UpdateFrame(f32 i_deltaMs);
-			void								RenderFrame(f32 i_deltaMs);
+class IProbesBaker;
 
-			void								OnInitialize(int i_param);
-			void								OnFrameStep(f32 i_deltaMs);
-			void								OnCleanUp(int i_param);
+class Application {
+	public:
+		Application(Controller* i_controller);
+		~Application();
 
-			// user interactions
-			void								OnCharacterInput(c8 i_character);
-			void								OnCursorMove(u32 i_x, u32 i_y);
-			void								OnCursorInteract(bool i_pressed, u32 i_buttonId);
+	private:
+		void								UpdateFrame(f32 i_deltaMs);
+		void								RenderFrame(f32 i_deltaMs);
 
-		private:
-			Game*								m_Game;
-			IShaderManager*						m_ShaderManager;
-			ITextureManager*					m_TextureManager;
-			IModelManager*						m_ModelManager;
-			MaterialManager*					m_MaterialManager;
-			IPostFXManager*						m_PostFXManager;
-			Debugger*							m_Debugger;
-	};
+		void								OnInitialize(int i_param);
+		void								OnFrameStep(f32 i_deltaMs);
+		void								OnCleanUp(int i_param);
+
+		// user interactions
+		void								OnCharacterInput(c8 i_character);
+		void								OnCursorMove(u32 i_x, u32 i_y);
+		void								OnCursorInteract(bool i_pressed, u32 i_buttonId);
+
+	private:
+		Game*									m_Game;
+		IShaderManager*							m_ShaderManager;
+		ITextureManager*						m_TextureManager;
+		IModelManager*							m_ModelManager;
+		MaterialManager*						m_MaterialManager;
+		IPostFXManager*							m_PostFXManager;
+		IProbesBaker*							m_ProbesBaker;
+		Debugger*								m_Debugger;
+};
+
 }

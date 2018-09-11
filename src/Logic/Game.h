@@ -15,66 +15,69 @@ namespace stone {
 	class CameraComponent;
 	class VisualComponent;
 	class SkyboxComponent;
+	class IProbesBaker;
 }
 
 namespace stone {
-	class Game {
-		public:
-			Game(IModelManager* i_modelManager, MaterialManager* i_materialManager, ITextureManager* i_textureManager,
-					Debugger* i_debugger);
-			~Game();
+class Game {
+	public:
+		Game(IModelManager* i_modelManager, MaterialManager* i_materialManager, ITextureManager* i_textureManager,
+				IProbesBaker* i_probesBaker, Debugger* i_debugger);
+		~Game();
 
-			void								Initialize();
+		void								Initialize();
 
-			void								Update(f32 i_deltaMs);
-			void								Render();
+		void								Update(f32 i_deltaMs);
+		void								Render();
 
-		private:
-			void								RequestLoadDefaultTextures();
-			void								RequestLoadPlateMaterial();
-			void								RequestContructCamera();
-			void								RequestLoadModels();
-			void								RequestLoadAndApplyTextures();
-			void								RequestLoadSkybox();
-			void								RequestLoadShadingProbes();
-			void								RequestLoadSplitSumLUTTexture();
+	private:
+		void								RequestLoadDefaultTextures();
+		void								RequestLoadPlateMaterial();
+		void								RequestContructCamera();
+		void								RequestLoadModels();
+		void								RequestLoadAndApplyTextures();
+		void								RequestLoadSkybox();
+		void								RequestLoadShadingProbes();
+		void								RequestLoadSplitSumLUTTexture();
+		void								RequestInitProbesBaker();
 
-		private:
-			typedef floral::fixed_array<IGameObject*, LinearAllocator>		GameObjectArray;
-			typedef floral::fixed_array<VisualComponent*, LinearAllocator>	VisualComponentArray;
-			typedef floral::fixed_array<SkyboxComponent*, LinearAllocator>	SkyboxComponentArray;
+	private:
+		typedef floral::fixed_array<IGameObject*, LinearAllocator>		GameObjectArray;
+		typedef floral::fixed_array<VisualComponent*, LinearAllocator>	VisualComponentArray;
+		typedef floral::fixed_array<SkyboxComponent*, LinearAllocator>	SkyboxComponentArray;
 
-		private:
-			GameObjectArray*					m_GameObjects;
-			VisualComponentArray*				m_VisualComponents;
-			SkyboxComponentArray*				m_SkyboxComponents;
-			insigne::surface_handle_t			m_SkyboxSurface;
+	private:
+		GameObjectArray*					m_GameObjects;
+		VisualComponentArray*				m_VisualComponents;
+		SkyboxComponentArray*				m_SkyboxComponents;
+		insigne::surface_handle_t			m_SkyboxSurface;
 
-		private:
-			IModelManager*						m_ModelManager;
-			MaterialManager*					m_MaterialManager;
-			ITextureManager*					m_TextureManager;
-			CameraComponent*					m_CameraComponent;
-			Debugger*							m_Debugger;
+	private:
+		IModelManager*						m_ModelManager;
+		IProbesBaker*							m_ProbesBaker;
+		MaterialManager*					m_MaterialManager;
+		ITextureManager*					m_TextureManager;
+		CameraComponent*					m_CameraComponent;
+		Debugger*							m_Debugger;
 
-		private:
-			insigne::texture_handle_t			m_DefaultAlbedo;
-			insigne::texture_handle_t			m_DefaultMetallic;
-			insigne::texture_handle_t			m_DefaultRoughness;
+	private:
+		insigne::texture_handle_t			m_DefaultAlbedo;
+		insigne::texture_handle_t			m_DefaultMetallic;
+		insigne::texture_handle_t			m_DefaultRoughness;
 
-			insigne::texture_handle_t			m_Albedo;
-			insigne::texture_handle_t			m_Metallic;
-			insigne::texture_handle_t			m_Rougness;
-			insigne::texture_handle_t			m_AO;
-			insigne::texture_handle_t			m_Normal;
+		insigne::texture_handle_t			m_Albedo;
+		insigne::texture_handle_t			m_Metallic;
+		insigne::texture_handle_t			m_Rougness;
+		insigne::texture_handle_t			m_AO;
+		insigne::texture_handle_t			m_Normal;
 
-			insigne::texture_handle_t			m_SkyboxAlbedo;
+		insigne::texture_handle_t			m_SkyboxAlbedo;
 
-			IMaterial*							m_PlateMaterial;
-			IMaterial*							m_SkyboxMaterial;
-			insigne::surface_handle_t			m_PlateModel;
-			insigne::surface_handle_t			m_SkyboxModel;
+		IMaterial*							m_PlateMaterial;
+		IMaterial*							m_SkyboxMaterial;
+		insigne::surface_handle_t			m_PlateModel;
+		insigne::surface_handle_t			m_SkyboxModel;
 
-			floral::vec3f						m_LightPosition;
-	};
+		floral::vec3f						m_LightPosition;
+};
 }
