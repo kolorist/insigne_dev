@@ -5,6 +5,7 @@
 namespace stone {
 
 ProbesBaker::ProbesBaker()
+	: m_IsReady(false)
 {
 }
 
@@ -26,6 +27,17 @@ void ProbesBaker::Initialize()
 				colorAttachs);
 		m_ProbesFramebuffer = fb;
 	}
+	m_IsReady = true;
+}
+
+insigne::framebuffer_handle_t ProbesBaker::GetMegaFramebuffer()
+{
+	return m_ProbesFramebuffer;
+}
+
+bool ProbesBaker::IsReady()
+{
+	return m_IsReady;
 }
 
 }

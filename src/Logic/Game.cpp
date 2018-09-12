@@ -43,6 +43,7 @@ namespace stone {
 		m_Debugger->OnRequestLoadSkybox.bind<Game, &Game::RequestLoadSkybox>(this);
 		m_Debugger->OnRequestLoadShadingProbes.bind<Game, &Game::RequestLoadShadingProbes>(this);
 		m_Debugger->OnRequestLoadLUTTexture.bind<Game, &Game::RequestLoadSplitSumLUTTexture>(this);
+		m_Debugger->OnRequestInitializeProbesBaker.bind<Game, &Game::RequestInitProbesBaker>(this);
 
 		m_SkyboxSurface = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/cube.cbobj");
 

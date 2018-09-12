@@ -14,8 +14,12 @@ class ProbesBaker : public IProbesBaker {
 
 		void Initialize() override;
 
+		insigne::framebuffer_handle_t					GetMegaFramebuffer() override;
+		bool IsReady() override;
+
 	private:
 		insigne::framebuffer_handle_t			m_ProbesFramebuffer;
+		bool									m_IsReady;
 };
 
 }

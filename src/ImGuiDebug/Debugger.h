@@ -53,6 +53,7 @@ namespace stone {
 			floral::simple_callback<void>		OnRequestLoadSkybox;
 			floral::simple_callback<void>		OnRequestLoadShadingProbes;
 			floral::simple_callback<void>		OnRequestLoadLUTTexture;
+			floral::simple_callback<void>		OnRequestInitializeProbesBaker;
 	};
 
 }

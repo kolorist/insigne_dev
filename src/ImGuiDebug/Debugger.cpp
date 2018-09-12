@@ -118,6 +118,10 @@ void Debugger::Update(f32 i_deltaMs)
 			OnRequestLoadLUTTexture();
 		}
 
+		if (ImGui::Button("9. Init Probes Baker")) {
+			OnRequestInitializeProbesBaker();
+		}
+
 		if (m_Camera) {
 			if (ImGui::CollapsingHeader("Camera Debug")) {
 				ImGui::LabelText("position", "(%f; %f; %f)", m_Camera->Position.x, m_Camera->Position.y, m_Camera->Position.z);

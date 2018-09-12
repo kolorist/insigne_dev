@@ -24,8 +24,8 @@ static FBODebugMaterial*					s_mat;
 
 Application::Application(Controller* i_controller)
 {
-	s_profileEvents[0].init(256u, &g_SystemAllocator);
-	s_profileEvents[1].init(256u, &g_SystemAllocator);
+	s_profileEvents[0].init(1024u, &g_SystemAllocator);
+	s_profileEvents[1].init(1024u, &g_SystemAllocator);
 
 	i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
 	i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
@@ -77,6 +77,8 @@ void Application::RenderFrame(f32 i_deltaMs)
 	insigne::framebuffer_handle_t mainFb = m_PostFXManager->GetMainFramebuffer();
 	insigne::texture_handle_t tex0 = insigne::extract_color_attachment(mainFb, 0);
 
+	insigne::framebuffer_handle_t probeFb = m_ProbesBaker->GetMegaFramebuffer();
+
 	insigne::begin_frame();
 	
 	// main color buffer population
@@ -86,6 +88,16 @@ void Application::RenderFrame(f32 i_deltaMs)
 		m_Game->Render();
 		insigne::end_render_pass(mainFb);
 		insigne::dispatch_render_pass();
+	}
+
+	// probe baker
+	if (m_ProbesBaker->IsReady()) {
+		for (s32 i = 0; i < 6; i++) {
+			insigne::begin_render_pass(probeFb, 128 * i, 0, 128, 128);
+			m_Game->Render();
+			insigne::end_render_pass(probeFb);
+			insigne::dispatch_render_pass();
+		}
 	}
 
 	// postfx
