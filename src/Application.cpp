@@ -93,6 +93,7 @@ void Application::RenderFrame(f32 i_deltaMs)
 	// probe baker
 	if (m_ProbesBaker->IsReady()) {
 		for (s32 i = 0; i < 6; i++) {
+			PROFILE_SCOPE(ProbeBaking);
 			insigne::begin_render_pass(probeFb, 128 * i, 0, 128, 128);
 			m_Game->Render();
 			insigne::end_render_pass(probeFb);

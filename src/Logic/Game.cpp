@@ -73,6 +73,7 @@ namespace stone {
 
 	void Game::Render()
 	{
+		PROFILE_SCOPE(Game_Render);
 		if (m_VisualComponents) {
 			for (u32 i = 0; i < m_VisualComponents->get_size(); i++) {
 				PROFILE_SCOPE(VisualComponentRender);

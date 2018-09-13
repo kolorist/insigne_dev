@@ -39,13 +39,13 @@ const insigne::shader_handle_t ShaderManager::LoadShader(const_cstr i_shaderPath
 
 	floral::file_info shaderFile = floral::open_file(vertPath);
 	cstr vertSource = (cstr)m_MemoryArena->allocate(shaderFile.file_size + 1);
-	memset(vertSource, 0, shaderFile.file_size);
+	memset(vertSource, 0, shaderFile.file_size + 1);
 	floral::read_all_file(shaderFile, vertSource);
 	floral::close_file(shaderFile);
 
 	shaderFile = floral::open_file(fragPath);
 	cstr fragSource = (cstr)m_MemoryArena->allocate(shaderFile.file_size + 1);
-	memset(fragSource, 0, shaderFile.file_size);
+	memset(fragSource, 0, shaderFile.file_size + 1);
 	floral::read_all_file(shaderFile, fragSource);
 	floral::close_file(shaderFile);
 
@@ -60,7 +60,7 @@ const insigne::shader_handle_t ShaderManager::LoadShader(const floral::path& i_c
 {
 	floral::file_info shaderFile = floral::open_file(i_cbShaderPath);
 	cstr cbShaderSource = (cstr)m_MemoryArena->allocate(shaderFile.file_size + 1);
-	memset(cbShaderSource, 0, shaderFile.file_size);
+	memset(cbShaderSource, 0, shaderFile.file_size + 1);
 	floral::read_all_file(shaderFile, cbShaderSource);
 	floral::close_file(shaderFile);
 
@@ -71,13 +71,13 @@ const insigne::shader_handle_t ShaderManager::LoadShader(const floral::path& i_c
 
 	shaderFile = floral::open_file(shaderDesc.vertexShaderPath);
 	cstr vertSource = (cstr)m_MemoryArena->allocate(shaderFile.file_size + 1);
-	memset(vertSource, 0, shaderFile.file_size);
+	memset(vertSource, 0, shaderFile.file_size + 1);
 	floral::read_all_file(shaderFile, vertSource);
 	floral::close_file(shaderFile);
 
 	shaderFile = floral::open_file(shaderDesc.fragmentShaderPath);
 	cstr fragSource = (cstr)m_MemoryArena->allocate(shaderFile.file_size + 1);
-	memset(fragSource, 0, shaderFile.file_size);
+	memset(fragSource, 0, shaderFile.file_size + 1);
 	floral::read_all_file(shaderFile, fragSource);
 	floral::close_file(shaderFile);
 

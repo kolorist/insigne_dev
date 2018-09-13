@@ -25,7 +25,7 @@ insigne::material_handle_t MaterialManager::CreateMaterialFromFile(const floral:
 {
 	floral::file_info materialFile = floral::open_file(i_matPath);
 	cstr matSource = (cstr)m_MemoryArena->allocate(materialFile.file_size + 1);
-	memset(matSource, 0, materialFile.file_size);
+	memset(matSource, 0, materialFile.file_size + 1);
 	floral::read_all_file(materialFile, matSource);
 	floral::close_file(materialFile);
 
