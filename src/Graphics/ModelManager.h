@@ -16,7 +16,7 @@ public:
 	void									Initialize() override;
 	insigne::surface_handle_t				CreateSingleSurface(const_cstr i_surfPath) override;
 
-	Model*									CreateModel(const floral::path& i_path) override;
+	Model*									CreateModel(const floral::path& i_path, floral::aabb3f& o_aabb) override;
 
 private:
 	LinearArena*							m_MemoryArena;

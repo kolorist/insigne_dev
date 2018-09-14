@@ -15,20 +15,21 @@ namespace stone {
 	class CameraComponent;
 	class VisualComponent;
 	class SkyboxComponent;
-	class IProbesBaker;
+	struct Camera;
 }
 
 namespace stone {
 class Game {
 	public:
 		Game(IModelManager* i_modelManager, MaterialManager* i_materialManager, ITextureManager* i_textureManager,
-				IProbesBaker* i_probesBaker, Debugger* i_debugger);
+				Debugger* i_debugger);
 		~Game();
 
 		void								Initialize();
 
 		void								Update(f32 i_deltaMs);
 		void								Render();
+		void								RenderWithCamera(Camera* i_camera);
 
 	private:
 		void								RequestLoadDefaultTextures();
@@ -54,7 +55,6 @@ class Game {
 
 	private:
 		IModelManager*						m_ModelManager;
-		IProbesBaker*							m_ProbesBaker;
 		MaterialManager*					m_MaterialManager;
 		ITextureManager*					m_TextureManager;
 		CameraComponent*					m_CameraComponent;

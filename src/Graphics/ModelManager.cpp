@@ -25,7 +25,7 @@ inline void ReadString(floral::file_stream& i_fileStream, cstr o_str, const u32 
 	i_fileStream.read_bytes(o_str, len);
 }
 
-Model* ModelManager::CreateModel(const floral::path& i_path)
+Model* ModelManager::CreateModel(const floral::path& i_path, floral::aabb3f& o_aabb)
 {
 	typedef floral::fixed_array<Vertex, LinearArena>	VertexArray;
 	typedef floral::fixed_array<u32, LinearArena>		IndexArray;
@@ -48,6 +48,9 @@ Model* ModelManager::CreateModel(const floral::path& i_path)
 	};
 #pragma pack(pop)
 
+	floral::aabb3f bbox;
+	bbox.min_corner = floral::vec3f(9999.0f, 9999.0f, 9999.0f);
+	bbox.max_corner = floral::vec3f(-9999.0f, -9999.0f, -9999.0f);
 	Header1 h1;
 	dataStream.read<Header1>(&h1);
 
@@ -96,6 +99,12 @@ Model* ModelManager::CreateModel(const floral::path& i_path)
 				Vertex v;
 				dataStream.read<Vertex>(&v);
 				vertices.push_back(v);
+				if (v.Position.x < bbox.min_corner.x) bbox.min_corner.x = v.Position.x;
+				if (v.Position.y < bbox.min_corner.y) bbox.min_corner.y = v.Position.y;
+				if (v.Position.z < bbox.min_corner.z) bbox.min_corner.z = v.Position.z;
+				if (v.Position.x > bbox.max_corner.x) bbox.max_corner.x = v.Position.x;
+				if (v.Position.y > bbox.max_corner.y) bbox.max_corner.y = v.Position.y;
+				if (v.Position.z > bbox.max_corner.z) bbox.max_corner.z = v.Position.z;
 			}
 
 			dataStream.read<u32>(&indicesCount);
@@ -118,6 +127,7 @@ Model* ModelManager::CreateModel(const floral::path& i_path)
 	}
 
 	m_MemoryArena->free_all();
+	o_aabb = bbox;
 
 	return newModel;
 }

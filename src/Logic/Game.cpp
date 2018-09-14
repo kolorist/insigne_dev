@@ -15,14 +15,14 @@
 #include "ImGuiDebug/Debugger.h"
 
 #include "Graphics/RenderData.h"
+#include "Graphics/Camera.h"
 
 namespace stone {
 	Game::Game(IModelManager* i_modelManager, MaterialManager* i_materialManager, ITextureManager* i_textureManager,
-			IProbesBaker* i_probesBaker, Debugger* i_debugger)
+			Debugger* i_debugger)
 		: m_ModelManager(i_modelManager)
 		, m_MaterialManager(i_materialManager)
 		, m_TextureManager(i_textureManager)
-		, m_ProbesBaker(i_probesBaker)
 		, m_Debugger(i_debugger)
 		, m_GameObjects(nullptr)
 		, m_VisualComponents(nullptr)
@@ -91,6 +91,26 @@ namespace stone {
 		}
 	}
 
+	void Game::RenderWithCamera(Camera* i_camera)
+	{
+		PROFILE_SCOPE(Game_RenderWithCamera);
+		if (m_VisualComponents) {
+			for (u32 i = 0; i < m_VisualComponents->get_size(); i++) {
+				PROFILE_SCOPE(VisualComponentRender);
+				(*m_VisualComponents)[i]->Render(i_camera);
+			}
+		}
+
+		// then render the skybox
+		// actually, the order of calling rendering of insigne doesn't matter
+		if (m_SkyboxComponents) {
+			for (u32 i = 0; i < m_SkyboxComponents->get_size(); i++) {
+				PROFILE_SCOPE(SkyboxComponentRender);
+				(*m_SkyboxComponents)[i]->Render(i_camera);
+			}
+		}
+	}
+
 	void Game::RequestLoadDefaultTextures()
 	{
 		CLOVER_INFO("Request load default textures...");
@@ -132,7 +152,8 @@ namespace stone {
 		m_VisualComponents = g_SceneResourceAllocator.allocate<VisualComponentArray>(32, &g_SceneResourceAllocator);
 		m_SkyboxComponents = g_SceneResourceAllocator.allocate<SkyboxComponentArray>(4, &g_SceneResourceAllocator);
 
-		Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/envi/models/demo/cornell_box.cbobj"));
+		floral::aabb3f modelAABB;
+		Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/envi/models/demo/cornell_box.cbobj"), modelAABB);
 
 		//for (u32 i = 0; i < 5; i++)
 			//for (u32 j = 0; j < 5; j++)
@@ -220,7 +241,6 @@ namespace stone {
 	void Game::RequestInitProbesBaker()
 	{
 		CLOVER_INFO("Request initializing probes baker...");
-		m_ProbesBaker->Initialize();
 	}
 
 }

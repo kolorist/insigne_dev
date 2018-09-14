@@ -40,10 +40,10 @@ Application::Application(Controller* i_controller)
 	m_MaterialManager = g_SystemAllocator.allocate<MaterialManager>(m_ShaderManager, m_TextureManager);
 	m_ModelManager = g_SystemAllocator.allocate<ModelManager>(m_MaterialManager);
 	m_PostFXManager = g_SystemAllocator.allocate<PostFXManager>(m_MaterialManager);
-	m_ProbesBaker = g_SystemAllocator.allocate<ProbesBaker>();
 	m_Debugger = g_SystemAllocator.allocate<Debugger>(m_MaterialManager, m_TextureManager);
 	m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager, m_TextureManager,
-			m_ProbesBaker, m_Debugger);
+			m_Debugger);
+	m_ProbesBaker = g_SystemAllocator.allocate<ProbesBaker>(m_Game);
 
 }
 
@@ -90,15 +90,9 @@ void Application::RenderFrame(f32 i_deltaMs)
 		insigne::dispatch_render_pass();
 	}
 
-	// probe baker
-	if (m_ProbesBaker->IsReady()) {
-		for (s32 i = 0; i < 6; i++) {
-			PROFILE_SCOPE(ProbeBaking);
-			insigne::begin_render_pass(probeFb, 128 * i, 0, 128, 128);
-			m_Game->Render();
-			insigne::end_render_pass(probeFb);
-			insigne::dispatch_render_pass();
-		}
+	{
+		PROFILE_SCOPE(ProbeBaking);
+		m_ProbesBaker->Render();
 	}
 
 	// postfx
@@ -156,6 +150,7 @@ void Application::OnInitialize(int i_param)
 	m_ModelManager->Initialize();
 	m_PostFXManager->Initialize();
 	m_Game->Initialize();
+	m_ProbesBaker->Initialize();
 
 	//
 	s_mat = (FBODebugMaterial*)m_MaterialManager->CreateMaterial<FBODebugMaterial>("shaders/internal/ssquad");
