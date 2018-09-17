@@ -16,7 +16,7 @@ ProbesBaker::~ProbesBaker()
 {
 }
 
-void ProbesBaker::Initialize()
+void ProbesBaker::Initialize(const floral::aabb3f& i_sceneAABB)
 {
 	{
 		insigne::color_attachment_list_t* colorAttachs = insigne::allocate_color_attachment_list(1u);
@@ -33,10 +33,20 @@ void ProbesBaker::Initialize()
 
 	m_MemoryArena = g_PersistanceAllocator.allocate_arena<LinearArena>(SIZE_MB(2));
 
-	m_ProbeCameras.init(2, m_MemoryArena);
-	{
+	f32 aabbX = i_sceneAABB.max_corner.x - i_sceneAABB.min_corner.x;
+	f32 aabbY = i_sceneAABB.max_corner.y - i_sceneAABB.min_corner.y;
+	f32 aabbZ = i_sceneAABB.max_corner.z - i_sceneAABB.min_corner.z;
+
+	u32 cX = u32(aabbX / 0.25f);
+	u32 cY = u32(aabbY / 0.25f);
+	u32 cZ = u32(aabbZ / 0.25f);
+
+	m_ProbeCameras.init(cX * cY * cZ, m_MemoryArena);
+	for (u32 i = 1; i < cX; i++)
+		for (u32 j = 1; j < cY; j++)
+			for (u32 k = 1; k < cZ; k++) {
 		ProbeCamera pCam;
-		pCam.posXCam.Position = floral::vec3f(0.0f, 0.0f, 0.0f);
+		pCam.posXCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
 		pCam.posXCam.LookAtDir = floral::vec3f(0.0f, 1.0f, 0.0f);
 		pCam.posXCam.AspectRatio = 1.0f;
 		pCam.posXCam.NearPlane = 0.01f;
@@ -53,7 +63,7 @@ void ProbesBaker::Initialize()
 				pCam.posXCam.AspectRatio);
 		pCam.posXCam.WVPMatrix = pCam.posXCam.ProjectionMatrix * pCam.posXCam.ViewMatrix;
 
-		pCam.posYCam.Position = floral::vec3f(0.0f, 0.0f, 0.0f);
+		pCam.posYCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
 		pCam.posYCam.LookAtDir = floral::vec3f(1.0f, 0.0f, 0.0f);
 		pCam.posYCam.AspectRatio = 1.0f;
 		pCam.posYCam.NearPlane = 0.01f;
@@ -70,7 +80,7 @@ void ProbesBaker::Initialize()
 				pCam.posYCam.AspectRatio);
 		pCam.posYCam.WVPMatrix = pCam.posYCam.ProjectionMatrix * pCam.posYCam.ViewMatrix;
 
-		pCam.posZCam.Position = floral::vec3f(0.0f, 0.0f, 0.0f);
+		pCam.posZCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
 		pCam.posZCam.LookAtDir = floral::vec3f(0.0f, 0.0f, 1.0f);
 		pCam.posZCam.AspectRatio = 1.0f;
 		pCam.posZCam.NearPlane = 0.01f;
@@ -87,7 +97,7 @@ void ProbesBaker::Initialize()
 				pCam.posZCam.AspectRatio);
 		pCam.posZCam.WVPMatrix = pCam.posZCam.ProjectionMatrix * pCam.posZCam.ViewMatrix;
 
-		pCam.negXCam.Position = floral::vec3f(0.0f, 0.0f, 0.0f);
+		pCam.negXCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
 		pCam.negXCam.LookAtDir = floral::vec3f(0.0f, -1.0f, 0.0f);
 		pCam.negXCam.AspectRatio = 1.0f;
 		pCam.negXCam.NearPlane = 0.01f;
@@ -104,7 +114,7 @@ void ProbesBaker::Initialize()
 				pCam.negXCam.AspectRatio);
 		pCam.negXCam.WVPMatrix = pCam.negXCam.ProjectionMatrix * pCam.negXCam.ViewMatrix;
 
-		pCam.negYCam.Position = floral::vec3f(0.0f, 0.0f, 0.0f);
+		pCam.negYCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
 		pCam.negYCam.LookAtDir = floral::vec3f(-1.0f, 0.0f, 0.0f);
 		pCam.negYCam.AspectRatio = 1.0f;
 		pCam.negYCam.NearPlane = 0.01f;
@@ -121,7 +131,7 @@ void ProbesBaker::Initialize()
 				pCam.negYCam.AspectRatio);
 		pCam.negYCam.WVPMatrix = pCam.negYCam.ProjectionMatrix * pCam.negYCam.ViewMatrix;
 
-		pCam.negZCam.Position = floral::vec3f(0.0f, 0.0f, 0.0f);
+		pCam.negZCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
 		pCam.negZCam.LookAtDir = floral::vec3f(0.0f, 0.0f, -1.0f);
 		pCam.negZCam.AspectRatio = 1.0f;
 		pCam.negZCam.NearPlane = 0.01f;
@@ -146,35 +156,38 @@ void ProbesBaker::Initialize()
 void ProbesBaker::Render()
 {
 	if (m_IsReady) {
-		insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 0, 0, 128, 128);
-		m_Game->RenderWithCamera(&(m_ProbeCameras[0].posXCam));
-		insigne::end_render_pass(m_ProbesFramebuffer);
-		insigne::dispatch_render_pass();
+		for (u32 i = 0; i < m_ProbeCameras.get_size(); i++) {
+		//u32 i = 0; {
+			insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 0, 128 * i, 128, 128);
+			m_Game->RenderWithCamera(&(m_ProbeCameras[i].posXCam));
+			insigne::end_render_pass(m_ProbesFramebuffer);
+			insigne::dispatch_render_pass();
 
-		insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 1, 0, 128, 128);
-		m_Game->RenderWithCamera(&(m_ProbeCameras[0].negXCam));
-		insigne::end_render_pass(m_ProbesFramebuffer);
-		insigne::dispatch_render_pass();
+			insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 1, 128 * i, 128, 128);
+			m_Game->RenderWithCamera(&(m_ProbeCameras[i].negXCam));
+			insigne::end_render_pass(m_ProbesFramebuffer);
+			insigne::dispatch_render_pass();
 
-		insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 2, 0, 128, 128);
-		m_Game->RenderWithCamera(&(m_ProbeCameras[0].posYCam));
-		insigne::end_render_pass(m_ProbesFramebuffer);
-		insigne::dispatch_render_pass();
+			insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 2, 128 * i, 128, 128);
+			m_Game->RenderWithCamera(&(m_ProbeCameras[i].posYCam));
+			insigne::end_render_pass(m_ProbesFramebuffer);
+			insigne::dispatch_render_pass();
 
-		insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 3, 0, 128, 128);
-		m_Game->RenderWithCamera(&(m_ProbeCameras[0].negYCam));
-		insigne::end_render_pass(m_ProbesFramebuffer);
-		insigne::dispatch_render_pass();
+			insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 3, 128 * i, 128, 128);
+			m_Game->RenderWithCamera(&(m_ProbeCameras[i].negYCam));
+			insigne::end_render_pass(m_ProbesFramebuffer);
+			insigne::dispatch_render_pass();
 
-		insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 4, 0, 128, 128);
-		m_Game->RenderWithCamera(&(m_ProbeCameras[0].posZCam));
-		insigne::end_render_pass(m_ProbesFramebuffer);
-		insigne::dispatch_render_pass();
+			insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 4, 128 * i, 128, 128);
+			m_Game->RenderWithCamera(&(m_ProbeCameras[i].posZCam));
+			insigne::end_render_pass(m_ProbesFramebuffer);
+			insigne::dispatch_render_pass();
 
-		insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 5, 0, 128, 128);
-		m_Game->RenderWithCamera(&(m_ProbeCameras[0].negZCam));
-		insigne::end_render_pass(m_ProbesFramebuffer);
-		insigne::dispatch_render_pass();
+			insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 5, 128 * i, 128, 128);
+			m_Game->RenderWithCamera(&(m_ProbeCameras[i].negZCam));
+			insigne::end_render_pass(m_ProbesFramebuffer);
+			insigne::dispatch_render_pass();
+		}
 	}
 }
 

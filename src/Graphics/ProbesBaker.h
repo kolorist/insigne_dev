@@ -16,7 +16,7 @@ class ProbesBaker : public IProbesBaker {
 		ProbesBaker(Game* i_game);
 		~ProbesBaker();
 
-		void									Initialize() override;
+		void									Initialize(const floral::aabb3f& i_sceneAABB) override;
 		void									Render() override;
 
 		insigne::framebuffer_handle_t			GetMegaFramebuffer() override;

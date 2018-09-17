@@ -24,8 +24,8 @@ static FBODebugMaterial*					s_mat;
 
 Application::Application(Controller* i_controller)
 {
-	s_profileEvents[0].init(1024u, &g_SystemAllocator);
-	s_profileEvents[1].init(1024u, &g_SystemAllocator);
+	s_profileEvents[0].init(4096u, &g_SystemAllocator);
+	s_profileEvents[1].init(4096u, &g_SystemAllocator);
 
 	i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
 	i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
@@ -44,7 +44,6 @@ Application::Application(Controller* i_controller)
 	m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager, m_TextureManager,
 			m_Debugger);
 	m_ProbesBaker = g_SystemAllocator.allocate<ProbesBaker>(m_Game);
-
 }
 
 Application::~Application()
@@ -150,7 +149,9 @@ void Application::OnInitialize(int i_param)
 	m_ModelManager->Initialize();
 	m_PostFXManager->Initialize();
 	m_Game->Initialize();
-	m_ProbesBaker->Initialize();
+	m_ProbesBaker->Initialize(floral::aabb3f(
+				floral::vec3f(-0.5f, 0.0f, -0.5f),
+				floral::vec3f(0.5f, 1.0f, 0.5f)));
 
 	//
 	s_mat = (FBODebugMaterial*)m_MaterialManager->CreateMaterial<FBODebugMaterial>("shaders/internal/ssquad");
