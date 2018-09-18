@@ -12,79 +12,6 @@
 
 namespace texbaker {
 
-#if 0
-void ConvertTexture2D(const_cstr i_inputPath, const_cstr i_outputPath, const s32 i_maxMips)
-{
-	printf("converting texture2d...\n");
-	printf("loading original image...");
-	s32 x, y, n;
-	p8 data = stbi_load(i_inputPath, &x, &y, &n, 0);
-	printf("done\n");
-	printf("image info:\n");
-	printf(" -- resolution: %d x %d\n", x, y);
-	printf(" -- number of channels: %d\n", n);
-
-	FILE* fp = fopen(i_outputPath, "wb");
-	// magic number
-	fwrite("CBFM", 1, 4, fp);
-
-	// HDR or LDR?
-	// 1 = HDR
-	// 2 = LDR
-	s32 colorRange = 2;
-	fwrite(&colorRange, sizeof(s32), 1, fp);
-
-	// Color space?
-	// 1 = Linear
-	// 2 = Gamma-corrected
-	s32 colorSpace = 1;
-	fwrite(&colorSpace, sizeof(s32), 1, fp);
-
-	// Color channels?
-	// 1 = R
-	// 2 = RG
-	// 3 = RGB
-	// 4 = RGBA
-	s32 colorChannel = n;
-	fwrite(&colorChannel, sizeof(s32), 1, fp);
-
-	// Encoded-gamma, if any?
-	f32 encodeGamma = 1.0f;
-	fwrite(&encodeGamma, sizeof(f32), 1, fp);
-
-	// mips count?
-	s32 mipsCount = (s32)log2(x) + 1;
-	s32 maxMips = i_maxMips;
-	s32 mipOffset = 0;
-	if (mipsCount > maxMips) {
-		mipOffset = mipsCount - maxMips;
-		mipsCount = maxMips;
-	}
-	fwrite(&mipsCount, sizeof(s32), 1, fp);
-	printf("mipsCount = %d\n", mipsCount);
-
-	for (s32 i = 1 + mipOffset; i <= mipsCount + mipOffset; i++) {
-		s32 nx = x >> (i - 1);
-		s32 ny = y >> (i - 1);
-		printf("creating mip #%d at size %dx%d...", i - mipOffset, nx, ny);
-		if (i == 1) {
-			fwrite(data, sizeof(u8), nx * ny * n, fp);
-		} else {
-			p8 rzdata = g_PersistanceAllocator.allocate_array<u8>(nx * ny * n);
-			stbir_resize_uint8_srgb(
-					data, x, y, 0,
-					rzdata, nx, ny, 0,
-					n, STBIR_ALPHA_CHANNEL_NONE, 0);
-			fwrite(rzdata, sizeof(u8), nx * ny * n, fp);
-			g_PersistanceAllocator.free(rzdata);
-		}
-		printf("done\n");
-	}
-
-	fclose(fp);
-}
-#endif
-
 struct HDRPixel {
 	f32 r, g, b;
 };
@@ -319,6 +246,7 @@ int main(int argc, char** argv)
 				"Texture Baker Syntax:\n"
 				"	> 2D Texture:           texturebaker.exe -t input_texture.png -m 10 -o output_texture.cbtex\n"
 				"	> ShadingProbe Texture: texturebaker.exe -p input_cubemap_no_ext -f pfm -o output_cubemap.cbprb\n"
+				"	> Spherical Harmonics:	texturebaker.exe -sh input_texture.hdr\n"
 				"	> CubeMap Texture:      texturebaker.exe -s input_skybox_no_ext -f pfm -o output_skybox.cbskb");
 		return 0;
 	}
@@ -329,6 +257,8 @@ int main(int argc, char** argv)
 		ConvertProbe(argv[2], argv[6]);
 	} else if (strcmp(argv[1], "-s") == 0) {
 		ConvertSkybox(argv[2], argv[6]);
+	} else if (strcmp(argv[1], "-sh") == 0) {
+		ComputeSH(argv[2]);
 	}
 
 	return 0;
