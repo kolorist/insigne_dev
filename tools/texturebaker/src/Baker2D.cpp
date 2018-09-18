@@ -257,7 +257,7 @@ void ComputeSH(const_cstr i_inputTexPath)
 			output[i].y = resultG[i];
 			output[i].z = resultB[i];
 
-			CLOVER_DEBUG("coeff %d: (%f; %f; %f)", i, output[i].x, output[i].y, output[i].z);
+			CLOVER_DEBUG("coeff %d: (%f %f %f)", i, output[i].x, output[i].y, output[i].z);
 		}
 	}
 
