@@ -84,7 +84,9 @@ void ConvertTexture2D(const_cstr i_inputTexPath, const_cstr i_outputTexPath, con
 }
 
 //----------------------------------------------
-void AddCoeffs(f32* o_result, const f32* i_a, const f32* i_b, const u32 i_order)
+void AddCoeffs(floral::fixed_array<f32, LinearArena>& o_result,
+		const floral::fixed_array<f32, LinearArena>& i_a,
+		const floral::fixed_array<f32, LinearArena>& i_b, const u32 i_order)
 {
 	u32 numCoeffs = i_order * i_order;
 	for (u32 i = 0; i < numCoeffs; i++) {
@@ -92,12 +94,34 @@ void AddCoeffs(f32* o_result, const f32* i_a, const f32* i_b, const u32 i_order)
 	}
 }
 
-void ScalarScaleCoeffs(f32* o_result, const f32* i_a, const f32 i_scale, const u32 i_order)
+void ScalarScaleCoeffs(floral::fixed_array<f32, LinearArena>& o_result,
+		const floral::fixed_array<f32, LinearArena>& i_a,
+		const f32 i_scale, const u32 i_order)
 {
 	u32 numCoeffs = i_order * i_order;
 	for (u32 i = 0; i < numCoeffs; i++) {
 		o_result[i] = i_a[i] * i_scale;
 	}
+}
+
+void computeSHForDirection(floral::fixed_array<f32, LinearArena>& o_result, const u32 i_order, const floral::vec3f& i_dir)
+{
+   // calculate coefficients for first 3 bands of spherical harmonics
+   f64 p_0_0 = 0.282094791773878140;
+   f64 p_1_0 = 0.488602511902919920 * i_dir.z;
+   f64 p_1_1 = -0.488602511902919920;
+   f64 p_2_0 = 0.946174695757560080 * i_dir.z * i_dir.z - 0.315391565252520050;
+   f64 p_2_1 = -1.092548430592079200 * i_dir.z;
+   f64 p_2_2 = 0.546274215296039590;
+   o_result[0] = p_0_0;
+   o_result[1] = p_1_1 * i_dir.y;
+   o_result[2] = p_1_0;
+   o_result[3] = p_1_1 * i_dir.x;
+   o_result[4] = p_2_2 * (i_dir.x * i_dir.y + i_dir.y * i_dir.x);
+   o_result[5] = p_2_1 * i_dir.y;
+   o_result[6] = p_2_0;
+   o_result[7] = p_2_1 * i_dir.x;
+   o_result[8] = p_2_2 * (i_dir.x * i_dir.x - i_dir.y * i_dir.y);
 }
 
 void ComputeSH(const_cstr i_inputTexPath)
@@ -116,14 +140,26 @@ void ComputeSH(const_cstr i_inputTexPath)
 			"  - Color Channels: %d",
 			x, y, n);
 	s32 faceWidth = x / 6;
+	f32 mR = 0.0f, mG = 0.0f, mB = 0.0f;
+	for (u32 i = 0; i < y; i++)
+		for (u32 j = 0; j < x; j++) {
+			if (data[i * x + j + 1] > mR) mR = data[i * x + j + 1];
+			if (data[i * x + j + 2] > mG) mG = data[i * x + j + 2];
+			if (data[i * x + j + 3] > mB) mB = data[i * x + j + 3];
+		}
 
 	const u32 order = 3;
 	const u32 sqOrder = order * order;
 	floral::fixed_array<floral::vec3f, LinearArena> output(sqOrder, &g_TemporalArena);
+	output.resize_ex(sqOrder);
 	floral::fixed_array<f32, LinearArena> resultR(sqOrder, &g_TemporalArena);
+	resultR.resize_ex(sqOrder);
 	floral::fixed_array<f32, LinearArena> resultG(sqOrder, &g_TemporalArena);
+	resultG.resize_ex(sqOrder);
 	floral::fixed_array<f32, LinearArena> resultB(sqOrder, &g_TemporalArena);
+	resultB.resize_ex(sqOrder);
 
+	f32 fWt = 0.0f;
 	for (u32 i = 0; i < sqOrder; i++) {
 		output[i] = floral::vec3f(0.0f);
 		resultR[i] = 0.0f;
@@ -132,7 +168,9 @@ void ComputeSH(const_cstr i_inputTexPath)
 	}
 
 	floral::fixed_array<f32, LinearArena> shBuff(sqOrder, &g_TemporalArena);
+	shBuff.resize_ex(sqOrder);
 	floral::fixed_array<f32, LinearArena> shBuffB(sqOrder, &g_TemporalArena);
+	shBuffB.resize_ex(sqOrder);
 
 	for (u32 f = 0; f < 6; f++) {
 		// convert texel coordinate to cubemap direction
@@ -182,8 +220,38 @@ void ComputeSH(const_cstr i_inputTexPath)
 					default:
 						break;
 				}
+
+				dir = dir.normalize();
+				const f32 fDiffSolid = 4.0f / ((1.0f + fU*fU + fV*fV) *
+						sqrtf(1.0f + fU*fU + fV*fV));
+				fWt += fDiffSolid;
+				//calculate SH for this direction
+				computeSHForDirection(shBuff, order, dir);
+
+				size pixelIdx = y * faceWidth + x + f * faceWidth;
+				floral::vec3f color(data[pixelIdx] / mR, data[pixelIdx + 1] / mG, data[pixelIdx + 2] / mB);
+
+				//scale and add to accumulated coeffs
+				ScalarScaleCoeffs(shBuffB, shBuff, color.x * fDiffSolid, order);
+				AddCoeffs(resultR, resultR, shBuffB, order);
+				ScalarScaleCoeffs(shBuffB, shBuffB, color.y * fDiffSolid, order);
+				AddCoeffs(resultG, resultG, shBuffB, order);
+				ScalarScaleCoeffs(shBuffB, shBuffB, color.z * fDiffSolid, order);
+				AddCoeffs(resultB, resultB, shBuffB, order);
 			}
 		}
+	}
+
+	// final scale
+	const f32 fNormProj = (4.0f * 3.1415f) / fWt;
+	ScalarScaleCoeffs(resultR, resultR, fNormProj, order);
+	ScalarScaleCoeffs(resultG, resultG, fNormProj, order);
+	ScalarScaleCoeffs(resultB, resultB, fNormProj, order);
+
+	for (u32 i = 0; i < sqOrder; i++) {
+		output[i].x = resultR[i];
+		output[i].y = resultG[i];
+		output[i].z = resultB[i];
 	}
 
 	delete[] data;
