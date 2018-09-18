@@ -153,7 +153,8 @@ namespace stone {
 		m_SkyboxComponents = g_SceneResourceAllocator.allocate<SkyboxComponentArray>(4, &g_SceneResourceAllocator);
 
 		floral::aabb3f modelAABB;
-		Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/envi/models/demo/cornell_box.cbobj"), modelAABB);
+		//Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/envi/models/demo/cornell_box.cbobj"), modelAABB);
+		Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/go/models/demo/uv_sphere_pbr.cbobj"), modelAABB);
 
 		//for (u32 i = 0; i < 5; i++)
 			//for (u32 j = 0; j < 5; j++)
@@ -164,8 +165,9 @@ namespace stone {
 				//PlateComponent* newPC = g_SceneResourceAllocator.allocate<PlateComponent>();
 
 				newVC->Initialize(cornellBox);
-				//newVC->SetPosition(floral::vec3f(-0.8f + 0.4f * i, -1.0f, -0.8f + 0.4f * j));
-				newVC->SetPosition(floral::vec3f(0.0f, -0.3f, 0.0f));
+				//newVC->SetPosition(floral::vec3f(-0.8f + 0.4f * i, -1.0f, -0.8f + 0.4f * j)); // for plates
+				//newVC->SetPosition(floral::vec3f(0.0f, -0.3f, 0.0f)); // for cornell_box
+				newVC->SetPosition(floral::vec3f(0.0f, 0.2f, 0.0f)); // for shdebug
 				newVC->SetScaling(floral::vec3f(0.5f, 0.5f, 0.5f));
 				//newPC->Initialize(newVC, 1000.0f + (i * 5 + j) * 200.0f, 500.0f);
 

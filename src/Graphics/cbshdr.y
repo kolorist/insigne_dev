@@ -51,6 +51,7 @@ void add_nvp(const_cstr i_name, const T& i_value, TContainer& o_container);
 cbshdr:
 		version shader_paths params_header params_body param_footer
 		| version cbshdr_path params_header param_defs param_footer
+		| version cbshdr_path params_header param_footer
 		;
 
 version:

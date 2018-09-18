@@ -1,0 +1,21 @@
+_version 0.1
+
+_vs shaders/internal/shdebug.vert
+_fs shaders/internal/shdebug.frag
+
+_sparams
+	_p_mat4										iu_PerspectiveWVP
+	_p_mat4										iu_TransformMat
+
+	_p_vec3										coeff1
+	_p_vec3										coeff2
+	_p_vec3										coeff3
+	_p_vec3										coeff4
+	_p_vec3										coeff5
+	_p_vec3										coeff6
+	_p_vec3										coeff7
+	_p_vec3										coeff8
+	_p_float									coeff9x
+	_p_float									coeff9y
+	_p_float									coeff9z
+_end_sparams

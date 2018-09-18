@@ -87,6 +87,7 @@ void Application::RenderFrame(f32 i_deltaMs)
 		insigne::dispatch_render_pass();
 	}
 
+	if (0)
 	{
 		PROFILE_SCOPE(ProbeBaking);
 		m_ProbesBaker->Render();

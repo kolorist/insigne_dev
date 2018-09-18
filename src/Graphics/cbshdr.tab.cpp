@@ -413,16 +413,16 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  5
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   50
+#define YYLAST   52
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  16
 /* YYNNTS -- Number of nonterminals.  */
 #define YYNNTS  12
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  23
+#define YYNRULES  24
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  55
+#define YYNSTATES  56
 
 /* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
    by yylex, with out-of-bounds checking.  */
@@ -470,9 +470,9 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    52,    52,    53,    57,    61,    62,    66,    69,    73,
-      77,    78,    82,    83,    84,    85,    86,    90,    91,    95,
-      96,    97,   101,   106
+       0,    52,    52,    53,    54,    58,    62,    63,    67,    70,
+      74,    78,    79,    83,    84,    85,    86,    87,    91,    92,
+      96,    97,    98,   102,   107
 };
 #endif
 
@@ -499,10 +499,10 @@ static const yytype_uint16 yytoknum[] =
 };
 # endif
 
-#define YYPACT_NINF -9
+#define YYPACT_NINF -25
 
 #define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-9)))
+  (!!((Yystate) == (-25)))
 
 #define YYTABLE_NINF -1
 
@@ -513,12 +513,12 @@ static const yytype_uint16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      -1,     5,    13,    12,    -9,    -9,     6,     7,     8,    17,
-      17,    -9,    14,    20,    -9,    -2,     3,    11,    15,    16,
-      18,    19,    21,    22,    25,    -2,    -9,    24,    26,    27,
-      28,    -8,    -9,    -9,    -9,    -9,    -9,    -9,    -9,    -9,
-      -9,    -9,    -9,    29,    30,    32,    33,    -9,    -9,    -9,
-      -9,    34,    -9,    35,    -9
+       0,     3,     7,    10,   -25,   -25,     4,     5,     6,    11,
+      11,   -25,    16,    18,   -25,     1,    -7,     9,    12,    13,
+      14,    15,    17,    19,    20,     1,   -25,    21,    22,    23,
+      24,   -25,    -7,   -25,   -25,   -25,   -25,   -25,   -25,   -25,
+     -25,   -25,   -25,   -25,    25,    26,    28,    29,   -25,   -25,
+     -25,   -25,    30,   -25,    31,   -25
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -526,26 +526,26 @@ static const yytype_int8 yypact[] =
      means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       0,     0,     0,     0,     4,     1,     0,     0,     0,     0,
-       0,     7,     0,     0,     8,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     9,    11,     0,     0,     0,
-       0,     0,    18,     5,     6,    12,    13,    14,    15,    16,
-      23,     2,    10,     0,     0,     0,     0,    17,     3,    19,
-      20,     0,    22,     0,    21
+       0,     0,     0,     0,     5,     1,     0,     0,     0,     0,
+       0,     8,     0,     0,     9,     0,     0,     0,     0,     0,
+       0,     0,     0,     0,     0,    10,    12,     0,     0,     0,
+       0,    24,     0,    19,     4,     6,     7,    13,    14,    15,
+      16,    17,     2,    11,     0,     0,     0,     0,    18,     3,
+      20,    21,     0,    23,     0,    22
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-      -9,    -9,    -9,    -9,    -9,    40,    -9,    -9,     2,    -9,
-      -3,     1
+     -25,   -25,   -25,   -25,   -25,    36,   -25,   -25,    27,   -25,
+      -6,   -24
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     2,     3,     9,    10,    15,    24,    25,    26,    31,
-      32,    41
+      -1,     2,     3,     9,    10,    15,    24,    25,    26,    32,
+      33,    34
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -553,22 +553,22 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_uint8 yytable[] =
 {
-      27,    28,     1,    29,    30,    40,    19,    20,    21,    22,
-      23,    27,    28,     5,    29,    30,     6,     7,     8,     4,
-      17,    11,    12,    13,    14,    18,    33,    42,    47,     0,
-      34,    35,    48,    36,    37,     0,    38,    39,    40,    43,
-       0,    44,    45,    46,    49,    50,    51,    52,    53,    54,
-      16
+      42,    27,    28,     1,    29,    30,    31,     5,    49,    19,
+      20,    21,    22,    23,     6,     7,     8,     4,    14,    11,
+      12,    13,    17,    18,    35,     0,    48,    36,    37,    38,
+      39,     0,    40,    31,    41,     0,    44,    45,    46,    47,
+      50,    51,    52,    53,    54,    55,    16,     0,     0,     0,
+       0,     0,    43
 };
 
 static const yytype_int8 yycheck[] =
 {
-       8,     9,     3,    11,    12,    13,     8,     9,    10,    11,
-      12,     8,     9,     0,    11,    12,     4,     5,     6,    14,
-       6,    15,    15,    15,     7,     5,    15,    25,    31,    -1,
-      15,    15,    31,    15,    15,    -1,    15,    15,    13,    15,
-      -1,    15,    15,    15,    15,    15,    14,    14,    14,    14,
-      10
+      24,     8,     9,     3,    11,    12,    13,     0,    32,     8,
+       9,    10,    11,    12,     4,     5,     6,    14,     7,    15,
+      15,    15,     6,     5,    15,    -1,    32,    15,    15,    15,
+      15,    -1,    15,    13,    15,    -1,    15,    15,    15,    15,
+      15,    15,    14,    14,    14,    14,    10,    -1,    -1,    -1,
+      -1,    -1,    25
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
@@ -578,25 +578,25 @@ static const yytype_uint8 yystos[] =
        0,     3,    17,    18,    14,     0,     4,     5,     6,    19,
       20,    15,    15,    15,     7,    21,    21,     6,     5,     8,
        9,    10,    11,    12,    22,    23,    24,     8,     9,    11,
-      12,    25,    26,    15,    15,    15,    15,    15,    15,    15,
-      13,    27,    24,    15,    15,    15,    15,    26,    27,    15,
-      15,    14,    14,    14,    14
+      12,    13,    25,    26,    27,    15,    15,    15,    15,    15,
+      15,    15,    27,    24,    15,    15,    15,    15,    26,    27,
+      15,    15,    14,    14,    14,    14
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    16,    17,    17,    18,    19,    19,    20,    21,    22,
-      23,    23,    24,    24,    24,    24,    24,    25,    25,    26,
-      26,    26,    26,    27
+       0,    16,    17,    17,    17,    18,    19,    19,    20,    21,
+      22,    23,    23,    24,    24,    24,    24,    24,    25,    25,
+      26,    26,    26,    26,    27
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
-       0,     2,     5,     5,     2,     4,     4,     2,     1,     1,
-       2,     1,     2,     2,     2,     2,     2,     2,     1,     3,
-       3,     5,     3,     1
+       0,     2,     5,     5,     4,     2,     4,     4,     2,     1,
+       1,     2,     1,     2,     2,     2,     2,     2,     2,     1,
+       3,     3,     5,     3,     1
 };
 
 
@@ -1273,68 +1273,68 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-        case 5:
-#line 61 "cbshdr.y" /* yacc.c:1648  */
+        case 6:
+#line 62 "cbshdr.y" /* yacc.c:1648  */
     { g_CurrentTargetShader->vertexShaderPath = floral::path((yyvsp[-2].stringValue)); g_CurrentTargetShader->fragmentShaderPath = floral::path((yyvsp[0].stringValue)); }
 #line 1280 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 6:
-#line 62 "cbshdr.y" /* yacc.c:1648  */
+  case 7:
+#line 63 "cbshdr.y" /* yacc.c:1648  */
     { g_CurrentTargetShader->vertexShaderPath = floral::path((yyvsp[0].stringValue)); g_CurrentTargetShader->fragmentShaderPath = floral::path((yyvsp[-2].stringValue)); }
 #line 1286 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 7:
-#line 66 "cbshdr.y" /* yacc.c:1648  */
+  case 8:
+#line 67 "cbshdr.y" /* yacc.c:1648  */
     { g_CurrentTargetMaterial->cbShaderPath = floral::path((yyvsp[0].stringValue)); }
 #line 1292 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 12:
-#line 82 "cbshdr.y" /* yacc.c:1648  */
+  case 13:
+#line 83 "cbshdr.y" /* yacc.c:1648  */
     { g_CurrentTargetShader->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_sampler2d)); }
 #line 1298 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 13:
-#line 83 "cbshdr.y" /* yacc.c:1648  */
+  case 14:
+#line 84 "cbshdr.y" /* yacc.c:1648  */
     { g_CurrentTargetShader->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_sampler_cube)); }
 #line 1304 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 14:
-#line 84 "cbshdr.y" /* yacc.c:1648  */
+  case 15:
+#line 85 "cbshdr.y" /* yacc.c:1648  */
     { g_CurrentTargetShader->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_mat4)); }
 #line 1310 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 15:
-#line 85 "cbshdr.y" /* yacc.c:1648  */
+  case 16:
+#line 86 "cbshdr.y" /* yacc.c:1648  */
     { g_CurrentTargetShader->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_vec3)); }
 #line 1316 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 16:
-#line 86 "cbshdr.y" /* yacc.c:1648  */
+  case 17:
+#line 87 "cbshdr.y" /* yacc.c:1648  */
     { g_CurrentTargetShader->shaderParams->push_back(insigne::shader_param_t((yyvsp[0].stringValue), insigne::param_data_type_e::param_float)); }
 #line 1322 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 19:
-#line 95 "cbshdr.y" /* yacc.c:1648  */
+  case 20:
+#line 96 "cbshdr.y" /* yacc.c:1648  */
     { add_nvp((yyvsp[-1].stringValue), floral::path((yyvsp[0].stringValue)), g_CurrentTargetMaterial->tex2DParams); }
 #line 1328 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 20:
-#line 96 "cbshdr.y" /* yacc.c:1648  */
+  case 21:
+#line 97 "cbshdr.y" /* yacc.c:1648  */
     { add_nvp((yyvsp[-1].stringValue), floral::path((yyvsp[0].stringValue)), g_CurrentTargetMaterial->texCubeParams); }
 #line 1334 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 21:
-#line 97 "cbshdr.y" /* yacc.c:1648  */
+  case 22:
+#line 98 "cbshdr.y" /* yacc.c:1648  */
     {
 				floral::vec3f v((yyvsp[-2].floatValue), (yyvsp[-1].floatValue), (yyvsp[0].floatValue));
 				add_nvp((yyvsp[-3].stringValue),v, g_CurrentTargetMaterial->vec3Params);
@@ -1342,8 +1342,8 @@ yyreduce:
 #line 1343 "cbshdr.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 22:
-#line 101 "cbshdr.y" /* yacc.c:1648  */
+  case 23:
+#line 102 "cbshdr.y" /* yacc.c:1648  */
     {
 				add_nvp((yyvsp[-1].stringValue), (yyvsp[0].floatValue), g_CurrentTargetMaterial->floatParams);
 			}
@@ -1579,7 +1579,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 109 "cbshdr.y" /* yacc.c:1907  */
+#line 110 "cbshdr.y" /* yacc.c:1907  */
 
 
 void yyerror(const char* i_errorStr) {
