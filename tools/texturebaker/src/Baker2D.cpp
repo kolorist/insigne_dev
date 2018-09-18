@@ -159,99 +159,106 @@ void ComputeSH(const_cstr i_inputTexPath)
 	floral::fixed_array<f32, LinearArena> resultB(sqOrder, &g_TemporalArena);
 	resultB.resize_ex(sqOrder);
 
-	f32 fWt = 0.0f;
-	for (u32 i = 0; i < sqOrder; i++) {
-		output[i] = floral::vec3f(0.0f);
-		resultR[i] = 0.0f;
-		resultG[i] = 0.0f;
-		resultB[i] = 0.0f;
-	}
 
 	floral::fixed_array<f32, LinearArena> shBuff(sqOrder, &g_TemporalArena);
 	shBuff.resize_ex(sqOrder);
 	floral::fixed_array<f32, LinearArena> shBuffB(sqOrder, &g_TemporalArena);
 	shBuffB.resize_ex(sqOrder);
 
-	for (u32 f = 0; f < 6; f++) {
-		// convert texel coordinate to cubemap direction
-		f32 invWidth = 1.0f / f32(faceWidth);
-		f32 negBound = -1.0f + invWidth;
-		f32 invWidthBy2 = 2.0f / f32(faceWidth);
-		for (s32 y = 0; y < faceWidth; y++) {
-			const f32 fV = negBound + f32(y) + invWidthBy2;
-			for (s32 x = 0; x < faceWidth; x++) {
-				const f32 fU = negBound + f32(x) + invWidthBy2;
-				floral::vec3f dir;
-				switch (f) {
-					case 0:
-						dir.x = 1.0f;
-						dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-						dir.z = 1.0f - (invWidthBy2 * float(x) + invWidth);
-						dir = -dir;
-						break;
-					case 1:
-						dir.x = -1.0f;
-						dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-						dir.z = -1.0f + (invWidthBy2 * float(x) + invWidth);
-						dir = -dir;
-						break;
-					case 2:
-						dir.x = - 1.0f + (invWidthBy2 * float(x) + invWidth);
-						dir.y = 1.0f;
-						dir.z = - 1.0f + (invWidthBy2 * float(y) + invWidth);
-						dir = -dir;
-						break;
-					case 3:
-						dir.x = - 1.0f + (invWidthBy2 * float(x) + invWidth);
-						dir.y = - 1.0f;
-						dir.z = 1.0f - (invWidthBy2 * float(y) + invWidth);
-						dir = -dir;
-						break;
-					case 4:
-						dir.x = - 1.0f + (invWidthBy2 * float(x) + invWidth);
-						dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-						dir.z = 1.0f;
-						break;
-					case 5:
-						dir.x = 1.0f - (invWidthBy2 * float(x) + invWidth);
-						dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-						dir.z = - 1.0f;
-						break;
-					default:
-						break;
+	for (u32 shc = 0; shc < 6; shc++) {
+		CLOVER_DEBUG("---");
+		f32 fWt = 0.0f;
+		for (u32 i = 0; i < sqOrder; i++) {
+			output[i] = floral::vec3f(0.0f);
+			resultR[i] = 0.0f;
+			resultG[i] = 0.0f;
+			resultB[i] = 0.0f;
+			shBuff[i] = 0.0f;
+			shBuffB[i] = 0.0f;
+		}
+		for (u32 f = 0; f < 6; f++) {
+			// convert texel coordinate to cubemap direction
+			f32 invWidth = 1.0f / f32(faceWidth);
+			f32 negBound = -1.0f + invWidth;
+			f32 invWidthBy2 = 2.0f / f32(faceWidth);
+			for (s32 y = 0; y < faceWidth; y++) {
+				const f32 fV = negBound + f32(y) + invWidthBy2;
+				for (s32 x = 0; x < faceWidth; x++) {
+					const f32 fU = negBound + f32(x) + invWidthBy2;
+					floral::vec3f dir;
+					switch (f) {
+						case 0:
+							dir.x = 1.0f;
+							dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
+							dir.z = 1.0f - (invWidthBy2 * float(x) + invWidth);
+							dir = -dir;
+							break;
+						case 1:
+							dir.x = -1.0f;
+							dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
+							dir.z = -1.0f + (invWidthBy2 * float(x) + invWidth);
+							dir = -dir;
+							break;
+						case 2:
+							dir.x = - 1.0f + (invWidthBy2 * float(x) + invWidth);
+							dir.y = 1.0f;
+							dir.z = - 1.0f + (invWidthBy2 * float(y) + invWidth);
+							dir = -dir;
+							break;
+						case 3:
+							dir.x = - 1.0f + (invWidthBy2 * float(x) + invWidth);
+							dir.y = - 1.0f;
+							dir.z = 1.0f - (invWidthBy2 * float(y) + invWidth);
+							dir = -dir;
+							break;
+						case 4:
+							dir.x = - 1.0f + (invWidthBy2 * float(x) + invWidth);
+							dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
+							dir.z = 1.0f;
+							break;
+						case 5:
+							dir.x = 1.0f - (invWidthBy2 * float(x) + invWidth);
+							dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
+							dir.z = - 1.0f;
+							break;
+						default:
+							break;
+					}
+
+					dir = dir.normalize();
+					const f32 fDiffSolid = 4.0f / ((1.0f + fU*fU + fV*fV) *
+							sqrtf(1.0f + fU*fU + fV*fV));
+					fWt += fDiffSolid;
+					//calculate SH for this direction
+					computeSHForDirection(shBuff, order, dir);
+
+					size pixelIdx = (y + shc * faceWidth) * faceWidth + x + f * faceWidth;
+					floral::vec3f color(data[pixelIdx] / mR, data[pixelIdx + 1] / mG, data[pixelIdx + 2] / mB);
+
+					//scale and add to accumulated coeffs
+					ScalarScaleCoeffs(shBuffB, shBuff, color.x * fDiffSolid, order);
+					AddCoeffs(resultR, resultR, shBuffB, order);
+					ScalarScaleCoeffs(shBuffB, shBuffB, color.y * fDiffSolid, order);
+					AddCoeffs(resultG, resultG, shBuffB, order);
+					ScalarScaleCoeffs(shBuffB, shBuffB, color.z * fDiffSolid, order);
+					AddCoeffs(resultB, resultB, shBuffB, order);
 				}
-
-				dir = dir.normalize();
-				const f32 fDiffSolid = 4.0f / ((1.0f + fU*fU + fV*fV) *
-						sqrtf(1.0f + fU*fU + fV*fV));
-				fWt += fDiffSolid;
-				//calculate SH for this direction
-				computeSHForDirection(shBuff, order, dir);
-
-				size pixelIdx = y * faceWidth + x + f * faceWidth;
-				floral::vec3f color(data[pixelIdx] / mR, data[pixelIdx + 1] / mG, data[pixelIdx + 2] / mB);
-
-				//scale and add to accumulated coeffs
-				ScalarScaleCoeffs(shBuffB, shBuff, color.x * fDiffSolid, order);
-				AddCoeffs(resultR, resultR, shBuffB, order);
-				ScalarScaleCoeffs(shBuffB, shBuffB, color.y * fDiffSolid, order);
-				AddCoeffs(resultG, resultG, shBuffB, order);
-				ScalarScaleCoeffs(shBuffB, shBuffB, color.z * fDiffSolid, order);
-				AddCoeffs(resultB, resultB, shBuffB, order);
 			}
 		}
-	}
 
-	// final scale
-	const f32 fNormProj = (4.0f * 3.1415f) / fWt;
-	ScalarScaleCoeffs(resultR, resultR, fNormProj, order);
-	ScalarScaleCoeffs(resultG, resultG, fNormProj, order);
-	ScalarScaleCoeffs(resultB, resultB, fNormProj, order);
+		// final scale
+		const f32 fNormProj = (4.0f * 3.1415f) / fWt;
+		ScalarScaleCoeffs(resultR, resultR, fNormProj, order);
+		ScalarScaleCoeffs(resultG, resultG, fNormProj, order);
+		ScalarScaleCoeffs(resultB, resultB, fNormProj, order);
 
-	for (u32 i = 0; i < sqOrder; i++) {
-		output[i].x = resultR[i];
-		output[i].y = resultG[i];
-		output[i].z = resultB[i];
+		for (u32 i = 0; i < sqOrder; i++) {
+			output[i].x = resultR[i];
+			output[i].y = resultG[i];
+			output[i].z = resultB[i];
+
+			CLOVER_DEBUG("coeff %d: (%f; %f; %f)", i, output[i].x, output[i].y, output[i].z);
+		}
 	}
 
 	delete[] data;
