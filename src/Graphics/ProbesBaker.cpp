@@ -157,7 +157,6 @@ void ProbesBaker::Render()
 {
 	if (m_IsReady) {
 		for (u32 i = 0; i < m_ProbeCameras.get_size(); i++) {
-		//u32 i = 0; {
 			insigne::begin_render_pass(m_ProbesFramebuffer, 128 * 0, 128 * i, 128, 128);
 			m_Game->RenderWithCamera(&(m_ProbeCameras[i].posXCam));
 			insigne::end_render_pass(m_ProbesFramebuffer);
@@ -189,6 +188,11 @@ void ProbesBaker::Render()
 			insigne::dispatch_render_pass();
 		}
 	}
+}
+
+void ProbesBaker::CalculateSHs()
+{
+	// download the texture to cpu
 }
 
 insigne::framebuffer_handle_t ProbesBaker::GetMegaFramebuffer()

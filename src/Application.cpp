@@ -76,8 +76,6 @@ void Application::RenderFrame(f32 i_deltaMs)
 	insigne::framebuffer_handle_t mainFb = m_PostFXManager->GetMainFramebuffer();
 	insigne::texture_handle_t tex0 = insigne::extract_color_attachment(mainFb, 0);
 
-	insigne::framebuffer_handle_t probeFb = m_ProbesBaker->GetMegaFramebuffer();
-
 	insigne::begin_frame();
 	
 	// main color buffer population
@@ -141,7 +139,7 @@ void Application::OnInitialize(int i_param)
 	insigne::initialize_render_thread<SurfaceTypeList>();
 	insigne::wait_for_initialization();
 
-	insigne::set_clear_color(0.3f, 0.4f, 0.5f, 1.0f);
+	insigne::set_clear_color(0.0f, 0.0f, 0.0f, 0.0f);
 
 	m_Debugger->Initialize();
 	m_TextureManager->Initialize(32);
@@ -153,7 +151,6 @@ void Application::OnInitialize(int i_param)
 				floral::vec3f(-0.5f, 0.0f, -0.5f),
 				floral::vec3f(0.5f, 1.0f, 0.5f)));
 
-	//
 	s_mat = (FBODebugMaterial*)m_MaterialManager->CreateMaterial<FBODebugMaterial>("shaders/internal/ssquad");
 	SSVertex vs[4];
 	vs[0].Position = floral::vec2f(-1.0f, -1.0f);
@@ -167,9 +164,6 @@ void Application::OnInitialize(int i_param)
 	u32 indices[] = {0, 1, 2, 2, 3, 0};
 	s_testSS = insigne::upload_surface(&vs[0], sizeof(SSVertex) * 4, &indices[0], sizeof(u32) * 6,
 			sizeof(SSVertex), 4, 6);
-
-	//insigne::shader_handle_t test = m_ShaderManager->LoadShader("gfx/shd/pbr_cook_torrance.shd");
-	//insigne::material_handle_t testMat = m_MaterialManager->CreateMaterialFromFile(floral::path("gfx/mat/pbr_solid_fill.mat"));
 }
 
 void Application::OnFrameStep(f32 i_deltaMs)

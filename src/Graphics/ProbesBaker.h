@@ -18,6 +18,7 @@ class ProbesBaker : public IProbesBaker {
 
 		void									Initialize(const floral::aabb3f& i_sceneAABB) override;
 		void									Render() override;
+		void									CalculateSHs() override;
 
 		insigne::framebuffer_handle_t			GetMegaFramebuffer() override;
 
