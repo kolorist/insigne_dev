@@ -3,15 +3,15 @@ _version 0.1
 _cbshdr gfx/shd/shdebug.shd
 
 _sparams
-	_p_vec3										coeff1		0.79 0.44 0.54
-	_p_vec3										coeff2		0.39 0.35 0.60
-	_p_vec3										coeff3		-0.34 -0.18 -0.27
-	_p_vec3										coeff4		-0.29 -0.06 0.01
-	_p_vec3										coeff5		-0.26 -0.22 -0.47
-	_p_vec3										coeff6		-0.11 -0.05 -0.12
-	_p_vec3										coeff7		-0.16 -0.09 -0.15
-	_p_vec3										coeff8		0.56 0.21 0.14
-	_p_float									coeff9x		0.21
-	_p_float									coeff9y		-0.05
-	_p_float									coeff9z		-0.30
+	_p_vec3										coeff1		1.174788 4.920631 30.212860
+	_p_vec3										coeff2		-0.008541 -0.037276 -0.205920
+	_p_vec3										coeff3		-0.000684 -0.001192 -0.000830
+	_p_vec3										coeff4		-0.016155 -0.046921 0.067483
+	_p_vec3										coeff5		-0.000776 -0.001601 -0.002701
+	_p_vec3										coeff6		-0.007749 -0.034316 -0.195240
+	_p_vec3										coeff7		-0.000029 0.001003 -0.008634
+	_p_vec3										coeff8		0.000084 -0.001439 -0.015857
+	_p_float									coeff9x		-0.065340
+	_p_float									coeff9y		 -0.365702
+	_p_float									coeff9z		 -1.946882
 _end_sparams

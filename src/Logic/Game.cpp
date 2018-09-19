@@ -51,12 +51,15 @@ namespace stone {
 
 	void Game::Update(f32 i_deltaMs)
 	{
-		if (m_CameraComponent) {
-			m_CameraComponent->Update(nullptr, i_deltaMs);
-		}
-
 		static f32 timeElapsed = 0.0f;
 		timeElapsed += i_deltaMs;
+
+		if (m_CameraComponent) {
+			floral::vec3f camPos = floral::vec3f(3.0f * sinf(floral::to_radians(timeElapsed / 10.0f)), 0.5f, 3.0f * cosf(floral::to_radians(timeElapsed / 10.0f)));
+			m_CameraComponent->SetPosition(camPos);
+			m_CameraComponent->SetLookAtDir(floral::vec3f(0.0f, 0.2f, 0.0f)-camPos);
+			m_CameraComponent->Update(nullptr, i_deltaMs);
+		}
 
 		if (m_PlateMaterial) {
 			PBRMaterial* pbrMat = (PBRMaterial*)m_PlateMaterial;
