@@ -31,6 +31,8 @@ class Game {
 		void								Render();
 		void								RenderWithCamera(Camera* i_camera);
 
+		Camera*									GetMainCamera();
+
 	private:
 		void								RequestLoadDefaultTextures();
 		void								RequestLoadPlateMaterial();

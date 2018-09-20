@@ -3,12 +3,16 @@
 #include <insigne/render.h>
 
 #include "Logic/Game.h"
+#include "Graphics/IModelManager.h"
+#include "Graphics/Camera.h"
+#include "Graphics/SurfaceDefinitions.h"
 
 namespace stone {
 
-ProbesBaker::ProbesBaker(Game* i_game)
+ProbesBaker::ProbesBaker(Game* i_game, IModelManager* i_modelManager)
 	: m_IsReady(false)
 	, m_Game(i_game)
+	, m_ModelManager(i_modelManager)
 {
 }
 
@@ -24,7 +28,7 @@ void ProbesBaker::Initialize(const floral::aabb3f& i_sceneAABB)
 				insigne::color_attachment_t("mega_fbo",
 					insigne::texture_format_e::hdr_rgba));
 		insigne::framebuffer_handle_t fb = insigne::create_framebuffer(
-				768, 768,
+				768, 128,
 				1.0f,
 				true,
 				colorAttachs);
@@ -46,14 +50,14 @@ void ProbesBaker::Initialize(const floral::aabb3f& i_sceneAABB)
 		for (u32 j = 1; j < cY; j++)
 			for (u32 k = 1; k < cZ; k++) {
 		ProbeCamera pCam;
-		pCam.posXCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
-		pCam.posXCam.LookAtDir = floral::vec3f(0.0f, 1.0f, 0.0f);
+		pCam.posXCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.25f * i, i_sceneAABB.min_corner.y + 0.25f * j, i_sceneAABB.min_corner.z + 0.25f * k);
+		pCam.posXCam.LookAtDir = floral::vec3f(1.0f, 0.0f, 0.0f);
 		pCam.posXCam.AspectRatio = 1.0f;
 		pCam.posXCam.NearPlane = 0.01f;
 		pCam.posXCam.FarPlane = 1000.0f;
 		pCam.posXCam.FOV = 90.0f;
 		pCam.posXCam.ViewMatrix = floral::construct_lookat(
-				floral::vec3f(0.0f, 0.0f, 1.0f),
+				floral::vec3f(0.0f, 1.0f, 0.0f),
 				pCam.posXCam.Position,
 				pCam.posXCam.LookAtDir);
 		pCam.posXCam.ProjectionMatrix = floral::construct_perspective(
@@ -63,14 +67,14 @@ void ProbesBaker::Initialize(const floral::aabb3f& i_sceneAABB)
 				pCam.posXCam.AspectRatio);
 		pCam.posXCam.WVPMatrix = pCam.posXCam.ProjectionMatrix * pCam.posXCam.ViewMatrix;
 
-		pCam.posYCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
-		pCam.posYCam.LookAtDir = floral::vec3f(1.0f, 0.0f, 0.0f);
+		pCam.posYCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.25f * i, i_sceneAABB.min_corner.y + 0.25f * j, i_sceneAABB.min_corner.z + 0.25f * k);
+		pCam.posYCam.LookAtDir = floral::vec3f(0.0f, 1.0f, 0.0f);
 		pCam.posYCam.AspectRatio = 1.0f;
 		pCam.posYCam.NearPlane = 0.01f;
 		pCam.posYCam.FarPlane = 1000.0f;
 		pCam.posYCam.FOV = 90.0f;
 		pCam.posYCam.ViewMatrix = floral::construct_lookat(
-				floral::vec3f(0.0f, 1.0f, 0.0f),
+				floral::vec3f(0.0f, 0.0f, 1.0f),
 				pCam.posYCam.Position,
 				pCam.posYCam.LookAtDir);
 		pCam.posYCam.ProjectionMatrix = floral::construct_perspective(
@@ -80,8 +84,8 @@ void ProbesBaker::Initialize(const floral::aabb3f& i_sceneAABB)
 				pCam.posYCam.AspectRatio);
 		pCam.posYCam.WVPMatrix = pCam.posYCam.ProjectionMatrix * pCam.posYCam.ViewMatrix;
 
-		pCam.posZCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
-		pCam.posZCam.LookAtDir = floral::vec3f(0.0f, 0.0f, 1.0f);
+		pCam.posZCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.25f * i, i_sceneAABB.min_corner.y + 0.25f * j, i_sceneAABB.min_corner.z + 0.25f * k);
+		pCam.posZCam.LookAtDir = floral::vec3f(0.0f, 0.0f, -1.0f);
 		pCam.posZCam.AspectRatio = 1.0f;
 		pCam.posZCam.NearPlane = 0.01f;
 		pCam.posZCam.FarPlane = 1000.0f;
@@ -97,14 +101,14 @@ void ProbesBaker::Initialize(const floral::aabb3f& i_sceneAABB)
 				pCam.posZCam.AspectRatio);
 		pCam.posZCam.WVPMatrix = pCam.posZCam.ProjectionMatrix * pCam.posZCam.ViewMatrix;
 
-		pCam.negXCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
-		pCam.negXCam.LookAtDir = floral::vec3f(0.0f, -1.0f, 0.0f);
+		pCam.negXCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.25f * i, i_sceneAABB.min_corner.y + 0.25f * j, i_sceneAABB.min_corner.z + 0.25f * k);
+		pCam.negXCam.LookAtDir = floral::vec3f(-1.0f, 0.0f, 0.0f);
 		pCam.negXCam.AspectRatio = 1.0f;
 		pCam.negXCam.NearPlane = 0.01f;
 		pCam.negXCam.FarPlane = 1000.0f;
 		pCam.negXCam.FOV = 90.0f;
 		pCam.negXCam.ViewMatrix = floral::construct_lookat(
-				floral::vec3f(0.0f, 0.0f, -1.0f),
+				floral::vec3f(0.0f, 1.0f, 0.0f),
 				pCam.negXCam.Position,
 				pCam.negXCam.LookAtDir);
 		pCam.negXCam.ProjectionMatrix = floral::construct_perspective(
@@ -114,14 +118,14 @@ void ProbesBaker::Initialize(const floral::aabb3f& i_sceneAABB)
 				pCam.negXCam.AspectRatio);
 		pCam.negXCam.WVPMatrix = pCam.negXCam.ProjectionMatrix * pCam.negXCam.ViewMatrix;
 
-		pCam.negYCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
-		pCam.negYCam.LookAtDir = floral::vec3f(-1.0f, 0.0f, 0.0f);
+		pCam.negYCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.25f * i, i_sceneAABB.min_corner.y + 0.25f * j, i_sceneAABB.min_corner.z + 0.25f * k);
+		pCam.negYCam.LookAtDir = floral::vec3f(0.0f, -1.0f, 0.0f);
 		pCam.negYCam.AspectRatio = 1.0f;
 		pCam.negYCam.NearPlane = 0.01f;
 		pCam.negYCam.FarPlane = 1000.0f;
 		pCam.negYCam.FOV = 90.0f;
 		pCam.negYCam.ViewMatrix = floral::construct_lookat(
-				floral::vec3f(0.0f, 1.0f, 0.0f),
+				floral::vec3f(0.0f, 0.0f, -1.0f),
 				pCam.negYCam.Position,
 				pCam.negYCam.LookAtDir);
 		pCam.negYCam.ProjectionMatrix = floral::construct_perspective(
@@ -131,8 +135,8 @@ void ProbesBaker::Initialize(const floral::aabb3f& i_sceneAABB)
 				pCam.negYCam.AspectRatio);
 		pCam.negYCam.WVPMatrix = pCam.negYCam.ProjectionMatrix * pCam.negYCam.ViewMatrix;
 
-		pCam.negZCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.5f * i, i_sceneAABB.min_corner.y + 0.5f * j, i_sceneAABB.min_corner.z + 0.5f * k);
-		pCam.negZCam.LookAtDir = floral::vec3f(0.0f, 0.0f, -1.0f);
+		pCam.negZCam.Position = floral::vec3f(i_sceneAABB.min_corner.x + 0.25f * i, i_sceneAABB.min_corner.y + 0.25f * j, i_sceneAABB.min_corner.z + 0.25f * k);
+		pCam.negZCam.LookAtDir = floral::vec3f(0.0f, 0.0f, 1.0f);
 		pCam.negZCam.AspectRatio = 1.0f;
 		pCam.negZCam.NearPlane = 0.01f;
 		pCam.negZCam.FarPlane = 1000.0f;
@@ -149,6 +153,9 @@ void ProbesBaker::Initialize(const floral::aabb3f& i_sceneAABB)
 		pCam.negZCam.WVPMatrix = pCam.negZCam.ProjectionMatrix * pCam.negZCam.ViewMatrix;
 		m_ProbeCameras.push_back(pCam);
 	}
+
+	floral::aabb3f modelAABB;
+	m_SHProbe = m_ModelManager->CreateModel(floral::path("gfx/go/models/demo/uv_sphere_pbr.cbobj"), modelAABB);
 
 	m_IsReady = true;
 }
@@ -186,6 +193,29 @@ void ProbesBaker::Render()
 			m_Game->RenderWithCamera(&(m_ProbeCameras[i].negZCam));
 			insigne::end_render_pass(m_ProbesFramebuffer);
 			insigne::dispatch_render_pass();
+		}
+	}
+}
+
+void ProbesBaker::RenderProbes(Camera* i_camera)
+{
+	if (!i_camera) return;
+
+	if (m_IsReady) {
+		for (u32 j = 0; j < m_ProbeCameras.get_size(); j++) {
+		//u32 j = 0; {
+			floral::mat4x4f xformMat = floral::construct_translation3d(m_ProbeCameras[j].posXCam.Position) *
+				floral::construct_scaling3d(floral::vec3f(0.02f, 0.02f, 0.02f));
+			for (u32 i = 0; i < m_SHProbe->surfacesList.get_size(); i++) {
+				insigne::material_handle_t surfaceMat = m_SHProbe->surfacesList[i].materialHdl;
+				insigne::surface_handle_t surface = m_SHProbe->surfacesList[i].surfaceHdl;
+				insigne::param_id wvp = insigne::get_material_param<floral::mat4x4f>(surfaceMat, "iu_PerspectiveWVP");
+				insigne::param_id xform = insigne::get_material_param<floral::mat4x4f>(surfaceMat, "iu_TransformMat");
+
+				insigne::set_material_param(surfaceMat, wvp, i_camera->WVPMatrix);
+				insigne::set_material_param(surfaceMat, xform, xformMat);
+				insigne::draw_surface<SolidSurface>(surface, surfaceMat);
+			}
 		}
 	}
 }

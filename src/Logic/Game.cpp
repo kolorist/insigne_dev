@@ -26,11 +26,19 @@ namespace stone {
 		, m_Debugger(i_debugger)
 		, m_GameObjects(nullptr)
 		, m_VisualComponents(nullptr)
+		, m_CameraComponent(nullptr)
 	{
 	}
 
 	Game::~Game()
 	{
+	}
+
+	Camera* Game::GetMainCamera()
+	{
+		if (m_CameraComponent)
+			return m_CameraComponent->GetCamera();
+		else return nullptr;
 	}
 
 	void Game::Initialize()
@@ -46,18 +54,18 @@ namespace stone {
 		m_Debugger->OnRequestInitializeProbesBaker.bind<Game, &Game::RequestInitProbesBaker>(this);
 
 		m_SkyboxSurface = m_ModelManager->CreateSingleSurface("gfx/go/models/demo/cube.cbobj");
-
 	}
 
 	void Game::Update(f32 i_deltaMs)
 	{
 		static f32 timeElapsed = 0.0f;
 		timeElapsed += i_deltaMs;
-
 		if (m_CameraComponent) {
-			floral::vec3f camPos = floral::vec3f(3.0f * sinf(floral::to_radians(timeElapsed / 10.0f)), 0.5f, 3.0f * cosf(floral::to_radians(timeElapsed / 10.0f)));
+#if 0
+			floral::vec3f camPos = floral::vec3f(3.0f * sinf(floral::to_radians(timeElapsed / 30.0f)), 0.5f, 3.0f * cosf(floral::to_radians(timeElapsed / 30.0f)));
 			m_CameraComponent->SetPosition(camPos);
 			m_CameraComponent->SetLookAtDir(floral::vec3f(0.0f, 0.2f, 0.0f)-camPos);
+#endif
 			m_CameraComponent->Update(nullptr, i_deltaMs);
 		}
 
@@ -156,8 +164,8 @@ namespace stone {
 		m_SkyboxComponents = g_SceneResourceAllocator.allocate<SkyboxComponentArray>(4, &g_SceneResourceAllocator);
 
 		floral::aabb3f modelAABB;
-		//Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/envi/models/demo/cornell_box.cbobj"), modelAABB);
-		Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/go/models/demo/uv_sphere_pbr.cbobj"), modelAABB);
+		Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/envi/models/demo/cornell_box.cbobj"), modelAABB);
+		//Model* cornellBox = m_ModelManager->CreateModel(floral::path("gfx/go/models/demo/uv_sphere_pbr.cbobj"), modelAABB);
 
 		//for (u32 i = 0; i < 5; i++)
 			//for (u32 j = 0; j < 5; j++)
@@ -169,8 +177,8 @@ namespace stone {
 
 				newVC->Initialize(cornellBox);
 				//newVC->SetPosition(floral::vec3f(-0.8f + 0.4f * i, -1.0f, -0.8f + 0.4f * j)); // for plates
-				//newVC->SetPosition(floral::vec3f(0.0f, -0.3f, 0.0f)); // for cornell_box
-				newVC->SetPosition(floral::vec3f(0.0f, 0.2f, 0.0f)); // for shdebug
+				newVC->SetPosition(floral::vec3f(0.0f, -0.3f, 0.0f)); // for cornell_box
+				//newVC->SetPosition(floral::vec3f(0.0f, 0.2f, 0.0f)); // for shdebug
 				newVC->SetScaling(floral::vec3f(0.5f, 0.5f, 0.5f));
 				//newPC->Initialize(newVC, 1000.0f + (i * 5 + j) * 200.0f, 500.0f);
 
