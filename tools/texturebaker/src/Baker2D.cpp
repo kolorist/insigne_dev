@@ -84,44 +84,87 @@ void ConvertTexture2D(const_cstr i_inputTexPath, const_cstr i_outputTexPath, con
 }
 
 //----------------------------------------------
-void AddCoeffs(floral::fixed_array<f32, LinearArena>& o_result,
-		const floral::fixed_array<f32, LinearArena>& i_a,
-		const floral::fixed_array<f32, LinearArena>& i_b, const u32 i_order)
+#define MAX_SH_ORDER							3
+#define NUM_SH_COEFF							MAX_SH_ORDER * MAX_SH_ORDER
+#define CP_PI									3.14159265359
+
+void BuildNormalizerHStrip(const s32 i_size, f32* o_output)
 {
-	u32 numCoeffs = i_order * i_order;
-	for (u32 i = 0; i < numCoeffs; i++) {
-		o_result[i] = i_a[i] + i_b[i];
+	s32 stripWidth = i_size * 6;
+	//iterate over cube faces
+	for(s32 iCubeFace = 0; iCubeFace < 6; iCubeFace++)
+	{
+		//fast texture walk, build normalizer cube map
+		f32 *texelPtr = o_output;
+		for(s32 v = 0; v < i_size; v++) // scanline
+		{
+			for(s32 u=0; u < i_size; u++) // pixel
+			{
+				floral::vec3f cubeCoord = floral::texel_coord_to_cube_coord(iCubeFace, (f32)u, (f32)v, i_size);
+				texelPtr[(v * stripWidth + iCubeFace * i_size + u) * 4] = cubeCoord.x;
+				texelPtr[(v * stripWidth + iCubeFace * i_size + u) * 4 + 1] = cubeCoord.y;
+				texelPtr[(v * stripWidth + iCubeFace * i_size + u) * 4 + 2] = cubeCoord.z;
+				texelPtr[(v * stripWidth + iCubeFace * i_size + u) * 4 + 3] =
+					floral::texel_coord_to_solid_angle(iCubeFace, (f32)u, (f32)v, i_size);
+			}
+		}
 	}
 }
 
-void ScalarScaleCoeffs(floral::fixed_array<f32, LinearArena>& o_result,
-		const floral::fixed_array<f32, LinearArena>& i_a,
-		const f32 i_scale, const u32 i_order)
-{
-	u32 numCoeffs = i_order * i_order;
-	for (u32 i = 0; i < numCoeffs; i++) {
-		o_result[i] = i_a[i] * i_scale;
-	}
-}
+static f64 SHBandFactor[NUM_SH_COEFF] =
+	{ 1.0,
+	2.0 / 3.0, 2.0 / 3.0, 2.0 / 3.0,
+	1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0, 1.0 / 4.0};
 
-void computeSHForDirection(floral::fixed_array<f32, LinearArena>& o_result, const u32 i_order, const floral::vec3f& i_dir)
+void EvalSHBasis(const f32* dir, f64* res )
 {
-   // calculate coefficients for first 3 bands of spherical harmonics
-   f64 p_0_0 = 0.282094791773878140;
-   f64 p_1_0 = 0.488602511902919920 * i_dir.z;
-   f64 p_1_1 = -0.488602511902919920;
-   f64 p_2_0 = 0.946174695757560080 * i_dir.z * i_dir.z - 0.315391565252520050;
-   f64 p_2_1 = -1.092548430592079200 * i_dir.z;
-   f64 p_2_2 = 0.546274215296039590;
-   o_result[0] = p_0_0;
-   o_result[1] = p_1_1 * i_dir.y;
-   o_result[2] = p_1_0;
-   o_result[3] = p_1_1 * i_dir.x;
-   o_result[4] = p_2_2 * (i_dir.x * i_dir.y + i_dir.y * i_dir.x);
-   o_result[5] = p_2_1 * i_dir.y;
-   o_result[6] = p_2_0;
-   o_result[7] = p_2_1 * i_dir.x;
-   o_result[8] = p_2_2 * (i_dir.x * i_dir.x - i_dir.y * i_dir.y);
+	// Can be optimize by precomputing constant.
+	static const f64 SqrtPi = sqrt(CP_PI);
+
+	f64 xx = dir[0];
+	f64 yy = dir[1];
+	f64 zz = dir[2];
+
+	// x[i] == pow(x, i), etc.
+	f64 x[MAX_SH_ORDER+1], y[MAX_SH_ORDER+1], z[MAX_SH_ORDER+1];
+	x[0] = y[0] = z[0] = 1.;
+	for (s32 i = 1; i < MAX_SH_ORDER+1; ++i)
+	{
+		x[i] = xx * x[i-1];
+		y[i] = yy * y[i-1];
+		z[i] = zz * z[i-1];
+	}
+
+	res[0]  = (1/(2.*SqrtPi));
+
+	res[1]  = -(sqrt(3/CP_PI)*yy)/2.;
+	res[2]  = (sqrt(3/CP_PI)*zz)/2.;
+	res[3]  = -(sqrt(3/CP_PI)*xx)/2.;
+
+	res[4]  = (sqrt(15/CP_PI)*xx*yy)/2.;
+	res[5]  = -(sqrt(15/CP_PI)*yy*zz)/2.;
+	res[6]  = (sqrt(5/CP_PI)*(-1 + 3*z[2]))/4.;
+	res[7]  = -(sqrt(15/CP_PI)*xx*zz)/2.;
+	res[8]  = sqrt(15/CP_PI)*(x[2] - y[2])/4.;
+#if 0
+	res[9]  = (sqrt(35/(2.*CP_PI))*(-3*x[2]*yy + y[3]))/4.;
+	res[10] = (sqrt(105/CP_PI)*xx*yy*zz)/2.;
+	res[11] = -(sqrt(21/(2.*CP_PI))*yy*(-1 + 5*z[2]))/4.;
+	res[12] = (sqrt(7/CP_PI)*zz*(-3 + 5*z[2]))/4.;
+	res[13] = -(sqrt(21/(2.*CP_PI))*xx*(-1 + 5*z[2]))/4.;
+	res[14] = (sqrt(105/CP_PI)*(x[2] - y[2])*zz)/4.;
+	res[15] = -(sqrt(35/(2.*CP_PI))*(x[3] - 3*xx*y[2]))/4.;
+
+	res[16] = (3*sqrt(35/CP_PI)*xx*yy*(x[2] - y[2]))/4.;
+	res[17] = (-3*sqrt(35/(2.*CP_PI))*(3*x[2]*yy - y[3])*zz)/4.;
+	res[18] = (3*sqrt(5/CP_PI)*xx*yy*(-1 + 7*z[2]))/4.;
+	res[19] = (-3*sqrt(5/(2.*CP_PI))*yy*zz*(-3 + 7*z[2]))/4.;
+	res[20] = (3*(3 - 30*z[2] + 35*z[4]))/(16.*SqrtPi);
+	res[21] = (-3*sqrt(5/(2.*CP_PI))*xx*zz*(-3 + 7*z[2]))/4.;
+	res[22] = (3*sqrt(5/CP_PI)*(x[2] - y[2])*(-1 + 7*z[2]))/8.;
+	res[23] = (-3*sqrt(35/(2.*CP_PI))*(x[3] - 3*xx*y[2])*zz)/4.;
+	res[24] = (3*sqrt(35/CP_PI)*(x[4] - 6*x[2]*y[2] + y[4]))/16.;
+#endif
 }
 
 void ComputeSH(const_cstr i_inputTexPath)
@@ -131,155 +174,77 @@ void ComputeSH(const_cstr i_inputTexPath)
 
 	g_TemporalArena.free_all();
 
-	s32 x, y, n;
+	s32 width, height, numChannels;
 	// the stbi_loadf() will load the image with the order from top-down scanlines (y), left-right pixels (x)
-	f32* data = stbi_loadf(i_inputTexPath, &x, &y, &n, 0);
+	f32* data = stbi_loadf(i_inputTexPath, &width, &height, &numChannels, 0);
 	CLOVER_DEBUG(
 			"Original image loaded:\n"
 			"  - Resolution: %d x %d\n"
 			"  - Color Channels: %d",
-			x, y, n);
-	s32 faceWidth = x / 6;
-	f32 mR = 0.0f, mG = 0.0f, mB = 0.0f;
-	for (u32 i = 0; i < y; i++)
-		for (u32 j = 0; j < x; j++) {
-			if (data[i * x + j + 1] > mR) mR = data[i * x + j + 1];
-			if (data[i * x + j + 2] > mG) mG = data[i * x + j + 2];
-			if (data[i * x + j + 3] > mB) mB = data[i * x + j + 3];
-		}
+			width, height, numChannels);
+	s32 faceWidth = width / 6;
 
-	const u32 order = 3;
-	const u32 sqOrder = order * order;
-	floral::fixed_array<floral::vec3f, LinearArena> output(sqOrder, &g_TemporalArena);
-	output.resize_ex(sqOrder);
-	floral::fixed_array<f32, LinearArena> resultR(sqOrder, &g_TemporalArena);
-	resultR.resize_ex(sqOrder);
-	floral::fixed_array<f32, LinearArena> resultG(sqOrder, &g_TemporalArena);
-	resultG.resize_ex(sqOrder);
-	floral::fixed_array<f32, LinearArena> resultB(sqOrder, &g_TemporalArena);
-	resultB.resize_ex(sqOrder);
+	f32* normalizeData = g_TemporalArena.allocate_array<f32>(faceWidth * faceWidth * 4 * 6);
+	BuildNormalizerHStrip(faceWidth, normalizeData);
 
+	f64 SHr[NUM_SH_COEFF];
+	f64 SHg[NUM_SH_COEFF];
+	f64 SHb[NUM_SH_COEFF];
+	f64 SHdir[NUM_SH_COEFF];
 
-	floral::fixed_array<f32, LinearArena> shBuff(sqOrder, &g_TemporalArena);
-	shBuff.resize_ex(sqOrder);
-	floral::fixed_array<f32, LinearArena> shBuffB(sqOrder, &g_TemporalArena);
-	shBuffB.resize_ex(sqOrder);
+	memset(SHr, 0, NUM_SH_COEFF * sizeof(f64));
+	memset(SHg, 0, NUM_SH_COEFF * sizeof(f64));
+	memset(SHb, 0, NUM_SH_COEFF * sizeof(f64));
+	memset(SHdir, 0, NUM_SH_COEFF * sizeof(f64));
 
-	//for (u32 shc = 0; shc < 6; shc++) {
-	u32 shc = 0; {
-		CLOVER_DEBUG("---");
-		f32 fWtSum = 0.0f;
-		for (u32 i = 0; i < sqOrder; i++) {
-			output[i] = floral::vec3f(0.0f);
-			resultR[i] = 0.0f;
-			resultG[i] = 0.0f;
-			resultB[i] = 0.0f;
-			shBuff[i] = 0.0f;
-			shBuffB[i] = 0.0f;
-		}
-		for (u32 f = 0; f < 6; f++) {
-			// convert texel coordinate to cubemap direction
-			f32 invWidth = 1.0f / f32(faceWidth - 1);
-			f32 negBound = -1.0f + invWidth;
-			f32 invWidthBy2 = 2.0f / f32(faceWidth);
-			for (s32 y = 0; y < faceWidth; y++) {
-				//const f32 fV = negBound + f32(y) + invWidthBy2;
-				const f32 fV = -(f32(y) * invWidth * 2.0f - 1.0f); // -1.0f to 1.0f
-				for (s32 x = 0; x < faceWidth; x++) {
-					//const f32 fU = negBound + f32(x) + invWidthBy2;
-					const f32 fU = f32(x) * invWidth * 2.0f - 1.0f; // -1.0f to 1.0f
-					floral::vec3f dir;
-					switch (f) {
-						case 0: // positive x
-							dir.x = 1.0f;
-							//dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-							dir.y = fV;
-							//dir.z = 1.0f - (invWidthBy2 * float(x) + invWidth);
-							dir.z = fU;
-							//dir = -dir;
-							break;
-						case 1: // negative x
-							dir.x = -1.0f;
-							//dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-							dir.y = fV;
-							//dir.z = -1.0f + (invWidthBy2 * float(x) + invWidth);
-							dir.z = -fU;
-							//dir = -dir;
-							break;
-						case 2: // positive y
-							//dir.x = - 1.0f + (invWidthBy2 * float(x) + invWidth);
-							dir.x = fU;
-							dir.y = 1.0f;
-							//dir.z = - 1.0f + (invWidthBy2 * float(y) + invWidth);
-							dir.z = fV;
-							//dir = -dir;
-							break;
-						case 3: // negative y
-							//dir.x = - 1.0f + (invWidthBy2 * float(x) + invWidth);
-							dir.x = fU;
-							dir.y = - 1.0f;
-							//dir.z = 1.0f - (invWidthBy2 * float(y) + invWidth);
-							dir.z = -fV;
-							//dir = -dir;
-							break;
-						case 4: // positive z
-							//dir.x = - 1.0f + (invWidthBy2 * float(x) + invWidth);
-							dir.x = -fU;
-							//dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-							dir.y = fV;
-							dir.z = 1.0f;
-							break;
-						case 5: // negative z
-							//dir.x = 1.0f - (invWidthBy2 * float(x) + invWidth);
-							dir.x = fU;
-							//dir.y = 1.0f - (invWidthBy2 * float(y) + invWidth);
-							dir.y = fV;
-							dir.z = -1.0f;
-							break;
-						default:
-							break;
-					}
-					dir = floral::texel_coord_to_cube_coord(f, x, y, faceWidth);
+	f64 weightAccum = 0.0;
+	f64 weight = 0.0;
 
-					//dir = dir.normalize();
-					//const f32 fDiffSolid = 4.0f / ((1.0f + fU*fU + fV*fV) *
-							//sqrtf(1.0f + fU*fU + fV*fV));
-					f32 fTmp = 1.0f + fU * fU + fV * fV;
-					f32 fWt = 4.0f / (sqrtf(fTmp) * fTmp);
-					//fWt += fDiffSolid;
-					fWtSum += fWt;
-					//calculate SH for this direction
-					computeSHForDirection(shBuff, order, dir);
+	for (s32 iFaceIdx = 0; iFaceIdx < 6; iFaceIdx++)
+	{
+		for (s32 y = 0; y < faceWidth; y++) // scanline
+		{
+			//normCubeRowStartPtr = &m_NormCubeMap[iFaceIdx].m_ImgData[NormCubeMapNumChannels * (y * faceWidth)];
+			//srcCubeRowStartPtr	= &SrcCubeImage[iFaceIdx].m_ImgData[SrcCubeMapNumChannels * (y * faceWidth)];
 
-					size pixelIdx = (y + shc * faceWidth) * faceWidth + x + f * faceWidth;
-					floral::vec3f color(data[pixelIdx], data[pixelIdx + 1], data[pixelIdx + 2]);
+			for (s32 x = 0; x < faceWidth; x++) // pixel
+			{
+				//pointer to direction and solid angle in cube map associated with texel
+				//texelVect = &normCubeRowStartPtr[NormCubeMapNumChannels * x];
+				f32* texelVect = &normalizeData[(y * width + iFaceIdx * faceWidth + x) * 4];
+				weight = *(texelVect + 3);
 
-					//scale and add to accumulated coeffs
-					ScalarScaleCoeffs(shBuffB, shBuff, color.x * fWt, order);
-					AddCoeffs(resultR, resultR, shBuffB, order);
-					ScalarScaleCoeffs(shBuffB, shBuffB, color.y * fWt, order);
-					AddCoeffs(resultG, resultG, shBuffB, order);
-					ScalarScaleCoeffs(shBuffB, shBuffB, color.z * fWt, order);
-					AddCoeffs(resultB, resultB, shBuffB, order);
+				EvalSHBasis(texelVect, SHdir);
+
+				// Convert to f64
+				f64 R = data[(y * width + iFaceIdx * faceWidth + x) * 3];
+				f64 G = data[(y * width + iFaceIdx * faceWidth + x) * 3 + 1];
+				f64 B = data[(y * width + iFaceIdx * faceWidth + x) * 3 + 2];
+
+				for (s32 i = 0; i < NUM_SH_COEFF; i++)
+				{
+					SHr[i] += R * SHdir[i] * weight;
+					SHg[i] += G * SHdir[i] * weight;
+					SHb[i] += B * SHdir[i] * weight;
 				}
+
+				weightAccum += weight;
 			}
-		}
-
-		// final scale
-		const f32 fNormProj = (4.0f * 3.1415f) / fWtSum;
-		ScalarScaleCoeffs(resultR, resultR, fNormProj, order);
-		ScalarScaleCoeffs(resultG, resultG, fNormProj, order);
-		ScalarScaleCoeffs(resultB, resultB, fNormProj, order);
-
-		for (u32 i = 0; i < sqOrder; i++) {
-			output[i].x = resultR[i];
-			output[i].y = resultG[i];
-			output[i].z = resultB[i];
-
-			CLOVER_DEBUG("coeff %d: (%f %f %f)", i, output[i].x, output[i].y, output[i].z);
 		}
 	}
 
+	//Normalization - The sum of solid angle should be equal to the solid angle of the sphere (4 PI), so
+	// normalize in order our weightAccum exactly match 4 PI.
+	for (s32 i = 0; i < NUM_SH_COEFF; ++i)
+	{
+		SHr[i] *= 4.0 * CP_PI / weightAccum;
+		SHg[i] *= 4.0 * CP_PI / weightAccum;
+		SHb[i] *= 4.0 * CP_PI / weightAccum;
+
+		CLOVER_DEBUG("%f %f %f", SHr[i], SHg[i], SHb[i]);
+	}
+
+	g_TemporalArena.free_all();
 	delete[] data;
 }
 
