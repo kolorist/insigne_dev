@@ -122,6 +122,18 @@ namespace stone {
 		}
 	}
 
+	void Game::RenderWithMaterial(insigne::material_handle_t i_ovrMaterial)
+	{
+		PROFILE_SCOPE(Game_RenderWithMaterial);
+
+		if (m_VisualComponents) {
+			for (u32 i = 0; i < m_VisualComponents->get_size(); i++) {
+				PROFILE_SCOPE(VisualComponentRender);
+				(*m_VisualComponents)[i]->RenderWithMaterial(m_CameraComponent->GetCamera(), i_ovrMaterial);
+			}
+		}
+	}
+
 	void Game::RequestLoadDefaultTextures()
 	{
 		CLOVER_INFO("Request load default textures...");

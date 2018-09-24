@@ -18,6 +18,7 @@ class VisualComponent : public Component {
 
 		void								Update(Camera* i_camera, f32 i_deltaMs);
 		void								Render(Camera* i_camera);
+		void								RenderWithMaterial(Camera* i_camera, insigne::material_handle_t i_ovrMaterial);
 
 		void								Initialize(Model* i_model);
 

@@ -40,4 +40,16 @@ struct CBTexture2DHeader {
 
 #pragma pack(pop)
 
+// ---------------------------------------------
+#pragma pack(push)
+#pragma pack(1)
+
+struct CBSHHeader {
+	c8											magicCharacters[4];		// "CBSH"
+	u32											numCoeffs;
+	u32											numSHs;
+};
+
+#pragma pack(pop)
+
 }

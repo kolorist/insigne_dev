@@ -30,6 +30,7 @@ class Game {
 		void								Update(f32 i_deltaMs);
 		void								Render();
 		void								RenderWithCamera(Camera* i_camera);
+		void									RenderWithMaterial(insigne::material_handle_t i_ovrMaterial);
 
 		Camera*									GetMainCamera();
 
