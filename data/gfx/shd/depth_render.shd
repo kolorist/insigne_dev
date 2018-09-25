@@ -1,0 +1,9 @@
+_version 0.1
+
+_vs shaders/lighting/depth_render.vert
+_fs shaders/lighting/depth_render.frag
+
+_sparams
+	_p_mat4										iu_PerspectiveWVP
+	_p_mat4										iu_TransformMat
+_end_sparams

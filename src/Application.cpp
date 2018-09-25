@@ -45,7 +45,7 @@ Application::Application(Controller* i_controller)
 	m_Game = g_SystemAllocator.allocate<Game>(m_ModelManager, m_MaterialManager, m_TextureManager,
 			m_Debugger);
 	m_ProbesBaker = g_SystemAllocator.allocate<ProbesBaker>(m_Game, m_ModelManager);
-	m_LightingManager = g_SystemAllocator.allocate<LightingManager>(m_Game);
+	m_LightingManager = g_SystemAllocator.allocate<LightingManager>(m_Game, m_MaterialManager);
 }
 
 Application::~Application()
