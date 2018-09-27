@@ -1,6 +1,7 @@
 #include "ShaderManager.h"
 
 #include <cstdio>
+#include <clover.h>
 
 #include <insigne/render.h>
 
@@ -82,6 +83,7 @@ const insigne::shader_handle_t ShaderManager::LoadShader(const floral::path& i_c
 	floral::close_file(shaderFile);
 
 	insigne::shader_handle_t newShader = insigne::compile_shader(vertSource, fragSource, shaderDesc.shaderParams);
+	CLOVER_DEBUG("Shader %d: %s", newShader, i_cbShaderPath.pm_PathStr);
 
 	m_MemoryArena->free_all();
 

@@ -37,7 +37,7 @@ void LightingManager::Initialize()
 	}
 
 	{
-		floral::vec3f lightPosition(3.0f, 0.5f, 0.3f);
+		floral::vec3f lightPosition(0.0f, 0.9f, 0.0f);
 		// init omni camera descriptors
 		// positive x
 		m_LightCamera.ViewDesc[0].position = lightPosition;

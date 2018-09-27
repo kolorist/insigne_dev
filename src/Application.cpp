@@ -33,6 +33,7 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.OnCleanUp.bind<Application, &Application::OnCleanUp>(this);
 
 	i_controller->IOEvents.CharacterInput.bind<Application, &Application::OnCharacterInput>(this);
+	i_controller->IOEvents.KeyInput.bind<Application, &Application::OnKeyInput>(this);
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
 
@@ -189,6 +190,15 @@ void Application::OnCleanUp(int i_param)
 void Application::OnCharacterInput(c8 i_character)
 {
 	m_Debugger->OnCharacterInput(i_character);
+}
+
+void Application::OnKeyInput(u32 i_keyCode, u32 i_keyStatus)
+{
+	if (i_keyStatus == 0) { // pressed
+		m_Game->OnKey(i_keyCode, true);
+	} else if (i_keyStatus == 2) { // up
+		m_Game->OnKey(i_keyCode, false);
+	}
 }
 
 void Application::OnCursorMove(u32 i_x, u32 i_y)

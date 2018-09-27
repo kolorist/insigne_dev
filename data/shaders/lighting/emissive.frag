@@ -7,10 +7,10 @@ uniform mediump float iu_Strength;
 
 layout(std140) uniform ub_TestUB
 {
-	vec4 inputColor;
+	mediump vec4 inputColor;
 };
 
 void main()
 {
-	o_Color = vec4(iu_BaseColor, 1.0f) * ub_TestUB.inputColor * iu_Strength;
+	o_Color = vec4(iu_BaseColor, 1.0f) * iu_Strength;
 }

@@ -67,6 +67,21 @@ namespace calyx {
 							break;
 						}
 
+					case calyx::interact_event_e::key_input:
+						{
+							if (TEST_BIT(event.payload, CLX_KEY)) {
+								u32 keyCode = event.payload >> 4;
+								if (TEST_BIT(event.payload, CLX_KEY_PRESSED)) {
+									s_Controller->IOEvents.KeyInput(keyCode, 0);
+								} else if (TEST_BIT(event.payload, CLX_KEY_HELD)) {
+									s_Controller->IOEvents.KeyInput(keyCode, 1);
+								} else {
+									s_Controller->IOEvents.KeyInput(keyCode, 2);
+								}
+							}
+							break;
+						}
+
 					default:
 						break;
 				};

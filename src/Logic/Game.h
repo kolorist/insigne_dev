@@ -34,6 +34,8 @@ class Game {
 
 		Camera*									GetMainCamera();
 
+		void									OnKey(const u32 i_keyCode, const bool i_isPressed);
+
 	private:
 		void								RequestLoadDefaultTextures();
 		void								RequestLoadPlateMaterial();
@@ -55,6 +57,7 @@ class Game {
 		VisualComponentArray*				m_VisualComponents;
 		SkyboxComponentArray*				m_SkyboxComponents;
 		insigne::surface_handle_t			m_SkyboxSurface;
+		u32										m_CamKeyState;
 
 	private:
 		IModelManager*						m_ModelManager;
