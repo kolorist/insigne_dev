@@ -61,9 +61,10 @@ extern int yydebug;
     P_MAT4 = 265,
     P_VEC3 = 266,
     P_FLOAT = 267,
-    END_SPARAMS = 268,
-    FLOAT_VALUE = 269,
-    STRING_VALUE = 270
+    P_UB = 268,
+    END_SPARAMS = 269,
+    FLOAT_VALUE = 270,
+    STRING_VALUE = 271
   };
 #endif
 
@@ -77,7 +78,7 @@ union YYSTYPE
 	float										floatValue;
 	char*										stringValue;
 
-#line 81 "cbshdr.tab.h" /* yacc.c:1910  */
+#line 82 "cbshdr.tab.h" /* yacc.c:1910  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -95,6 +96,6 @@ int yyparse (void);
 void yyparse_shader(cymbi::ShaderDesc& o_shaderDesc);
 void yyparse_material(cymbi::MaterialDesc& o_matDesc);
 
-#line 99 "cbshdr.tab.h" /* yacc.c:1910  */
+#line 100 "cbshdr.tab.h" /* yacc.c:1910  */
 
 #endif /* !YY_YY_CBSHDR_TAB_H_INCLUDED  */

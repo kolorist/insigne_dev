@@ -104,7 +104,7 @@ param_def:
 				add_nvp($2, $3, g_CurrentTargetMaterial->floatParams);
 			}
 		 | P_UB STRING_VALUE {
-		 		add_nvp(-1, g_CurrentTargetMaterial->ubParams);
+		 		add_nvp($2, -1, g_CurrentTargetMaterial->ubParams);
 		 	}
 
 param_footer:

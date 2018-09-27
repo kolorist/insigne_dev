@@ -9,4 +9,6 @@ _sparams
 
 	_p_vec3										iu_BaseColor
 	_p_float									iu_Strength
+	
+	_p_ub										ub_TestUB
 _end_sparams
