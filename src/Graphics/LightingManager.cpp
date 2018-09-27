@@ -23,10 +23,7 @@ LightingManager::~LightingManager()
 void LightingManager::Initialize()
 {
 	{
-		insigne::framebuffer_descriptor_t depthFbDesc = insigne::create_framebuffer_descriptor(1);
-		depthFbDesc.color_attachments->push_back(
-				insigne::color_attachment_t("mega_fbo",
-					insigne::texture_format_e::hdr_rgba));
+		insigne::framebuffer_descriptor_t depthFbDesc = insigne::create_framebuffer_descriptor(0);
 		depthFbDesc.has_depth = true;
 		depthFbDesc.width = 1024 * 6;
 		depthFbDesc.height = 1024;
@@ -67,8 +64,8 @@ void LightingManager::Initialize()
 		m_LightCamera.ViewDesc[5].look_at = floral::vec3f(0.0f, 0.0f, 1.0f);
 		m_LightCamera.ViewDesc[5].up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
 
-		m_LightCamera.PerspDesc.near_plane = 0.1f;
-		m_LightCamera.PerspDesc.far_plane = 100.0f;
+		m_LightCamera.PerspDesc.near_plane = 0.01f;
+		m_LightCamera.PerspDesc.far_plane = 1000.0f;
 		m_LightCamera.PerspDesc.fov = 90.0f;
 		m_LightCamera.PerspDesc.aspect_ratio = 1.0f;
 		floral::mat4x4f proj = floral::construct_perspective(m_LightCamera.PerspDesc);
@@ -92,7 +89,7 @@ void LightingManager::RenderShadowMap()
 		tmpCam.ViewMatrix = m_LightCamera.ViewMatrix[i];
 		tmpCam.WVPMatrix = m_LightCamera.ViewProjMatrix[i];
 
-		insigne::begin_render_pass(m_DepthRenderFb, 1024 * i, 1024, 1024, 1024);
+		insigne::begin_render_pass(m_DepthRenderFb, 1024 * i, 0, 1024, 1024);
 		m_Game->RenderWithMaterial(&tmpCam, m_DepthRenderMat);
 		insigne::end_render_pass(m_DepthRenderFb);
 		insigne::dispatch_render_pass();

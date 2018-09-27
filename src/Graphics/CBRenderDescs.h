@@ -45,10 +45,11 @@ struct ParamNVP {
 struct MaterialDesc {
 	floral::path										cbShaderPath;
 
-	floral::inplace_array<ParamNVP<floral::path>, 4u>	tex2DParams;
-	floral::inplace_array<ParamNVP<floral::path>, 4u>	texCubeParams;
-	floral::inplace_array<ParamNVP<f32>, 8u>			floatParams;
-	floral::inplace_array<ParamNVP<floral::vec3f>, 8u>	vec3Params;
+	floral::inplace_array<ParamNVP<floral::path>, MAX_TEX2D_UNIFORMS>	tex2DParams;
+	floral::inplace_array<ParamNVP<floral::path>, MAX_TEXCUBE_UNIFORMS>	texCubeParams;
+	floral::inplace_array<ParamNVP<f32>, MAX_FLOAT_UNIFORMS>			floatParams;
+	floral::inplace_array<ParamNVP<floral::vec3f>, MAX_VEC3_UNIFORMS>	vec3Params;
+	floral::inplace_array<ParamNVP<insigne::ub_handle_t>, MAX_UNIFORM_BLOCKS>	ubParams;
 };
 
 }

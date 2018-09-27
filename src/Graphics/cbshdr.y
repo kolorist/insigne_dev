@@ -41,6 +41,7 @@ void add_nvp(const_cstr i_name, const T& i_value, TContainer& o_container);
 %token P_MAT4
 %token P_VEC3
 %token P_FLOAT
+%token P_UB
 %token END_SPARAMS
 
 %token <floatValue>								FLOAT_VALUE
@@ -102,6 +103,9 @@ param_def:
 		 | P_FLOAT STRING_VALUE FLOAT_VALUE {
 				add_nvp($2, $3, g_CurrentTargetMaterial->floatParams);
 			}
+		 | P_UB STRING_VALUE {
+		 		add_nvp(-1, g_CurrentTargetMaterial->ubParams);
+		 	}
 
 param_footer:
 		END_SPARAMS

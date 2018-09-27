@@ -24,6 +24,7 @@ _p_texcube										{ return P_TEXCUBE; }
 _p_mat4											{ return P_MAT4; }
 _p_vec3											{ return P_VEC3; }
 _p_float										{ return P_FLOAT; }
+_p_ub											{ return P_UB; }
 _end_sparams									{ return END_SPARAMS; }
 
 ([\+|-])?[0-9]+\.[0-9]+							{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
