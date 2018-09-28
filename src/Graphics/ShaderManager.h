@@ -15,6 +15,7 @@ namespace stone {
 			void								Initialize() override;
 			const insigne::shader_handle_t		LoadShader(const_cstr i_shaderPathNoExt, insigne::shader_param_list_t* i_paramList) override;
 			const insigne::shader_handle_t		LoadShader(const floral::path& i_cbShaderPath) override;
+			const insigne::shader_handle_t		LoadShader2(const floral::path& i_cbShaderPath) override;
 
 		private:
 			struct ShaderRegistry {

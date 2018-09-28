@@ -137,6 +137,7 @@ void Application::OnInitialize(int i_param)
 	insigne::g_renderer_settings.frame_allocator_size_mb = 64u;
 	insigne::g_renderer_settings.draw_command_buffer_size = 64u;
 	insigne::g_renderer_settings.generic_command_buffer_size = 128u;
+	insigne::g_renderer_settings.frame_shader_allocator_size_mb = 16u;
 	
 	// graphics init
 	insigne::initialize_driver();
@@ -166,6 +167,7 @@ void Application::OnInitialize(int i_param)
 	m_DebugRenderer->Initialize();
 
 	s_mat = (FBODebugMaterial*)m_MaterialManager->CreateMaterial<FBODebugMaterial>("shaders/internal/ssquad");
+	insigne::shader_handle_t demoShader = m_ShaderManager->LoadShader2(floral::path("gfx/shd/shdebug.shd"));
 	SSVertex vs[4];
 	vs[0].Position = floral::vec2f(-1.0f, -1.0f);
 	vs[0].TexCoord = floral::vec2f(0.0f, 0.0f);

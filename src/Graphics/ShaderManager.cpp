@@ -4,6 +4,7 @@
 #include <clover.h>
 
 #include <insigne/render.h>
+#include <insigne/ut_shading.h>
 
 #include "CBRenderDescs.h"
 
@@ -84,6 +85,40 @@ const insigne::shader_handle_t ShaderManager::LoadShader(const floral::path& i_c
 
 	insigne::shader_handle_t newShader = insigne::compile_shader(vertSource, fragSource, shaderDesc.shaderParams);
 	CLOVER_DEBUG("Shader %d: %s", newShader, i_cbShaderPath.pm_PathStr);
+
+	m_MemoryArena->free_all();
+
+	return newShader;
+}
+
+const insigne::shader_handle_t ShaderManager::LoadShader2(const floral::path& i_cbShaderPath)
+{
+	floral::file_info shaderFile = floral::open_file(i_cbShaderPath);
+	cstr cbShaderSource = (cstr)m_MemoryArena->allocate(shaderFile.file_size + 1);
+	memset(cbShaderSource, 0, shaderFile.file_size + 1);
+	floral::read_all_file(shaderFile, cbShaderSource);
+	floral::close_file(shaderFile);
+
+	cymbi::ShaderDesc shaderDesc;
+	// build shader param list
+	shaderDesc.shaderParams = insigne::allocate_shader_param_list(32);
+	yylex_cbshdr(cbShaderSource, shaderDesc);
+
+	insigne::shader_desc_t desc = insigne::create_shader_desc();
+	desc.vs_path = shaderDesc.vertexShaderPath;
+	desc.fs_path = shaderDesc.fragmentShaderPath;
+
+	shaderFile = floral::open_file(shaderDesc.vertexShaderPath);
+	memset(desc.vs, 0, shaderFile.file_size + 1);
+	floral::read_all_file(shaderFile, desc.vs);
+	floral::close_file(shaderFile);
+
+	shaderFile = floral::open_file(shaderDesc.fragmentShaderPath);
+	memset(desc.fs, 0, shaderFile.file_size + 1);
+	floral::read_all_file(shaderFile, desc.fs);
+	floral::close_file(shaderFile);
+
+	insigne::shader_handle_t newShader = insigne::create_shader(desc);
 
 	m_MemoryArena->free_all();
 
