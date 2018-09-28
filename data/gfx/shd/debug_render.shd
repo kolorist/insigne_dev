@@ -1,0 +1,8 @@
+_version 0.1
+
+_vs shaders/internal/debug_render.vert
+_fs shaders/internal/debug_render.frag
+
+_sparams
+	_p_mat4										iu_PerspectiveWVP
+_end_sparams

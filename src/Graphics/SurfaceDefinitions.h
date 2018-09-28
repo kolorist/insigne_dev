@@ -150,6 +150,7 @@ struct SSSurface : insigne::renderable_surface_t<SSSurface> {
 
 struct DebugDrawVertex {
 	floral::vec3f								Position;
+	floral::vec4f								Color;
 };
 
 struct DebugLine : insigne::renderable_surface_t<DebugLine> {
@@ -166,12 +167,14 @@ struct DebugLine : insigne::renderable_surface_t<DebugLine> {
 
 		// vertex attributes
 		renderer::enable_vertex_attrib(0);
+		renderer::enable_vertex_attrib(1);
 	}
 
 	static void describe_vertex_data()
 	{
 		using namespace insigne;
 		renderer::describe_vertex_data(0, 3, data_type_e::elem_signed_float, false, sizeof(DebugDrawVertex), (const voidptr)0);
+		renderer::describe_vertex_data(1, 4, data_type_e::elem_signed_float, false, sizeof(DebugDrawVertex), (const voidptr)12);
 	}
 };
 

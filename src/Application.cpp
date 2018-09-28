@@ -15,6 +15,7 @@
 #include "Graphics/PostFXManager.h"
 #include "Graphics/ProbesBaker.h"
 #include "Graphics/LightingManager.h"
+#include "Graphics/DebugRenderer.h"
 
 #include "Graphics/FBODebugMaterial.h"
 
@@ -47,6 +48,7 @@ Application::Application(Controller* i_controller)
 			m_Debugger);
 	m_ProbesBaker = g_SystemAllocator.allocate<ProbesBaker>(m_Game, m_ModelManager);
 	m_LightingManager = g_SystemAllocator.allocate<LightingManager>(m_Game, m_MaterialManager);
+	m_DebugRenderer = g_SystemAllocator.allocate<DebugRenderer>(m_MaterialManager);
 }
 
 Application::~Application()
@@ -86,6 +88,7 @@ void Application::RenderFrame(f32 i_deltaMs)
 		PROFILE_SCOPE(MainColorBufferRender);
 		insigne::begin_render_pass(mainFb);
 		m_Game->Render();
+		m_DebugRenderer->Render(m_Game->GetMainCamera());
 		m_ProbesBaker->RenderProbes(m_Game->GetMainCamera());
 		insigne::end_render_pass(mainFb);
 		insigne::dispatch_render_pass();
@@ -160,6 +163,7 @@ void Application::OnInitialize(int i_param)
 				floral::vec3f(-0.5f, -0.3f, -0.5f),
 				floral::vec3f(0.5f, 0.7f, 0.5f)));
 	m_LightingManager->Initialize();
+	m_DebugRenderer->Initialize();
 
 	s_mat = (FBODebugMaterial*)m_MaterialManager->CreateMaterial<FBODebugMaterial>("shaders/internal/ssquad");
 	SSVertex vs[4];

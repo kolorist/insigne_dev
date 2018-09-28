@@ -13,6 +13,7 @@ namespace stone {
 
 class IProbesBaker;
 class ILightingManager;
+class IDebugRenderer;
 
 class Application {
 	public:
@@ -42,6 +43,7 @@ class Application {
 		IPostFXManager*							m_PostFXManager;
 		IProbesBaker*							m_ProbesBaker;
 		ILightingManager*						m_LightingManager;
+		IDebugRenderer*							m_DebugRenderer;
 
 		Debugger*								m_Debugger;
 };
