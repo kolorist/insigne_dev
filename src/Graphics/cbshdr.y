@@ -86,6 +86,7 @@ param_decl:
 		| P_MAT4 STRING_VALUE					{ g_CurrentTargetShader->shaderParams->push_back(insigne::shader_param_t($2, insigne::param_data_type_e::param_mat4)); }
 		| P_VEC3 STRING_VALUE					{ g_CurrentTargetShader->shaderParams->push_back(insigne::shader_param_t($2, insigne::param_data_type_e::param_vec3)); }
 		| P_FLOAT STRING_VALUE					{ g_CurrentTargetShader->shaderParams->push_back(insigne::shader_param_t($2, insigne::param_data_type_e::param_float)); }
+		| P_UB STRING_VALUE						{ g_CurrentTargetShader->shaderParams->push_back(insigne::shader_param_t($2, insigne::param_data_type_e::param_ub)); }
 		;
 
 param_defs:

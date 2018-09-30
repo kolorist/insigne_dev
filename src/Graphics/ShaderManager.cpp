@@ -108,6 +108,23 @@ const insigne::shader_handle_t ShaderManager::LoadShader2(const floral::path& i_
 	desc.vs_path = shaderDesc.vertexShaderPath;
 	desc.fs_path = shaderDesc.fragmentShaderPath;
 
+	{
+		for (u32 i = 0; i < shaderDesc.shaderParams->get_size(); i++) {
+			const insigne::shader_param_t& sparam = shaderDesc.shaderParams->at(i);
+			switch (sparam.data_type) {
+				case insigne::param_data_type_e::param_sampler2d:
+				case insigne::param_data_type_e::param_sampler_cube:
+					desc.reflection.textures->push_back(sparam);
+					break;
+				case insigne::param_data_type_e::param_ub:
+					desc.reflection.uniform_blocks->push_back(sparam);
+					break;
+				default:
+					break;
+			}
+		}
+	}
+
 	shaderFile = floral::open_file(shaderDesc.vertexShaderPath);
 	memset(desc.vs, 0, shaderFile.file_size + 1);
 	floral::read_all_file(shaderFile, desc.vs);
@@ -119,6 +136,8 @@ const insigne::shader_handle_t ShaderManager::LoadShader2(const floral::path& i_
 	floral::close_file(shaderFile);
 
 	insigne::shader_handle_t newShader = insigne::create_shader(desc);
+	insigne::material_desc_t newMaterial;
+	insigne::infuse_material(newShader, newMaterial);
 
 	m_MemoryArena->free_all();
 

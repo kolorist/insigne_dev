@@ -167,7 +167,7 @@ void Application::OnInitialize(int i_param)
 	m_DebugRenderer->Initialize();
 
 	s_mat = (FBODebugMaterial*)m_MaterialManager->CreateMaterial<FBODebugMaterial>("shaders/internal/ssquad");
-	insigne::shader_handle_t demoShader = m_ShaderManager->LoadShader2(floral::path("gfx/shd/shdebug.shd"));
+	insigne::shader_handle_t demoShader = m_ShaderManager->LoadShader2(floral::path("gfx/shd/test_shader.shd"));
 	SSVertex vs[4];
 	vs[0].Position = floral::vec2f(-1.0f, -1.0f);
 	vs[0].TexCoord = floral::vec2f(0.0f, 0.0f);
