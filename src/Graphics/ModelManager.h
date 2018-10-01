@@ -23,6 +23,11 @@ private:
 	LinearArena*							m_MemoryArena;
 
 	floral::fixed_array<floral::vec3f, LinearAllocator>	m_DemoData;
+	floral::fixed_array<u32, LinearAllocator>			m_DemoIndicesData;
+	struct DemoUniformData {
+		floral::vec4f							data[4];
+	};
+	DemoUniformData								m_DemoUniformData;
 
 private:
 	IMaterialManager*							m_MaterialManager;

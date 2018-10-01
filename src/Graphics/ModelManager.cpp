@@ -202,24 +202,62 @@ insigne::surface_handle_t ModelManager::CreateSingleSurface(const_cstr i_surfPat
 
 insigne::vb_handle_t ModelManager::CreateDemoVB()
 {
-	insigne::vbdesc_t desc;
-	desc.region_size = SIZE_KB(64);
-	desc.stride = sizeof(floral::vec3f);
-	desc.data = nullptr;
-	desc.count = 0;
-	desc.usage = insigne::buffer_usage_e::dynamic_draw;
+	{
+		insigne::vbdesc_t desc;
+		desc.region_size = SIZE_KB(64);
+		desc.stride = sizeof(floral::vec3f);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 
-	insigne::vb_handle_t newVB = insigne::create_vb(desc);
+		insigne::vb_handle_t newVB = insigne::create_vb(desc);
 
-	m_DemoData.init(4u, &g_StreammingAllocator);
-	m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 1.0f));
-	m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 2.0f));
-	m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 3.0f));
-	m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 4.0f));
+		m_DemoData.init(4u, &g_StreammingAllocator);
+		m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 1.0f));
+		m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 2.0f));
+		m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 3.0f));
+		m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 4.0f));
 
-	insigne::update_vb(newVB, &m_DemoData[0], 4, 0);
+		insigne::update_vb(newVB, &m_DemoData[0], 4, 0);
+	}
 
-	return newVB;
+	{
+		insigne::ibdesc_t desc;
+		desc.region_size = SIZE_KB(16);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ib_handle_t newIB = insigne::create_ib(desc);
+
+		m_DemoIndicesData.init(4u, &g_StreammingAllocator);
+		m_DemoIndicesData.push_back(0);
+		m_DemoIndicesData.push_back(1);
+		m_DemoIndicesData.push_back(2);
+		m_DemoIndicesData.push_back(3);
+
+		insigne::update_ib(newIB, &m_DemoIndicesData[0], 4, 0);
+	}
+
+	{
+		insigne::ubdesc_t desc;
+		desc.region_size = SIZE_KB(8);
+		desc.data = nullptr;
+		desc.data_size = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ub_handle_t newUB = insigne::create_ub(desc);
+
+		m_DemoUniformData.data[0] = floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f);
+		m_DemoUniformData.data[1] = floral::vec4f(0.0f, 2.0f, 0.0f, 2.0f);
+		m_DemoUniformData.data[2] = floral::vec4f(0.0f, 3.0f, 0.0f, 3.0f);
+		m_DemoUniformData.data[3] = floral::vec4f(0.0f, 4.0f, 0.0f, 4.0f);
+
+		insigne::update_ub(newUB, &m_DemoUniformData, sizeof(DemoUniformData), 0);
+
+	}
+
+	return 0;
 }
 
 }
