@@ -2,6 +2,8 @@
 
 #include "SurfaceDefinitions.h"
 
+#include <insigne/ut_buffers.h>
+
 namespace stone {
 ModelManager::ModelManager(IMaterialManager* i_materialManager)
 	: m_MaterialManager(i_materialManager)
@@ -197,4 +199,27 @@ insigne::surface_handle_t ModelManager::CreateSingleSurface(const_cstr i_surfPat
 	floral::close_file(modelFile);
 	return shdl;
 }
+
+insigne::vb_handle_t ModelManager::CreateDemoVB()
+{
+	insigne::vbdesc_t desc;
+	desc.region_size = SIZE_KB(64);
+	desc.stride = sizeof(floral::vec3f);
+	desc.data = nullptr;
+	desc.count = 0;
+	desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+	insigne::vb_handle_t newVB = insigne::create_vb(desc);
+
+	m_DemoData.init(4u, &g_StreammingAllocator);
+	m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 1.0f));
+	m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 2.0f));
+	m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 3.0f));
+	m_DemoData.push_back(floral::vec3f(0.0f, 0.0f, 4.0f));
+
+	insigne::update_vb(newVB, &m_DemoData[0], 4, 0);
+
+	return newVB;
+}
+
 }

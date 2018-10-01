@@ -41,6 +41,7 @@ namespace stone {
 	LinearAllocator								g_PersistanceAllocator;
 	LinearAllocator								g_PersistanceResourceAllocator;
 	LinearAllocator								g_SceneResourceAllocator;
+	LinearAllocator								g_StreammingAllocator;
 }
 
 namespace helich {
@@ -59,7 +60,8 @@ namespace helich {
 				memory_region<stone::LinearAllocator>		{ "stone/system",				SIZE_MB(16),	&stone::g_SystemAllocator },
 				memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(64),	&stone::g_PersistanceAllocator },
 				memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(16),	&stone::g_PersistanceResourceAllocator },
-				memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(16),	&stone::g_SceneResourceAllocator }
+				memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(16),	&stone::g_SceneResourceAllocator },
+				memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(16),	&stone::g_StreammingAllocator }
 				);
 	}
 }
