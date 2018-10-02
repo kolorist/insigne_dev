@@ -16,8 +16,12 @@ add_subdirectory (externals/lotus)
 include_directories ("${PROJECT_SOURCE_DIR}/src")
 
 file (GLOB_RECURSE file_list
-	"${PROJECT_SOURCE_DIR}/src/*.cpp"
-	"${PROJECT_SOURCE_DIR}/src/*.c")
+	"${PROJECT_SOURCE_DIR}/src/main.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Application.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Memory/MemorySystem.cpp"
+	"${PROJECT_SOURCE_DIR}/src/System/Controller.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/SurfaceDefinitions.cpp"
+	)
 
 add_definitions(
 	-D_CRT_SECURE_NO_WARNINGS)
