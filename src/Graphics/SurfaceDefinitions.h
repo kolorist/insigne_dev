@@ -34,14 +34,15 @@ struct DemoSurface : insigne::renderable_surface_t<DemoSurface> {
 		renderer::set_depth_write<false_type>();
 		renderer::set_scissor_test<false_type>(0, 0, 0, 0);
 
-		// vertex attributes
-		renderer::enable_vertex_attrib(0);
-		renderer::enable_vertex_attrib(1);
 	}
 
 	static void describe_vertex_data()
 	{
 		using namespace insigne;
+
+		// vertex attributes
+		renderer::enable_vertex_attrib(0);
+		renderer::enable_vertex_attrib(1);
 		renderer::describe_vertex_data(0, 3, data_type_e::elem_signed_float, false, sizeof(DemoVertex), (const voidptr)0);
 		renderer::describe_vertex_data(1, 4, data_type_e::elem_signed_float, false, sizeof(DemoVertex), (const voidptr)12);
 	}

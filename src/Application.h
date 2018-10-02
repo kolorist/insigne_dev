@@ -5,6 +5,7 @@
 namespace stone {
 
 class Controller;
+class ITestSuite;
 
 class Application {
 	public:
@@ -24,6 +25,9 @@ class Application {
 		void									OnKeyInput(u32 i_keyCode, u32 i_keyStatus);
 		void									OnCursorMove(u32 i_x, u32 i_y);
 		void									OnCursorInteract(bool i_pressed, u32 i_buttonId);
+
+	private:
+		ITestSuite*								m_CurrentTestSuite;
 };
 
 }

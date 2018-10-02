@@ -7,8 +7,13 @@
 #include <insigne/driver.h>
 #include <insigne/render.h>
 
+#include "Memory/MemorySystem.h"
 #include "System/Controller.h"
+
 #include "Graphics/SurfaceDefinitions.h"
+
+#include "Graphics/Tests/ITestSuite.h"
+#include "Graphics/Tests/PlainQuad.h"
 
 namespace stone {
 
@@ -25,6 +30,8 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.KeyInput.bind<Application, &Application::OnKeyInput>(this);
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
+
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
 }
 
 Application::~Application()
@@ -36,12 +43,8 @@ Application::~Application()
 void Application::UpdateFrame(f32 i_deltaMs)
 {
 	PROFILE_SCOPE(UpdateFrame);
-	{
-		PROFILE_SCOPE(GameUpdate);
-	}
-	{
-		PROFILE_SCOPE(DebuggerUpdate);
-	}
+	if (m_CurrentTestSuite)
+		m_CurrentTestSuite->OnUpdate(i_deltaMs);
 
 	/*
 	s_profileEvents[0].empty();
@@ -53,6 +56,9 @@ void Application::UpdateFrame(f32 i_deltaMs)
 
 void Application::RenderFrame(f32 i_deltaMs)
 {
+	PROFILE_SCOPE(RenderFrame);
+	if (m_CurrentTestSuite)
+		m_CurrentTestSuite->OnRender(i_deltaMs);
 }
 
 // -----------------------------------------
@@ -79,6 +85,9 @@ void Application::OnInitialize(int i_param)
 	insigne::wait_for_initialization();
 
 	insigne::set_clear_color(0.0f, 0.0f, 0.0f, 0.0f);
+
+	if (m_CurrentTestSuite)
+		m_CurrentTestSuite->OnInitialize();
 }
 
 void Application::OnFrameStep(f32 i_deltaMs)
@@ -89,6 +98,8 @@ void Application::OnFrameStep(f32 i_deltaMs)
 
 void Application::OnCleanUp(int i_param)
 {
+	if (m_CurrentTestSuite)
+		m_CurrentTestSuite->OnCleanUp();
 }
 
 // -----------------------------------------
