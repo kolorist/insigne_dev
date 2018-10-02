@@ -92,8 +92,10 @@ void Application::OnInitialize(int i_param)
 
 void Application::OnFrameStep(f32 i_deltaMs)
 {
+	insigne::begin_frame();
 	UpdateFrame(i_deltaMs);
 	RenderFrame(i_deltaMs);
+	insigne::end_frame();
 }
 
 void Application::OnCleanUp(int i_param)

@@ -22,9 +22,14 @@ static const_cstr s_FragmentShader = R"(
 
 layout (location = 0) out mediump vec4 o_Color;
 
+layout(std140) uniform ub_Data
+{
+	mediump vec4 iu_Color;
+};
+
 void main()
 {
-	o_Color = vec4(1.0f, 0.0f, 0.0f, 1.0f);
+	o_Color = iu_Color;
 }
 )";
 
@@ -80,12 +85,32 @@ void PlainQuadTest::OnInitialize()
 	}
 
 	{
+		insigne::ubdesc_t desc;
+		desc.region_size = SIZE_KB(4);
+		desc.data = nullptr;
+		desc.data_size = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ub_handle_t newUB = insigne::create_ub(desc);
+
+		m_Data.Color = floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f);
+
+		insigne::update_ub(newUB, &m_Data, sizeof(MyData), 0);
+		m_UB = newUB;
+	}
+
+	{
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Data", insigne::param_data_type_e::param_ub));
+
 		strcpy(desc.vs, s_VertexShader);
 		strcpy(desc.fs, s_FragmentShader);
 
 		m_Shader = insigne::create_shader(desc);
 		insigne::infuse_material(m_Shader, m_Material);
+
+		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Data");
+		m_Material.uniform_blocks[ubSlot].value = m_UB;
 	}
 }
 
@@ -95,14 +120,12 @@ void PlainQuadTest::OnUpdate(const f32 i_deltaMs)
 
 void PlainQuadTest::OnRender(const f32 i_deltaMs)
 {
-	insigne::begin_frame();
 	insigne::begin_render_pass(-1);
 	// render here
 	insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
 	insigne::end_render_pass(-1);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
-	insigne::end_frame();
 }
 
 void PlainQuadTest::OnCleanUp()
