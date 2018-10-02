@@ -1,2 +1,2 @@
-set (PROJECT_NAME "stone")
-set (EXECUTABLE_FILE_NAME "game")
+set (PROJECT_NAME "insigne_dev")
+set (EXECUTABLE_FILE_NAME "demo")
