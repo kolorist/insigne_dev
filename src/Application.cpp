@@ -4,8 +4,10 @@
 #include <clover.h>
 #include <lotus/events.h>
 #include <lotus/profiler.h>
+#include <insigne/system.h>
 #include <insigne/driver.h>
-#include <insigne/render.h>
+#include <insigne/ut_render.h>
+#include <insigne/ut_states.h>
 
 #include "Memory/MemorySystem.h"
 #include "System/Controller.h"
@@ -65,11 +67,11 @@ void Application::RenderFrame(f32 i_deltaMs)
 void Application::OnInitialize(int i_param)
 {
 	// insigne settings
-	insigne::g_renderer_settings.frame_allocator_size_mb = 64u;
-	insigne::g_renderer_settings.draw_command_buffer_size = 64u;
-	insigne::g_renderer_settings.generic_command_buffer_size = 128u;
-	insigne::g_renderer_settings.frame_shader_allocator_size_mb = 4u;
-	insigne::g_renderer_settings.frame_buffers_allocator_size_mb = 16u;
+	insigne::g_settings.frame_allocator_size_mb = 64u;
+	insigne::g_settings.draw_command_buffer_size = 64u;
+	insigne::g_settings.generic_command_buffer_size = 128u;
+	insigne::g_settings.frame_shader_allocator_size_mb = 4u;
+	insigne::g_settings.frame_buffers_allocator_size_mb = 16u;
 	
 	// graphics init
 	insigne::initialize_driver();
