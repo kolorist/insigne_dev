@@ -67,11 +67,13 @@ void Application::RenderFrame(f32 i_deltaMs)
 void Application::OnInitialize(int i_param)
 {
 	// insigne settings
-	insigne::g_settings.frame_allocator_size_mb = 64u;
-	insigne::g_settings.draw_command_buffer_size = 64u;
-	insigne::g_settings.generic_command_buffer_size = 128u;
 	insigne::g_settings.frame_shader_allocator_size_mb = 4u;
 	insigne::g_settings.frame_buffers_allocator_size_mb = 16u;
+	insigne::g_settings.frame_textures_allocator_size_mb = 4u;
+	insigne::g_settings.frame_render_allocator_size_mb = 4u;
+	insigne::g_settings.frame_draw_allocator_size_mb = 4u;
+
+	insigne::g_settings.draw_command_buffer_size = 64u;
 	
 	// graphics init
 	insigne::initialize_driver();

@@ -1,5 +1,7 @@
 #include "SurfaceDefinitions.h"
 
+#include <insigne/buffers.h>
+
 namespace insigne {
 
 namespace detail {
