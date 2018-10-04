@@ -7,7 +7,6 @@
 #include <insigne/system.h>
 #include <insigne/driver.h>
 #include <insigne/ut_render.h>
-#include <insigne/ut_states.h>
 
 #include "Memory/MemorySystem.h"
 #include "System/Controller.h"
@@ -87,8 +86,6 @@ void Application::OnInitialize(int i_param)
 	typedef type_list_1(DemoSurface)		SurfaceTypeList;
 	insigne::initialize_render_thread<SurfaceTypeList>();
 	insigne::wait_for_initialization();
-
-	insigne::set_clear_color(0.0f, 0.0f, 0.0f, 0.0f);
 
 	if (m_CurrentTestSuite)
 		m_CurrentTestSuite->OnInitialize();

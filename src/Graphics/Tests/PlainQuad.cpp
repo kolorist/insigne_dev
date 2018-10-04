@@ -112,6 +112,8 @@ void PlainQuadTest::OnInitialize()
 		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Data");
 		m_Material.uniform_blocks[ubSlot].value = m_UB;
 	}
+	// flush the initialization pass
+	insigne::dispatch_render_pass();
 }
 
 void PlainQuadTest::OnUpdate(const f32 i_deltaMs)
@@ -120,10 +122,10 @@ void PlainQuadTest::OnUpdate(const f32 i_deltaMs)
 
 void PlainQuadTest::OnRender(const f32 i_deltaMs)
 {
-	insigne::begin_render_pass(-1);
+	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	// render here
 	insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
-	insigne::end_render_pass(-1);
+	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
 }
