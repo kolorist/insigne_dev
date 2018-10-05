@@ -15,6 +15,7 @@
 
 #include "Graphics/Tests/ITestSuite.h"
 #include "Graphics/Tests/PlainQuad.h"
+#include "Graphics/Tests/PlainTextureQuad.h"
 
 namespace stone {
 
@@ -32,7 +33,8 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
 
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 }
 
 Application::~Application()
@@ -83,7 +85,7 @@ void Application::OnInitialize(int i_param)
 	// 3- ScreenSpaceSurface
 	// 4- ImGuiSurface
 	// thus the order of declaration must be reversed
-	typedef type_list_1(DemoSurface)		SurfaceTypeList;
+	typedef type_list_2(DemoSurface, DemoTexturedSurface)		SurfaceTypeList;
 	insigne::initialize_render_thread<SurfaceTypeList>();
 	insigne::wait_for_initialization();
 
