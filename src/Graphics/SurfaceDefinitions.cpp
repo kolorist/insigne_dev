@@ -12,6 +12,9 @@ gpu_command_buffer_t draw_command_buffer_t<stone::DemoSurface>::command_buffer[B
 template <>
 gpu_command_buffer_t draw_command_buffer_t<stone::DemoTexturedSurface>::command_buffer[BUFFERS_COUNT];
 
+template <>
+gpu_command_buffer_t draw_command_buffer_t<stone::DebugLine>::command_buffer[BUFFERS_COUNT];
+
 }
 
 }

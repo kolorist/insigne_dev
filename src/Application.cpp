@@ -85,7 +85,7 @@ void Application::OnInitialize(int i_param)
 	// 3- ScreenSpaceSurface
 	// 4- ImGuiSurface
 	// thus the order of declaration must be reversed
-	typedef type_list_2(DemoSurface, DemoTexturedSurface)		SurfaceTypeList;
+	typedef type_list_3(DemoSurface, DemoTexturedSurface, DebugLine)		SurfaceTypeList;
 	insigne::initialize_render_thread<SurfaceTypeList>();
 	insigne::wait_for_initialization();
 
