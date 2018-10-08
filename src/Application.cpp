@@ -16,6 +16,7 @@
 #include "Graphics/Tests/ITestSuite.h"
 #include "Graphics/Tests/PlainQuad.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
+#include "Graphics/Tests/CubeMapTexture.h"
 
 namespace stone {
 
@@ -34,7 +35,8 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
 
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
 }
 
 Application::~Application()
@@ -70,7 +72,7 @@ void Application::OnInitialize(int i_param)
 	// insigne settings
 	insigne::g_settings.frame_shader_allocator_size_mb = 4u;
 	insigne::g_settings.frame_buffers_allocator_size_mb = 16u;
-	insigne::g_settings.frame_textures_allocator_size_mb = 4u;
+	insigne::g_settings.frame_textures_allocator_size_mb = 48u;
 	insigne::g_settings.frame_render_allocator_size_mb = 4u;
 	insigne::g_settings.frame_draw_allocator_size_mb = 4u;
 
