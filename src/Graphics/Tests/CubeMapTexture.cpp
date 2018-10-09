@@ -36,8 +36,7 @@ in mediump vec3 v_SampleDir_W;
 
 void main()
 {
-	mediump vec3 sampleDir = normalize(v_SampleDir_W);
-	mediump vec3 outColor = texture(u_Tex, sampleDir).rgb;
+	mediump vec3 outColor = texture(u_Tex, v_SampleDir_W).rgb;
 	o_Color = vec4(outColor, 1.0f);
 }
 )";
@@ -125,12 +124,12 @@ void CubeMapTexture::OnInitialize()
 		insigne::ib_handle_t newIB = insigne::create_ib(desc);
 
 		m_Indices.init(36u, &g_StreammingAllocator);
-		m_Indices.push_back(0);
+		m_Indices.push_back(2);
 		m_Indices.push_back(1);
-		m_Indices.push_back(2);
-		m_Indices.push_back(2);
-		m_Indices.push_back(3);
 		m_Indices.push_back(0);
+		m_Indices.push_back(0);
+		m_Indices.push_back(3);
+		m_Indices.push_back(2);
 
 		m_Indices.push_back(4);
 		m_Indices.push_back(5);
@@ -196,7 +195,7 @@ void CubeMapTexture::OnInitialize()
 	}
 
 	{
-		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/alexs_apartment.cbskb");
+		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/cubeuvchecker.cbskb");
 		floral::file_stream dataStream;
 
 		dataStream.buffer = (p8)m_MemoryArena->allocate(texFile.file_size);
@@ -227,12 +226,10 @@ void CubeMapTexture::OnInitialize()
 		demoTexDesc.has_mipmap = true;
 		const size dataSize = insigne::prepare_texture_desc(demoTexDesc);
 		p8 pData = (p8)demoTexDesc.data;
-		// > This is where it get interesting
-		// > When displaying image in the screen, the usual coordinate origin for us is in upper left corner
-		// 	and the data stored in disk *may* in scanlines from top to bottom
-		// > But the texture coordinate origin of OpenGL starts from bottom left corner
-		// 	and the data stored will be read and displayed in a order from bottom to top
-		// Thus, we have to store our texture data in disk in the order of bottom to top scanlines
+		// > This is where it get *really* interesting
+		// 	Totally opposite of normal 2D texture mapping, CubeMapping define the origin of the texture sampling coordinate
+		// 	from the lower left corner. OmegaLUL
+		// > Reason: historical reason (from Renderman)
 		dataStream.read_bytes((p8)demoTexDesc.data, dataSize);
 
 		m_Texture = insigne::create_texture(demoTexDesc);
