@@ -262,16 +262,110 @@ void VectorMath::OnInitialize()
 		m_Cube.push_back(v7);
 		m_Cube.push_back(v4);
 		m_Cube.push_back(v0);
+
+		m_TranslationCube.init(36u, m_MemoryArena);
+		m_ScaleCube.init(36u, m_MemoryArena);
+		m_RotationCube.init(36u, m_MemoryArena);
+		m_XFormCube.init(36u, m_MemoryArena);
+		m_TranslationCube = m_Cube;
+		m_ScaleCube = m_Cube;
+		m_RotationCube = m_Cube;
+		m_XFormCube = m_Cube;
 	}
 }
 
 void VectorMath::OnUpdate(const f32 i_deltaMs)
 {
 	m_DebugDrawer.BeginFrame();
-	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 2.0f, 2.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-	m_DebugDrawer.DrawAABB3D(floral::aabb3f(floral::vec3f(0.8f), floral::vec3f(1.5f)), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
-	m_DebugDrawer.DrawIcosahedron3D(floral::vec3f(0.0f, 0.0f, -3.0f), 0.5, floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
-	m_DebugDrawer.DrawPolygon3D(m_Cube, floral::vec4f(1.0f, 0.0f, 1.0f, 1.0f));
+	//m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 2.0f, 2.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	//m_DebugDrawer.DrawAABB3D(floral::aabb3f(floral::vec3f(0.8f), floral::vec3f(1.5f)), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	//m_DebugDrawer.DrawIcosahedron3D(floral::vec3f(0.0f, 0.0f, -3.0f), 0.5, floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+	//m_DebugDrawer.DrawPolygon3D(m_Cube, floral::vec4f(1.0f, 0.0f, 1.0f, 1.0f));
+	// cpu translation test
+	static f32 s_elapsedTime = 0.0f;
+	s_elapsedTime += i_deltaMs;
+	{
+		floral::vec3f delta(-2.0f, 0.0f, 2.0f * sinf(floral::to_radians(s_elapsedTime / 10.0f)));
+		floral::mat4x4f m = floral::construct_translation3d(delta);
+		for (u32 i = 0; i < m_Cube.get_size(); i++) {
+			floral::vec4f v = m * floral::vec4f(m_Cube[i] * 0.5f, 1.0f);
+			m_TranslationCube[i] = floral::vec3f(v.x, v.y, v.z);
+		}
+		m_DebugDrawer.DrawPolygon3D(m_TranslationCube, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	}
+	{
+		floral::vec3f delta(
+				0.2f + 0.3f * (1.0f + sinf(floral::to_radians(s_elapsedTime / 10.0f)) / 2.0f),
+				0.2f + 0.3f * (1.0f + cosf(floral::to_radians(s_elapsedTime / 10.0f)) / 2.0f),
+				0.2f + 0.3f * (1.0f + sinf(floral::to_radians(s_elapsedTime / 10.0f)) / 2.0f));
+		floral::mat4x4f m = floral::construct_scaling3d(delta);
+		for (u32 i = 0; i < m_Cube.get_size(); i++) {
+			floral::vec4f v = m * floral::vec4f(m_Cube[i] * 0.5f, 1.0f);
+			m_ScaleCube[i] = floral::vec3f(v.x, v.y, v.z) + floral::vec3f(1.0f, 0.0f, -2.0f);
+		}
+		m_DebugDrawer.DrawPolygon3D(m_ScaleCube, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	}
+	{
+		floral::vec3f deltaEuler1(720.0f * sinf(floral::to_radians(s_elapsedTime / 50.0f)), 0.0f, 0.0f);
+		floral::vec3f deltaEuler2(0.0f, 720.0f * sinf(floral::to_radians(s_elapsedTime / 50.0f)), 0.0f);
+		floral::vec3f deltaEuler3(0.0f, 0.0f, 720.0f * sinf(floral::to_radians(s_elapsedTime / 50.0f)));
+		floral::vec3f deltaEuler4(720.0f * sinf(floral::to_radians(s_elapsedTime / 50.0f)),
+					720.0f * cosf(floral::to_radians(s_elapsedTime / 50.0f)),
+					-720.0f * sinf(floral::to_radians(s_elapsedTime / 50.0f)));
+		floral::quaternionf q1 = floral::construct_quaternion_euler(deltaEuler1);
+		floral::quaternionf q2 = floral::construct_quaternion_euler(deltaEuler2);
+		floral::quaternionf q3 = floral::construct_quaternion_euler(deltaEuler3);
+		floral::quaternionf q4 = floral::construct_quaternion_euler(deltaEuler4);
+		floral::mat4x4f m1 = q1.to_transform();
+		floral::mat4x4f m2 = q2.to_transform();
+		floral::mat4x4f m3 = q3.to_transform();
+		floral::mat4x4f m4 = q4.to_transform();
+
+		for (u32 i = 0; i < m_Cube.get_size(); i++) {
+			floral::vec4f v = m1 * floral::vec4f(m_Cube[i] * floral::vec3f(0.1f, 0.2f, 0.1f), 1.0f);
+			m_RotationCube[i] = floral::vec3f(v.x, v.y, v.z) + floral::vec3f(1.0f, 0.0f, 2.0f);
+		}
+		m_DebugDrawer.DrawPolygon3D(m_RotationCube, floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+
+		for (u32 i = 0; i < m_Cube.get_size(); i++) {
+			floral::vec4f v = m2 * floral::vec4f(m_Cube[i] * floral::vec3f(0.1f, 0.1f, 0.2f), 1.0f);
+			m_RotationCube[i] = floral::vec3f(v.x, v.y, v.z) + floral::vec3f(1.0f, 0.0f, 1.5f);
+		}
+		m_DebugDrawer.DrawPolygon3D(m_RotationCube, floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+
+		for (u32 i = 0; i < m_Cube.get_size(); i++) {
+			floral::vec4f v = m3 * floral::vec4f(m_Cube[i] * floral::vec3f(0.2f, 0.1f, 0.1f), 1.0f);
+			m_RotationCube[i] = floral::vec3f(v.x, v.y, v.z) + floral::vec3f(1.0f, 0.0f, 1.0f);
+		}
+		m_DebugDrawer.DrawPolygon3D(m_RotationCube, floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+
+		for (u32 i = 0; i < m_Cube.get_size(); i++) {
+			floral::vec4f v = m4 * floral::vec4f(m_Cube[i] * floral::vec3f(0.1f, 0.1f, 0.1f), 1.0f);
+			m_RotationCube[i] = floral::vec3f(v.x, v.y, v.z) + floral::vec3f(1.0f, 0.0f, 0.5f);
+		}
+		m_DebugDrawer.DrawPolygon3D(m_RotationCube, floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+	}
+	{
+		floral::vec3f deltaPos(0.0f, 0.0f, 2.0f * sinf(floral::to_radians(s_elapsedTime / 10.0f)));
+		floral::vec3f deltaScl(
+				0.2f + 0.3f * (1.0f + sinf(floral::to_radians(s_elapsedTime / 10.0f)) / 2.0f),
+				0.2f + 0.3f * (1.0f + cosf(floral::to_radians(s_elapsedTime / 10.0f)) / 2.0f),
+				0.2f + 0.3f * (1.0f + sinf(floral::to_radians(s_elapsedTime / 10.0f)) / 2.0f));
+		floral::vec3f deltaRot(720.0f * sinf(floral::to_radians(s_elapsedTime / 50.0f)),
+					720.0f * cosf(floral::to_radians(s_elapsedTime / 50.0f)),
+					-720.0f * sinf(floral::to_radians(s_elapsedTime / 50.0f)));
+		floral::mat4x4f t = floral::construct_translation3d(deltaPos);
+		floral::mat4x4f s = floral::construct_scaling3d(deltaScl);
+		floral::quaternionf q = floral::construct_quaternion_euler(deltaRot);
+		floral::mat4x4f r = q.to_transform();
+		floral::mat4x4f m = t * r * s;
+
+		for (u32 i = 0; i < m_Cube.get_size(); i++) {
+			floral::vec4f v = m * floral::vec4f(m_Cube[i] * 0.4f, 1.0f);
+			m_XFormCube[i] = floral::vec3f(v.x, v.y, v.z);
+		}
+		m_DebugDrawer.DrawPolygon3D(m_XFormCube, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	}
 	m_DebugDrawer.EndFrame();
 }
 
