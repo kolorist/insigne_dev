@@ -35,6 +35,8 @@ class VectorMath : public ITestSuite {
 		floral::camera_view_t					m_CamView;
 		floral::camera_persp_t					m_CamProj;
 		floral::mat4x4f							m_WVP;
+
+		insigne::framebuffer_handle_t			m_FbHandle;
 };
 
 }

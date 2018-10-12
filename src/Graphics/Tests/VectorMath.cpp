@@ -272,6 +272,19 @@ void VectorMath::OnInitialize()
 		m_RotationCube = m_Cube;
 		m_XFormCube = m_Cube;
 	}
+
+	{
+		insigne::framebuffer_desc_t fbDesc = insigne::create_framebuffer_desc();
+		fbDesc.clear_color = floral::vec4f(0.3f, 0.4f, 0.5f, 1.0f);
+		fbDesc.width = 1024;
+		fbDesc.height = 1024;
+		fbDesc.scale = 1.0f;
+		fbDesc.has_depth = true;
+		fbDesc.color_attachments->push_back(insigne::color_attachment_t("color0", insigne::texture_format_e::hdr_rgba));
+
+		m_FbHandle = insigne::create_framebuffer(fbDesc);
+	}
+	insigne::dispatch_render_pass();
 }
 
 void VectorMath::OnUpdate(const f32 i_deltaMs)
@@ -371,9 +384,11 @@ void VectorMath::OnUpdate(const f32 i_deltaMs)
 
 void VectorMath::OnRender(const f32 i_deltaMs)
 {
+	//insigne::begin_render_pass(m_FbHandle);
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	// render here
 	m_DebugDrawer.Render(m_WVP);
+	//insigne::end_render_pass(m_FbHandle);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
