@@ -9,8 +9,7 @@
 
 namespace stone {
 
-static const_cstr s_VertexShader = R"(
-#version 300 es
+static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
 layout (location = 1) in mediump vec4 l_Color;
 
@@ -29,8 +28,7 @@ void main() {
 }
 )";
 
-static const_cstr s_FragmentShader = R"(
-#version 300 es
+static const_cstr s_FragmentShader = R"(#version 300 es
 
 layout (location = 0) out mediump vec4 o_Color;
 

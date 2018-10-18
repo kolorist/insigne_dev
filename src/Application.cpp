@@ -35,10 +35,10 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
 
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
 }
 
 Application::~Application()
@@ -52,7 +52,6 @@ void Application::UpdateFrame(f32 i_deltaMs)
 	PROFILE_SCOPE(UpdateFrame);
 	if (m_CurrentTestSuite)
 		m_CurrentTestSuite->OnUpdate(i_deltaMs);
-
 	/*
 	s_profileEvents[0].empty();
 	lotus::unpack_capture(s_profileEvents[0], 0);

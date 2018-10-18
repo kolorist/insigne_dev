@@ -6,9 +6,10 @@
 #include <insigne/ut_render.h>
 
 namespace stone {
-
-static const_cstr s_VertexShader = R"(
-#version 300 es
+#define TEST_CASE 2
+#if (TEST_CASE == 0)
+// very simple, stress nothing
+static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
 
 void main() {
@@ -17,8 +18,7 @@ void main() {
 }
 )";
 
-static const_cstr s_FragmentShader = R"(
-#version 300 es
+static const_cstr s_FragmentShader = R"(#version 300 es
 
 layout (location = 0) out mediump vec4 o_Color;
 
@@ -32,6 +32,83 @@ void main()
 	o_Color = iu_Color;
 }
 )";
+#elif (TEST_CASE == 1)
+// arithmetic (tripipe) stress
+static const_cstr s_VertexShader = R"(#version 300 es
+layout (location = 0) in highp vec3 l_Position_L;
+
+out mediump vec3 v_color;
+
+void main() {
+	highp vec4 pos_W = vec4(l_Position_L, 1.0f);
+	v_color = l_Position_L;
+	gl_Position = pos_W;
+}
+)";
+
+static const_cstr s_FragmentShader = R"(#version 300 es
+
+layout (location = 0) out mediump vec4 o_Color;
+
+layout(std140) uniform ub_Data
+{
+	mediump vec4 iu_Color;
+};
+
+in mediump vec3 v_color;
+
+void main()
+{
+	mediump vec3 a = v_color;
+	a = sqrt(a) * a / log(a) / sin(a) / cos(a) / tan(a) * sqrt(a);
+	a *= vec3(0.00001);
+	o_Color = iu_Color + vec4(a, 1.0f);
+}
+)";
+#elif (TEST_CASE == 2)
+// varying (tripipe) stress
+static const_cstr s_VertexShader = R"(#version 300 es
+layout (location = 0) in highp vec3 l_Position_L;
+
+out mediump vec3 v_color0;
+out mediump vec3 v_color1;
+out mediump vec3 v_color2;
+out mediump vec3 v_color3;
+out highp vec3 v_color4;
+
+void main() {
+	highp vec4 pos_W = vec4(l_Position_L, 1.0f);
+	v_color0 = l_Position_L.xxx;
+	v_color1 = l_Position_L.yyy;
+	v_color2 = l_Position_L.zzz;
+	v_color3 = l_Position_L.xyz;
+	v_color4 = l_Position_L.zyx;
+	gl_Position = pos_W;
+}
+)";
+
+static const_cstr s_FragmentShader = R"(#version 300 es
+
+layout (location = 0) out mediump vec4 o_Color;
+
+layout(std140) uniform ub_Data
+{
+	mediump vec4 iu_Color;
+};
+
+in mediump vec3 v_color0;
+in mediump vec3 v_color1;
+in mediump vec3 v_color2;
+in mediump vec3 v_color3;
+in highp vec3 v_color4;
+
+void main()
+{
+	mediump vec3 a = (v_color0 + v_color1 + v_color2 + v_color3 + v_color4) / 5.0f;
+	o_Color = iu_Color * vec4(a, 1.0f);
+}
+)";
+#endif
 
 PlainQuadTest::PlainQuadTest()
 {

@@ -83,12 +83,10 @@ void run(event_buffer_t* i_evtBuffer)
 						}
 						break;
 					}
-
 				default:
 					break;
 			};
 		}
-
 		s_Controller->IOEvents.OnFrameStep(16.6f);
 	}
 }
