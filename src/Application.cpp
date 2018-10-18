@@ -18,6 +18,7 @@
 #include "Graphics/Tests/PlainTextureQuad.h"
 #include "Graphics/Tests/CubeMapTexture.h"
 #include "Graphics/Tests/VectorMath.h"
+#include "Graphics/Tests/GPUVectorMath.h"
 
 namespace stone {
 
@@ -35,10 +36,11 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
 
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
 }
 
 Application::~Application()

@@ -46,6 +46,7 @@ file (GLOB_RECURSE file_list
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainTextureQuad.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CubeMapTexture.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/VectorMath.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GPUVectorMath.cpp"
 	)
 
 add_definitions(
