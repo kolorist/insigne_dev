@@ -216,6 +216,7 @@ void GPUVectorMath::OnInitialize()
 
 	}
 
+	SnapshotAllocatorInfos();
 	insigne::dispatch_render_pass();
 }
 
