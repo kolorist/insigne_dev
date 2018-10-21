@@ -213,7 +213,6 @@ void GPUVectorMath::OnInitialize()
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Static");
 			m_Material.uniform_blocks[ubSlot].value = m_StaticDataUB;
 		}
-
 	}
 
 	SnapshotAllocatorInfos();

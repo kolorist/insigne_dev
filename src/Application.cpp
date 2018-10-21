@@ -19,6 +19,8 @@
 #include "Graphics/Tests/CubeMapTexture.h"
 #include "Graphics/Tests/VectorMath.h"
 #include "Graphics/Tests/GPUVectorMath.h"
+#include "Graphics/Tests/CornelBox.h"
+#include "Graphics/Tests/OmniShadow.h"
 
 namespace stone {
 
@@ -40,7 +42,9 @@ Application::Application(Controller* i_controller)
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
 }
 
 Application::~Application()
@@ -90,7 +94,7 @@ void Application::OnInitialize(int i_param)
 	// 3- ScreenSpaceSurface
 	// 4- ImGuiSurface
 	// thus the order of declaration must be reversed
-	typedef type_list_3(DemoSurface, DemoTexturedSurface, DebugLine)		SurfaceTypeList;
+	typedef type_list_4(SurfacePNC, DemoSurface, DemoTexturedSurface, DebugLine)		SurfaceTypeList;
 	insigne::initialize_render_thread<SurfaceTypeList>();
 	insigne::wait_for_initialization();
 
