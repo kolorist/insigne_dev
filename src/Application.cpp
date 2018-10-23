@@ -4,6 +4,7 @@
 #include <clover.h>
 #include <lotus/events.h>
 #include <lotus/profiler.h>
+#include <insigne/configs.h>
 #include <insigne/system.h>
 #include <insigne/driver.h>
 #include <insigne/ut_render.h>
@@ -86,6 +87,9 @@ void Application::OnInitialize(int i_param)
 	insigne::g_settings.frame_draw_allocator_size_mb = 4u;
 
 	insigne::g_settings.draw_command_buffer_size = 64u;
+
+	insigne::g_settings.native_res_x = 1280u;
+	insigne::g_settings.native_res_y = 720u;
 	
 	// graphics init
 	insigne::initialize_driver();

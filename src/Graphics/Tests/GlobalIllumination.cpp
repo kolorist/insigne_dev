@@ -8,7 +8,34 @@
 #include "Graphics/GeometryBuilder.h"
 
 namespace stone {
+// final blit
+static const_cstr s_FinalBlitVS = R"(#version 300 es
+layout (location = 0) in highp vec3 l_Position_L;
+layout (location = 1) in highp vec2 l_TexCoord;
 
+out mediump vec2 v_TexCoord;
+
+void main() {
+	v_TexCoord = l_TexCoord;
+	gl_Position = vec4(l_Position_L, 1.0f);
+}
+)";
+
+static const_cstr s_FinalBlitFS = R"(#version 300 es
+layout (location = 0) out mediump vec4 o_Color;
+
+in mediump vec2 v_TexCoord;
+
+uniform mediump sampler2D iu_Tex;
+
+void main() {
+	mediump vec3 color = texture(iu_Tex, v_TexCoord).rgb;
+	o_Color = vec4(color.r, color.r, color.r, 1.0f);
+	//o_Color = vec4(v_TexCoord.x, v_TexCoord.y, 0.0f, 1.0f);
+}
+)";
+
+// shadow
 static const_cstr s_ShadowVS = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
 
@@ -25,13 +52,16 @@ void main() {
 )";
 
 static const_cstr s_ShadowFS = R"(#version 300 es
+layout (location = 0) out mediump vec4 o_Color;
 
 void main()
 {
+	o_Color = vec4(1.0f);
 	// nothing :)
 }
 )";
 
+// material
 static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
 layout (location = 1) in highp vec3 l_Normal_L;
@@ -112,7 +142,8 @@ void main()
 	highp float sld = v_LightSpacePos.z * 0.5f + 0.5f;
 	mediump float shadowMask = 1.0f - step(0.0002f, sld - ld);
 
-	o_Color = vec4(ld, ld, ld, 1.0f);
+	//o_Color = vec4(color * shadowMask, 1.0f);
+	o_Color = vec4(1.0f);
 }
 )";
 
@@ -128,8 +159,20 @@ void GlobalIllumination::OnInitialize()
 {
 	m_Vertices.init(128u, &g_StreammingAllocator);
 	m_Indices.init(256u, &g_StreammingAllocator);
+	m_SSVertices.init(4u, &g_StreammingAllocator);
+	m_SSIndices.init(6u, &g_StreammingAllocator);
 
 	floral::aabb3f sceneBB;
+
+	{
+		m_SSVertices.push_back({ floral::vec3f(-1.0f, -1.0f, 0.0f), floral::vec2f(0.0f, 0.0f) });
+		m_SSVertices.push_back({ floral::vec3f(1.0f, -1.0f, 0.0f), floral::vec2f(1.0f, 0.0f) });
+		m_SSVertices.push_back({ floral::vec3f(1.0f, 1.0f, 0.0f), floral::vec2f(1.0f, 1.0f) });
+		m_SSVertices.push_back({ floral::vec3f(-1.0f, 1.0f, 0.0f), floral::vec2f(0.0f, 1.0f) });
+
+		m_SSIndices.push_back(0); m_SSIndices.push_back(1); m_SSIndices.push_back(2);
+		m_SSIndices.push_back(2); m_SSIndices.push_back(3); m_SSIndices.push_back(0);
+	}
 
 	{
 		// bottom
@@ -207,6 +250,33 @@ void GlobalIllumination::OnInitialize()
 		m_SceneAABB = sceneBB;
 	}
 
+	// ss quad
+	{
+		insigne::vbdesc_t desc;
+		desc.region_size = SIZE_KB(64);
+		desc.stride = sizeof(DemoTexturedVertex);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::vb_handle_t newVB = insigne::create_vb(desc);
+		insigne::update_vb(newVB, &m_SSVertices[0], m_SSVertices.get_size(), 0);
+		m_SSVB = newVB;
+	}
+
+	{
+		insigne::ibdesc_t desc;
+		desc.region_size = SIZE_KB(16);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ib_handle_t newIB = insigne::create_ib(desc);
+		insigne::update_ib(newIB, &m_SSIndices[0], m_SSIndices.get_size(), 0);
+		m_SSIB = newIB;
+	}
+
+	// geometry
 	{
 		insigne::vbdesc_t desc;
 		desc.region_size = SIZE_KB(64);
@@ -233,11 +303,21 @@ void GlobalIllumination::OnInitialize()
 	}
 
 	{
-		// 1024 * 1024
+		// 1024 x 1024
 		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
+		desc.color_attachments->push_back(insigne::color_attachment_t("main_color", insigne::texture_format_e::hdr_rgba));
 		desc.width = 1024;
 		desc.height = 1024;
 		m_ShadowRenderBuffer = insigne::create_framebuffer(desc);
+	}
+
+	{
+		// 1024 x 720
+		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
+		desc.color_attachments->push_back(insigne::color_attachment_t("main_color", insigne::texture_format_e::hdr_rgba));
+		desc.width = insigne::g_settings.native_res_x;
+		desc.height = insigne::g_settings.native_res_y;
+		m_MainRenderBuffer = insigne::create_framebuffer(desc);
 	}
 
 	// camera
@@ -255,7 +335,7 @@ void GlobalIllumination::OnInitialize()
 		m_CamView.look_at = floral::vec3f(0.0f, 0.0f, 0.0f);
 		m_CamView.up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
 
-		m_CamProj.near_plane = 0.01f; m_CamProj.far_plane = 100.0f;
+		m_CamProj.near_plane = 0.01f; m_CamProj.far_plane = 20.0f;
 		m_CamProj.fov = 60.0f;
 		m_CamProj.aspect_ratio = 16.0f / 9.0f;
 
@@ -341,6 +421,28 @@ void GlobalIllumination::OnInitialize()
 		m_ShadowUB = newUB;
 	}
 
+	// ss shader
+	{
+		insigne::shader_desc_t desc = insigne::create_shader_desc();
+		desc.reflection.textures->push_back(insigne::shader_param_t("iu_Tex", insigne::param_data_type_e::param_sampler2d));
+
+		strcpy(desc.vs, s_FinalBlitVS);
+		strcpy(desc.fs, s_FinalBlitFS);
+		desc.vs_path = floral::path("/internal/ssquad_vs");
+		desc.fs_path = floral::path("/internal/ssquad_fs");
+
+		m_FinalBlitShader = insigne::create_shader(desc);
+		insigne::infuse_material(m_FinalBlitShader, m_FinalBlitMaterial);
+
+		{
+			//insigne::texture_handle_t tex = insigne::extract_depth_stencil_attachment(m_ShadowRenderBuffer);
+			//insigne::texture_handle_t tex = insigne::extract_color_attachment(m_MainRenderBuffer, 0);
+			insigne::texture_handle_t tex = insigne::extract_color_attachment(m_ShadowRenderBuffer, 0);
+			u32 texSlot = insigne::get_material_texture_slot(m_FinalBlitMaterial, "iu_Tex");
+			m_FinalBlitMaterial.textures[texSlot].value = tex;
+		}
+	}
+
 	// shadow shader
 	{
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
@@ -361,6 +463,7 @@ void GlobalIllumination::OnInitialize()
 		}
 	}
 
+	// scene shader
 	{
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
 		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
@@ -409,7 +512,7 @@ void GlobalIllumination::OnInitialize()
 void GlobalIllumination::OnUpdate(const f32 i_deltaMs)
 {
 	m_DebugDrawer.BeginFrame();
-	m_DebugDrawer.DrawAABB3D(m_SceneAABB, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	//m_DebugDrawer.DrawAABB3D(m_SceneAABB, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 	m_DebugDrawer.EndFrame();
 }
 
@@ -420,9 +523,14 @@ void GlobalIllumination::OnRender(const f32 i_deltaMs)
 	insigne::end_render_pass(m_ShadowRenderBuffer);
 	insigne::dispatch_render_pass();
 
-	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
+	insigne::begin_render_pass(m_MainRenderBuffer);
 	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
 	m_DebugDrawer.Render(m_SceneData.WVP);
+	insigne::end_render_pass(m_MainRenderBuffer);
+	insigne::dispatch_render_pass();
+
+	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
+	insigne::draw_surface<DemoTexturedSurface>(m_SSVB, m_SSIB, m_FinalBlitMaterial);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();

@@ -25,7 +25,9 @@ class GlobalIllumination : public ITestSuite {
 		DebugDrawer								m_DebugDrawer;
 
 		floral::fixed_array<VertexPNC, LinearAllocator>		m_Vertices;
+		floral::fixed_array<DemoTexturedVertex, LinearAllocator>	m_SSVertices;
 		floral::fixed_array<u32, LinearAllocator>			m_Indices;
+		floral::fixed_array<u32, LinearAllocator>			m_SSIndices;
 
 		struct LightData {
 			floral::vec4f						Direction;	// uniform buffer layout, sorry
@@ -45,7 +47,9 @@ class GlobalIllumination : public ITestSuite {
 		floral::aabb3f							m_SceneAABB;
 
 		insigne::vb_handle_t					m_VB;
+		insigne::vb_handle_t					m_SSVB;
 		insigne::ib_handle_t					m_IB;
+		insigne::ib_handle_t					m_SSIB;
 		insigne::ub_handle_t					m_UB;
 		insigne::ub_handle_t					m_LightDataUB;
 		insigne::ub_handle_t					m_ShadowUB;
@@ -54,7 +58,11 @@ class GlobalIllumination : public ITestSuite {
 		insigne::shader_handle_t				m_ShadowShader;
 		insigne::material_desc_t				m_ShadowMaterial;
 
+		insigne::shader_handle_t				m_FinalBlitShader;
+		insigne::material_desc_t				m_FinalBlitMaterial;
+
 		insigne::framebuffer_handle_t			m_ShadowRenderBuffer;
+		insigne::framebuffer_handle_t			m_MainRenderBuffer;
 
 		floral::camera_view_t					m_CamView;
 		floral::camera_persp_t					m_CamProj;
