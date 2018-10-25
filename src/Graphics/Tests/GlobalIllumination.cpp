@@ -161,7 +161,8 @@ void GlobalIllumination::OnInitialize()
 	m_Indices.init(256u, &g_StreammingAllocator);
 	m_SSVertices.init(4u, &g_StreammingAllocator);
 	m_SSIndices.init(6u, &g_StreammingAllocator);
-	m_SHCamPos.init(64u, &g_StreammingAllocator);
+	m_SHCamPos.init(27u, &g_StreammingAllocator);
+	m_SHWVPs.init(27 * 6, &g_StreammingAllocator);
 
 	floral::aabb3f sceneBB;
 
@@ -252,19 +253,56 @@ void GlobalIllumination::OnInitialize()
 
 		// sh cam pos
 		{
+			//		+Y
+			//	+Z	-X	-Z	+X
+			//		-Y
+			static floral::vec3f faceUpDirs[] = {
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive X
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// negative X
+				floral::vec3f(1.0f, 0.0f, 0.0f),	// positive Y
+				floral::vec3f(0.0f, 0.0f, -1.0f),	// negative Y
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Z
+				floral::vec3f(0.0f, 1.0f, 0.0f)	// negative X
+			};
+
+			static floral::vec3f faceLookAtDirs[] = {
+				floral::vec3f(1.0f, 0.0f, 0.0f),	// positive X
+				floral::vec3f(-1.0f, 0.0f, 0.0f),	// negative X
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Y
+				floral::vec3f(0.0f, -1.0f, 0.0f),	// negative Y
+				floral::vec3f(0.0f, 0.0f, 1.0f),	// positive Z
+				floral::vec3f(0.0f, 0.0f, -1.0f)	// negative Z
+			};
+
+			floral::camera_persp_t camProj;
+			camProj.near_plane = 0.01f; camProj.far_plane = 20.0f;
+			camProj.fov = 45.0f;
+			camProj.aspect_ratio = 1.0f;
+			floral::mat4x4f proj = floral::construct_perspective(camProj);
+
 			f32 dx = m_SceneAABB.max_corner.x - m_SceneAABB.min_corner.x;
 			f32 dy = m_SceneAABB.max_corner.y - m_SceneAABB.min_corner.y;
 			f32 dz = m_SceneAABB.max_corner.z - m_SceneAABB.min_corner.z;
-			const u32 steps = 3;
+			const u32 steps = 2;
 			const f32 disp = 0.2f;
 			const f32 stepDist = (dx - disp * 2.0f) / (f32)steps;
 			for (u32 i = 0; i <= steps; i++) {
 				for (u32 j = 0; j <= steps; j++) {
 					for (u32 k = 0; k <= steps; k++) {
-						m_SHCamPos.push_back(floral::vec3f(
-									m_SceneAABB.min_corner.x + disp + i * stepDist,
-									m_SceneAABB.min_corner.y + disp + j * stepDist,
-									m_SceneAABB.min_corner.z + disp + k * stepDist));
+						floral::vec3f camPos(
+								m_SceneAABB.min_corner.x + disp + i * stepDist,
+								m_SceneAABB.min_corner.y + disp + j * stepDist,
+								m_SceneAABB.min_corner.z + disp + k * stepDist);
+
+						m_SHCamPos.push_back(camPos);
+						for (u32 f = 0; f < 6; f++) {
+							floral::camera_view_t camView;
+							camView.position = camPos;
+							camView.look_at = faceLookAtDirs[f];
+							camView.up_direction = faceUpDirs[f];
+							floral::mat4x4f wvp = proj * floral::construct_lookat_dir(camView);
+							m_SHWVPs.push_back(wvp);
+						}
 					}
 				}
 			}
@@ -342,12 +380,10 @@ void GlobalIllumination::OnInitialize()
 	}
 
 	{
-		// 2048 x 2048
-		// 64 sh = 8 x 8
-		// 256 size cube map
+		// 1536 x 6192
 		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
-		desc.color_attachments->push_back(insigne::color_attachment_t("main_color", insigne::texture_format::hdr_rgba));
-		desc.width = 2048; desc.height = 2048;
+		desc.color_attachments->push_back(insigne::color_attachment_t("main_color", insigne::texture_format_e::hdr_rgba));
+		desc.width = 1536; desc.height = 6192;
 		m_SHRenderBuffer = insigne::create_framebuffer(desc);
 	}
 
@@ -370,7 +406,7 @@ void GlobalIllumination::OnInitialize()
 		m_CamProj.fov = 60.0f;
 		m_CamProj.aspect_ratio = 16.0f / 9.0f;
 
-		m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
+		m_SceneData.WVP = floral::construct_perspective(m_CamProj) * floral::construct_lookat_point(m_CamView);
 		m_SceneData.XForm = floral::mat4x4f(1.0f);
 		m_SceneData.CameraPos = floral::vec4f(5.0f, 0.5f, 0.0f, 1.0f);
 
@@ -544,17 +580,43 @@ void GlobalIllumination::OnUpdate(const f32 i_deltaMs)
 {
 	m_DebugDrawer.BeginFrame();
 	m_DebugDrawer.DrawAABB3D(m_SceneAABB, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	for (u32 i = 0; i < 27; i++) {
+		m_DebugDrawer.DrawIcosahedron3D(m_SHCamPos[i], 0.1f, floral::vec4f(1.0f, 0.0f, 1.0f, 1.0f));
+	}
 	m_DebugDrawer.EndFrame();
 }
 
 void GlobalIllumination::OnRender(const f32 i_deltaMs)
 {
+
 	insigne::begin_render_pass(m_ShadowRenderBuffer);
 	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_ShadowMaterial);
 	insigne::end_render_pass(m_ShadowRenderBuffer);
 	insigne::dispatch_render_pass();
 
+	{
+		static bool shPopulated = false;
+		if (!shPopulated)
+		{
+			for (u32 i = 0; i < 27; i++) {
+				for (u32 f = 0; f < 6; f++) {
+					insigne::begin_render_pass(m_SHRenderBuffer, 256 * f, 256 * i, 256, 256);
+					SceneData shScene;
+					shScene.XForm = m_SceneData.XForm;
+					shScene.WVP = m_SHWVPs[i * 6 + f];
+					shScene.CameraPos = floral::vec4f(m_SHCamPos[i].x, m_SHCamPos[i].y, m_SHCamPos[i].z, 1.0f);
+					insigne::copy_update_ub(m_UB, &shScene, sizeof(SceneData), 0);
+					insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
+					insigne::end_render_pass(m_SHRenderBuffer);
+					insigne::dispatch_render_pass();
+				}
+			}
+			shPopulated = true;
+		}
+	}
+
 	insigne::begin_render_pass(m_MainRenderBuffer);
+	insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
 	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
 	m_DebugDrawer.Render(m_SceneData.WVP);
 	insigne::end_render_pass(m_MainRenderBuffer);

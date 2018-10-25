@@ -28,6 +28,7 @@ class GlobalIllumination : public ITestSuite {
 		floral::fixed_array<DemoTexturedVertex, LinearAllocator>	m_SSVertices;
 		floral::fixed_array<u32, LinearAllocator>			m_Indices;
 		floral::fixed_array<u32, LinearAllocator>			m_SSIndices;
+		floral::fixed_array<floral::mat4x4f, LinearAllocator>	m_SHWVPs;
 
 		struct LightData {
 			floral::vec4f						Direction;	// uniform buffer layout, sorry
