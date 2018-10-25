@@ -61,6 +61,9 @@ class GlobalIllumination : public ITestSuite {
 		insigne::shader_handle_t				m_FinalBlitShader;
 		insigne::material_desc_t				m_FinalBlitMaterial;
 
+		insigne::framebuffer_handle_t			m_SHRenderBuffer;
+		floral::fixed_array<floral::vec3f, LinearAllocator>	m_SHCamPos;
+
 		insigne::framebuffer_handle_t			m_ShadowRenderBuffer;
 		insigne::framebuffer_handle_t			m_MainRenderBuffer;
 

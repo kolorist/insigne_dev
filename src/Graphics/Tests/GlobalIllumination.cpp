@@ -30,7 +30,7 @@ uniform mediump sampler2D iu_Tex;
 
 void main() {
 	mediump vec3 color = texture(iu_Tex, v_TexCoord).rgb;
-	o_Color = vec4(color.r, color.r, color.r, 1.0f);
+	o_Color = vec4(color, 1.0f);
 	//o_Color = vec4(v_TexCoord.x, v_TexCoord.y, 0.0f, 1.0f);
 }
 )";
@@ -142,8 +142,8 @@ void main()
 	highp float sld = v_LightSpacePos.z * 0.5f + 0.5f;
 	mediump float shadowMask = 1.0f - step(0.0002f, sld - ld);
 
-	//o_Color = vec4(color * shadowMask, 1.0f);
-	o_Color = vec4(1.0f);
+	o_Color = vec4(color * shadowMask, 1.0f);
+	//o_Color = vec4(1.0f);
 }
 )";
 
@@ -161,6 +161,7 @@ void GlobalIllumination::OnInitialize()
 	m_Indices.init(256u, &g_StreammingAllocator);
 	m_SSVertices.init(4u, &g_StreammingAllocator);
 	m_SSIndices.init(6u, &g_StreammingAllocator);
+	m_SHCamPos.init(64u, &g_StreammingAllocator);
 
 	floral::aabb3f sceneBB;
 
@@ -248,6 +249,26 @@ void GlobalIllumination::OnInitialize()
 			}
 		}
 		m_SceneAABB = sceneBB;
+
+		// sh cam pos
+		{
+			f32 dx = m_SceneAABB.max_corner.x - m_SceneAABB.min_corner.x;
+			f32 dy = m_SceneAABB.max_corner.y - m_SceneAABB.min_corner.y;
+			f32 dz = m_SceneAABB.max_corner.z - m_SceneAABB.min_corner.z;
+			const u32 steps = 3;
+			const f32 disp = 0.2f;
+			const f32 stepDist = (dx - disp * 2.0f) / (f32)steps;
+			for (u32 i = 0; i <= steps; i++) {
+				for (u32 j = 0; j <= steps; j++) {
+					for (u32 k = 0; k <= steps; k++) {
+						m_SHCamPos.push_back(floral::vec3f(
+									m_SceneAABB.min_corner.x + disp + i * stepDist,
+									m_SceneAABB.min_corner.y + disp + j * stepDist,
+									m_SceneAABB.min_corner.z + disp + k * stepDist));
+					}
+				}
+			}
+		}
 	}
 
 	// ss quad
@@ -318,6 +339,16 @@ void GlobalIllumination::OnInitialize()
 		desc.width = insigne::g_settings.native_res_x;
 		desc.height = insigne::g_settings.native_res_y;
 		m_MainRenderBuffer = insigne::create_framebuffer(desc);
+	}
+
+	{
+		// 2048 x 2048
+		// 64 sh = 8 x 8
+		// 256 size cube map
+		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
+		desc.color_attachments->push_back(insigne::color_attachment_t("main_color", insigne::texture_format::hdr_rgba));
+		desc.width = 2048; desc.height = 2048;
+		m_SHRenderBuffer = insigne::create_framebuffer(desc);
 	}
 
 	// camera
@@ -436,8 +467,8 @@ void GlobalIllumination::OnInitialize()
 
 		{
 			//insigne::texture_handle_t tex = insigne::extract_depth_stencil_attachment(m_ShadowRenderBuffer);
-			//insigne::texture_handle_t tex = insigne::extract_color_attachment(m_MainRenderBuffer, 0);
-			insigne::texture_handle_t tex = insigne::extract_color_attachment(m_ShadowRenderBuffer, 0);
+			insigne::texture_handle_t tex = insigne::extract_color_attachment(m_MainRenderBuffer, 0);
+			//insigne::texture_handle_t tex = insigne::extract_color_attachment(m_ShadowRenderBuffer, 0);
 			u32 texSlot = insigne::get_material_texture_slot(m_FinalBlitMaterial, "iu_Tex");
 			m_FinalBlitMaterial.textures[texSlot].value = tex;
 		}
@@ -512,7 +543,7 @@ void GlobalIllumination::OnInitialize()
 void GlobalIllumination::OnUpdate(const f32 i_deltaMs)
 {
 	m_DebugDrawer.BeginFrame();
-	//m_DebugDrawer.DrawAABB3D(m_SceneAABB, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawAABB3D(m_SceneAABB, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 	m_DebugDrawer.EndFrame();
 }
 
