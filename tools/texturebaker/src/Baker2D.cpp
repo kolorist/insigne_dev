@@ -171,7 +171,7 @@ void EvalSHBasis(const f32* dir, f64* res )
 #endif
 }
 
-void ComputeSH(const_cstr i_inputTexPath)
+void ComputeSH(const_cstr i_inputTexPath, const_cstr i_outputPath)
 {
 	CLOVER_INFO("Computing Spherial Harmonics Co-efficients...");
 	CLOVER_INFO("Input Texture: %s", i_inputTexPath);
@@ -187,67 +187,77 @@ void ComputeSH(const_cstr i_inputTexPath)
 			"  - Color Channels: %d",
 			width, height, numChannels);
 	s32 faceWidth = width / 6;
+	s32 probesCount = height / faceWidth;
+
+	FILE* fp = fopen(i_outputPath, "wb");
 
 	f32* normalizeData = g_TemporalArena.allocate_array<f32>(faceWidth * faceWidth * 4 * 6);
 	BuildNormalizerHStrip(faceWidth, normalizeData);
 
-	f64 SHr[NUM_SH_COEFF];
-	f64 SHg[NUM_SH_COEFF];
-	f64 SHb[NUM_SH_COEFF];
-	f64 SHdir[NUM_SH_COEFF];
+	for (s32 pc = 0; pc < probesCount; pc++) {		
+		f64 SHr[NUM_SH_COEFF];
+		f64 SHg[NUM_SH_COEFF];
+		f64 SHb[NUM_SH_COEFF];
+		f64 SHdir[NUM_SH_COEFF];
+		memset(SHr, 0, NUM_SH_COEFF * sizeof(f64));
+		memset(SHg, 0, NUM_SH_COEFF * sizeof(f64));
+		memset(SHb, 0, NUM_SH_COEFF * sizeof(f64));
+		memset(SHdir, 0, NUM_SH_COEFF * sizeof(f64));
 
-	memset(SHr, 0, NUM_SH_COEFF * sizeof(f64));
-	memset(SHg, 0, NUM_SH_COEFF * sizeof(f64));
-	memset(SHb, 0, NUM_SH_COEFF * sizeof(f64));
-	memset(SHdir, 0, NUM_SH_COEFF * sizeof(f64));
-
-	f64 weightAccum = 0.0;
-	f64 weight = 0.0;
-
-	for (s32 iFaceIdx = 0; iFaceIdx < 6; iFaceIdx++)
-	{
-		for (s32 y = 0; y < faceWidth; y++) // scanline
+		f64 weightAccum = 0.0;
+		f64 weight = 0.0;
+		
+		for (s32 iFaceIdx = 0; iFaceIdx < 6; iFaceIdx++)
 		{
-			//normCubeRowStartPtr = &m_NormCubeMap[iFaceIdx].m_ImgData[NormCubeMapNumChannels * (y * faceWidth)];
-			//srcCubeRowStartPtr	= &SrcCubeImage[iFaceIdx].m_ImgData[SrcCubeMapNumChannels * (y * faceWidth)];
-
-			for (s32 x = 0; x < faceWidth; x++) // pixel
+			for (s32 y = 0; y < faceWidth; y++) // scanline
 			{
-				//pointer to direction and solid angle in cube map associated with texel
-				//texelVect = &normCubeRowStartPtr[NormCubeMapNumChannels * x];
-				f32* texelVect = &normalizeData[(y * width + iFaceIdx * faceWidth + x) * 4];
-				weight = *(texelVect + 3);
+				s32 yy = y + pc * faceWidth;
+				//normCubeRowStartPtr = &m_NormCubeMap[iFaceIdx].m_ImgData[NormCubeMapNumChannels * (y * faceWidth)];
+				//srcCubeRowStartPtr	= &SrcCubeImage[iFaceIdx].m_ImgData[SrcCubeMapNumChannels * (y * faceWidth)];
 
-				EvalSHBasis(texelVect, SHdir);
-
-				// Convert to f64
-				f64 R = data[(y * width + iFaceIdx * faceWidth + x) * 3];
-				f64 G = data[(y * width + iFaceIdx * faceWidth + x) * 3 + 1];
-				f64 B = data[(y * width + iFaceIdx * faceWidth + x) * 3 + 2];
-
-				for (s32 i = 0; i < NUM_SH_COEFF; i++)
+				for (s32 x = 0; x < faceWidth; x++) // pixel
 				{
-					SHr[i] += R * SHdir[i] * weight;
-					SHg[i] += G * SHdir[i] * weight;
-					SHb[i] += B * SHdir[i] * weight;
-				}
+					//pointer to direction and solid angle in cube map associated with texel
+					//texelVect = &normCubeRowStartPtr[NormCubeMapNumChannels * x];
+					f32* texelVect = &normalizeData[(y * width + iFaceIdx * faceWidth + x) * 4];
+					weight = *(texelVect + 3);
 
-				weightAccum += weight;
+					EvalSHBasis(texelVect, SHdir);
+
+					// Convert to f64
+					f64 R = data[(yy * width + iFaceIdx * faceWidth + x) * 3];
+					f64 G = data[(yy * width + iFaceIdx * faceWidth + x) * 3 + 1];
+					f64 B = data[(yy * width + iFaceIdx * faceWidth + x) * 3 + 2];
+
+					for (s32 i = 0; i < NUM_SH_COEFF; i++)
+					{
+						SHr[i] += R * SHdir[i] * weight;
+						SHg[i] += G * SHdir[i] * weight;
+						SHb[i] += B * SHdir[i] * weight;
+					}
+
+					weightAccum += weight;
+				}
 			}
+		}
+		
+		CLOVER_DEBUG("%d ---", pc);
+		//Normalization - The sum of solid angle should be equal to the solid angle of the sphere (4 PI), so
+		// normalize in order our weightAccum exactly match 4 PI.
+		for (s32 i = 0; i < NUM_SH_COEFF; ++i)
+		{
+			SHr[i] *= 4.0 * CP_PI / weightAccum;
+			SHg[i] *= 4.0 * CP_PI / weightAccum;
+			SHb[i] *= 4.0 * CP_PI / weightAccum;
+
+			floral::vec3f v(SHr[i], SHg[i], SHb[i]);
+			fwrite(&v, sizeof(floral::vec3f), 1, fp);
+
+			CLOVER_DEBUG("floral::vec4f(%ff, %ff, %ff, 0.0f);", SHr[i], SHg[i], SHb[i]);
 		}
 	}
 
-	//Normalization - The sum of solid angle should be equal to the solid angle of the sphere (4 PI), so
-	// normalize in order our weightAccum exactly match 4 PI.
-	for (s32 i = 0; i < NUM_SH_COEFF; ++i)
-	{
-		SHr[i] *= 4.0 * CP_PI / weightAccum;
-		SHg[i] *= 4.0 * CP_PI / weightAccum;
-		SHb[i] *= 4.0 * CP_PI / weightAccum;
-
-		CLOVER_DEBUG("%f %f %f", SHr[i], SHg[i], SHb[i]);
-	}
-
+	fclose(fp);
 	g_TemporalArena.free_all();
 	delete[] data;
 }

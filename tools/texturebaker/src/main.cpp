@@ -9,6 +9,7 @@
 #include "stb_image_resize.h"
 
 #include "Baker2D.h"
+#include "BakerCube.h"
 
 namespace texbaker {
 
@@ -246,7 +247,7 @@ int main(int argc, char** argv)
 				"Texture Baker Syntax:\n"
 				"	> 2D Texture:           texturebaker.exe -t input_texture.png -m 10 -o output_texture.cbtex\n"
 				"	> ShadingProbe Texture: texturebaker.exe -p input_cubemap_no_ext -f pfm -o output_cubemap.cbprb\n"
-				"	> Spherical Harmonics:	texturebaker.exe -sh input_texture.hdr\n"
+				"	> Spherical Harmonics:	texturebaker.exe -sh input_texture.hdr -o output_shdata.cbsh\n"
 				"	> CubeMap Texture:      texturebaker.exe -s input_skybox_no_ext -f pfm -o output_skybox.cbskb");
 		return 0;
 	}
@@ -256,9 +257,9 @@ int main(int argc, char** argv)
 	} else if (strcmp(argv[1], "-p") == 0) {
 		ConvertProbe(argv[2], argv[6]);
 	} else if (strcmp(argv[1], "-s") == 0) {
-		ConvertSkybox(argv[2], argv[6]);
+		ConvertTextureCubeHStrip(argv[2], argv[6], atoi(argv[4]));
 	} else if (strcmp(argv[1], "-sh") == 0) {
-		ComputeSH(argv[2]);
+		ComputeSH(argv[2], argv[4]);
 	}
 
 	return 0;
