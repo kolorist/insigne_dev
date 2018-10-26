@@ -22,6 +22,7 @@
 #include "Graphics/Tests/GPUVectorMath.h"
 #include "Graphics/Tests/CornelBox.h"
 #include "Graphics/Tests/OmniShadow.h"
+#include "Graphics/Tests/SHMath.h"
 #include "Graphics/Tests/GlobalIllumination.h"
 
 namespace stone {
@@ -47,6 +48,7 @@ Application::Application(Controller* i_controller)
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
 	m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
 }
 

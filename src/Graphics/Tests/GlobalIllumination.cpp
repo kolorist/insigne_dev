@@ -143,7 +143,7 @@ void main()
 	mediump float shadowMask = 1.0f - step(0.0002f, sld - ld);
 
 	o_Color = vec4(color * shadowMask, 1.0f);
-	//o_Color = vec4(1.0f);
+	//o_Color = vec4(color, 1.0f);
 }
 )";
 
@@ -232,7 +232,7 @@ void GlobalIllumination::OnInitialize()
 				floral::construct_translation3d(0.2f, -0.4f, -0.4f) *
 				floral::construct_quaternion_euler(0.0f, -15.0f, 0.0f).to_transform() *
 				floral::construct_scaling3d(0.3f, 0.6f, 0.3f);
-			GenBox_Tris_PosNormalColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
+			GenBox_Tris_PosNormalColor(floral::vec4f(1.0f, 0.0f, 1.0f, 1.0f), m, m_Vertices, m_Indices);
 		}
 
 		// calculate scene bounding box
@@ -253,30 +253,31 @@ void GlobalIllumination::OnInitialize()
 
 		// sh cam pos
 		{
-			//		+Y
-			//	+Z	-X	-Z	+X
-			//		-Y
 			static floral::vec3f faceUpDirs[] = {
-				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive X
-				floral::vec3f(0.0f, 1.0f, 0.0f),	// negative X
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// negative Z
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Z
+
 				floral::vec3f(1.0f, 0.0f, 0.0f),	// positive Y
 				floral::vec3f(0.0f, 0.0f, -1.0f),	// negative Y
-				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Z
-				floral::vec3f(0.0f, 1.0f, 0.0f)	// negative X
+
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// negative X
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive X
 			};
 
 			static floral::vec3f faceLookAtDirs[] = {
-				floral::vec3f(1.0f, 0.0f, 0.0f),	// positive X
-				floral::vec3f(-1.0f, 0.0f, 0.0f),	// negative X
+				floral::vec3f(0.0f, 0.0f, -1.0f),	// negative Z
+				floral::vec3f(0.0f, 0.0f, 1.0f),	// positive Z
+
 				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Y
 				floral::vec3f(0.0f, -1.0f, 0.0f),	// negative Y
-				floral::vec3f(0.0f, 0.0f, 1.0f),	// positive Z
-				floral::vec3f(0.0f, 0.0f, -1.0f)	// negative Z
+
+				floral::vec3f(-1.0f, 0.0f, 0.0f),	// negative X
+				floral::vec3f(1.0f, 0.0f, 0.0f),	// positive X
 			};
 
 			floral::camera_persp_t camProj;
 			camProj.near_plane = 0.01f; camProj.far_plane = 20.0f;
-			camProj.fov = 45.0f;
+			camProj.fov = 90.0f;
 			camProj.aspect_ratio = 1.0f;
 			floral::mat4x4f proj = floral::construct_perspective(camProj);
 
@@ -380,10 +381,10 @@ void GlobalIllumination::OnInitialize()
 	}
 
 	{
-		// 1536 x 6192
+		// 1536 x 6912
 		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
-		desc.color_attachments->push_back(insigne::color_attachment_t("main_color", insigne::texture_format_e::hdr_rgba));
-		desc.width = 1536; desc.height = 6192;
+		desc.color_attachments->push_back(insigne::color_attachment_t("main_color", insigne::texture_format_e::hdr_rgb));
+		desc.width = 1536; desc.height = 6912;
 		m_SHRenderBuffer = insigne::create_framebuffer(desc);
 	}
 
@@ -429,7 +430,7 @@ void GlobalIllumination::OnInitialize()
 		floral::vec3f d = floral::normalize(floral::vec3f(1.0f, 3.0f, -1.0f));
 		m_LightData.Direction = floral::vec4f(d.x, d.y, d.z, 0.0f);
 		m_LightData.Color = floral::vec4f(1.0f);
-		m_LightData.Radiance = floral::vec4f(50.0f);
+		m_LightData.Radiance = floral::vec4f(5.0f);
 
 		insigne::update_ub(newUB, &m_LightData, sizeof(LightData), 0);
 		m_LightDataUB = newUB;

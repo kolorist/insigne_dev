@@ -41,7 +41,7 @@ void main()
 
 VectorMath::VectorMath()
 {
-	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(48));
+	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(24));
 }
 
 VectorMath::~VectorMath()

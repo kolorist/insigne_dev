@@ -38,6 +38,12 @@ void											GenIcosahedron_Tris_PosColor(const floral::vec4f& i_color,
 													floral::fixed_array<DemoVertex, TAllocator>& o_vertices,
 													floral::fixed_array<u32, TAllocator>& o_indices);
 
+template <typename TAllocator>
+void											GenIcosphere_Tris_PosColor(const floral::vec4f& i_color,
+													const floral::mat4x4f& i_xform,
+													floral::fixed_array<DemoVertex, TAllocator>& o_vertices,
+													floral::fixed_array<u32, TAllocator>& o_indices);
+
 }
 
 #include "GeometryBuilder.hpp"

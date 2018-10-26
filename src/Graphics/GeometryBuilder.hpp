@@ -164,10 +164,10 @@ void GenIcosahedron_Tris_PosColor(const floral::vec4f& i_color, const floral::ma
 	};
 
 	static const u32 indices[60] = {
-		0,4,1,0,9,4,9,5,4,4,5,8,4,8,1,
-		8,10,1,8,3,10,5,3,8,5,2,3,2,7,3,
-		7,10,3,7,6,10,7,11,6,11,0,6,0,1,6,
-		6,1,10,9,0,11,9,11,2,9,2,5,7,2,11
+		0,4,1,	0,9,4,	9,5,4,	4,5,8,	4,8,1,
+		8,10,1,	8,3,10,	5,3,8,	5,2,3,	2,7,3,
+		7,10,3,	7,6,10,	7,11,6,	11,0,6,	0,1,6,
+		6,1,10,	9,0,11,	9,11,2,	9,2,5,	7,2,11
 	};
 
 	u32 lastIdx = o_vertices.get_size();
@@ -179,6 +179,77 @@ void GenIcosahedron_Tris_PosColor(const floral::vec4f& i_color, const floral::ma
 
 	for (u32 i = 0; i < 60; i++) {
 		o_indices.push_back(lastIdx + indices[i]);
+	}
+}
+
+inline s32 SearchForVertices(const floral::vec3f& i_vertex, floral::inplace_array<floral::vec3f, 64u>& i_vertices,
+		const f32 i_delta)
+{
+	for (u32 i = 0; i < i_vertices.get_size(); i++) {
+		if (floral::length(i_vertex - i_vertices[i]) < i_delta) return i;
+	}
+	return -1;
+}
+
+template <typename TAllocator>
+void GenIcosphere_Tris_PosColor(const floral::vec4f& i_color, const floral::mat4x4f& i_xform,
+	floral::fixed_array<DemoVertex, TAllocator>& o_vertices, floral::fixed_array<u32, TAllocator>& o_indices)
+{
+	static const floral::vec3f positions[12] = {
+		floral::vec3f(-0.525731f, 0, 0.850651f), floral::vec3f(0.525731f, 0, 0.850651f),
+		floral::vec3f(-0.525731f, 0, -0.850651f), floral::vec3f(0.525731f, 0, -0.850651f),
+		floral::vec3f(0, 0.850651f, 0.525731f), floral::vec3f(0, 0.850651f, -0.525731f),
+		floral::vec3f(0, -0.850651f, 0.525731f), floral::vec3f(0, -0.850651f, -0.525731f),
+		floral::vec3f(0.850651f, 0.525731f, 0), floral::vec3f(-0.850651f, 0.525731f, 0),
+		floral::vec3f(0.850651f, -0.525731f, 0), floral::vec3f(-0.850651f, -0.525731f, 0)
+	};
+
+	static const u32 indices[60] = {
+		0,4,1,	0,9,4,	9,5,4,	4,5,8,	4,8,1,
+		8,10,1,	8,3,10,	5,3,8,	5,2,3,	2,7,3,
+		7,10,3,	7,6,10,	7,11,6,	11,0,6,	0,1,6,
+		6,1,10,	9,0,11,	9,11,2,	9,2,5,	7,2,11
+	};
+
+	static const u32 tmpIdx[12] = {
+		0,3,5,	3,1,4,	3,4,5,	5,4,2
+	};
+
+	floral::inplace_array<floral::vec3f, 64u> sphereVertices;
+	floral::inplace_array<u32, 256u> sphereIndices;
+
+	{
+		for (u32 i = 0; i < 20; i++) {
+			floral::vec3f v[6];
+			v[0] = positions[indices[i * 3]];
+			v[1] = positions[indices[i * 3 + 1]];
+			v[2] = positions[indices[i * 3 + 2]];
+
+			v[3] = floral::normalize((v[0] + v[1]) / 2.0f);
+			v[4] = floral::normalize((v[1] + v[2]) / 2.0f);
+			v[5] = floral::normalize((v[2] + v[0]) / 2.0f);
+			
+			for (u32 k = 0; k < 12; k++) {
+				s32 index = SearchForVertices(v[tmpIdx[k]], sphereVertices, 0.005f);
+				if (index < 0) {
+					sphereVertices.push_back(v[tmpIdx[k]]);
+					sphereIndices.push_back(sphereVertices.get_size() - 1);
+				} else {
+					sphereIndices.push_back(index);
+				}
+			}
+		}
+	}
+
+	u32 lastIdx = o_vertices.get_size();
+
+	for (u32 i = 0; i < sphereVertices.get_size(); i++) {
+		floral::vec4f xformPos = i_xform * floral::vec4f(sphereVertices[i].x, sphereVertices[i].y, sphereVertices[i].z, 1.0f);
+		o_vertices.push_back( { floral::vec3f(xformPos.x, xformPos.y, xformPos.z), i_color } );
+	}
+
+	for (u32 i = 0; i < sphereIndices.get_size(); i++) {
+		o_indices.push_back(lastIdx + sphereIndices[i]);
 	}
 }
 

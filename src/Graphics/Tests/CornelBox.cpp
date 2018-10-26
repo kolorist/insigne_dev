@@ -50,8 +50,8 @@ CornelBox::~CornelBox()
 
 void CornelBox::OnInitialize()
 {
-	m_Vertices.init(128u, &g_StreammingAllocator);
-	m_Indices.init(256u, &g_StreammingAllocator);
+	m_Vertices.init(256u, &g_StreammingAllocator);
+	m_Indices.init(512u, &g_StreammingAllocator);
 
 	{
 		// bottom
@@ -103,6 +103,7 @@ void CornelBox::OnInitialize()
 		}
 
 		// large box
+		if (0)
 		{
 			floral::mat4x4f m =
 				floral::construct_translation3d(0.2f, -0.4f, -0.4f) *
@@ -111,12 +112,12 @@ void CornelBox::OnInitialize()
 			GenBox_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
 		}
 
-		// point light cube
 		{
 			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, 0.9f, 0.0f) *
-				floral::construct_scaling3d(0.05f, 0.05f, 0.05f);
-			GenBox_Tris_PosColor(floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
+				floral::construct_translation3d(0.2f, -0.4f, -0.4f) *
+				floral::construct_quaternion_euler(0.0f, -15.0f, 0.0f).to_transform() *
+				floral::construct_scaling3d(0.2f, 0.2f, 0.2f);
+			GenIcosphere_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
 		}
 	}
 
