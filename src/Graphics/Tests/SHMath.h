@@ -7,6 +7,8 @@
 
 #include "Memory/MemorySystem.h"
 #include "Graphics/SurfaceDefinitions.h"
+#include "Graphics/TrackballCamera.h"
+#include "Graphics/DebugDrawer.h"
 
 namespace stone {
 
@@ -20,7 +22,13 @@ class SHMath : public ITestSuite {
 		void									OnRender(const f32 i_deltaMs) override;
 		void									OnCleanUp() override;
 
+		ICameraMotion*							GetCameraMotion() override { return &m_CameraMotion; }
+
 	private:
+		// camera motion
+		DebugDrawer								m_DebugDrawer;
+		TrackballCamera							m_CameraMotion;
+
 		floral::fixed_array<DemoVertex, LinearAllocator>	m_Vertices;
 		floral::fixed_array<u32, LinearAllocator>			m_Indices;
 
@@ -48,6 +56,7 @@ class SHMath : public ITestSuite {
 
 		floral::camera_view_t					m_CamView;
 		floral::camera_persp_t					m_CamProj;
+		floral::mat4x4f							m_DebugWVP;
 };
 
 }

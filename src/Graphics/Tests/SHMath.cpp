@@ -151,7 +151,7 @@ void SHMath::OnInitialize()
 		insigne::ub_handle_t newUB = insigne::create_ub(desc);
 
 		// camera
-		m_CamView.position = floral::vec3f(5.0f, 0.5f, 0.0f);
+		m_CamView.position = floral::vec3f(7.0f, 0.5f, 0.0f);
 		m_CamView.look_at = floral::vec3f(0.0f, 0.0f, 0.0f);
 		m_CamView.up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
 
@@ -161,6 +161,7 @@ void SHMath::OnInitialize()
 
 		m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
 		m_SceneData.XForm = floral::mat4x4f(1.0f);
+		m_DebugWVP = m_SceneData.WVP;
 
 		insigne::update_ub(newUB, &m_SceneData, sizeof(SceneData), 0);
 		m_UB = newUB;
@@ -214,10 +215,23 @@ void SHMath::OnInitialize()
 			m_Material.uniform_blocks[ubSlot].value = m_SHUB;
 		}
 	}
+	m_DebugDrawer.Initialize();
 }
 
 void SHMath::OnUpdate(const f32 i_deltaMs)
 {
+	m_DebugDrawer.BeginFrame();
+	floral::vec3f s = m_CameraMotion.GetStartCoord();
+	floral::vec3f e = m_CameraMotion.GetEndCoord();
+	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), s, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), e, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	floral::vec4f p(0.0f, 0.0f, 1.0f, 1.0f);
+	floral::mat4x4f r = m_CameraMotion.GetRotation().normalize().to_transform();
+	p = r * p;
+	floral::vec3f pp(p.x, p.y, p.z);
+	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), pp, floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, floral::length(pp), 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	m_DebugDrawer.EndFrame();
 }
 
 void SHMath::OnRender(const f32 i_deltaMs)
@@ -225,10 +239,9 @@ void SHMath::OnRender(const f32 i_deltaMs)
 	static f32 elapsedTime = 0.0f;
 	elapsedTime += i_deltaMs;
 
-	floral::vec3f camPos(7.0f * sinf(floral::to_radians(elapsedTime / 10.0f)),
-			0.5f,
-			7.0f * cosf(floral::to_radians(elapsedTime / 10.0f)));
-	m_CamView.position = camPos;
+	floral::vec4f camPos(7.0f, 0.5f, 0.0f, 1.0f);
+	camPos = m_CameraMotion.GetRotation().normalize().to_transform() * camPos;
+	m_CamView.position = floral::vec3f(camPos.x, camPos.y, camPos.z);
 
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	{
@@ -249,7 +262,7 @@ void SHMath::OnRender(const f32 i_deltaMs)
 							minCorner.x + disp + i * stepDist,
 							minCorner.y + disp + j * stepDist,
 							minCorner.z + disp + k * stepDist);
-					//m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
+					m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
 					m_SceneData.XForm = floral::construct_translation3d(pos);
 					insigne::copy_update_ub(m_SHUB, &m_SHData[shidx], sizeof(SHData), 0);
 					shidx++;
@@ -260,6 +273,7 @@ void SHMath::OnRender(const f32 i_deltaMs)
 			}
 		}
 	}
+	m_DebugDrawer.Render(m_DebugWVP);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
