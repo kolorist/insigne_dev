@@ -60,7 +60,7 @@ void init_memory_system()
 			memory_region<lotus::linear_allocator_t>	{ "lotus/main",					SIZE_MB(32),	&lotus::e_main_allocator },
 			memory_region<stone::LinearAllocator>		{ "stone/system",				SIZE_MB(1),		&stone::g_SystemAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(32),	&stone::g_PersistanceAllocator },
-			memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(64),	&stone::g_PersistanceResourceAllocator },
+			memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(256),	&stone::g_PersistanceResourceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(16),	&stone::g_SceneResourceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(16),	&stone::g_StreammingAllocator }
 			);

@@ -4,10 +4,45 @@
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
+#include <insigne/ut_textures.h>
 
 #include "Graphics/GeometryBuilder.h"
 
 namespace stone {
+
+static const_cstr s_CubeMapVS = R"(#version 300 es
+layout (location = 0) in highp vec3 l_Position_L;
+layout (location = 1) in mediump vec4 l_Color;
+
+layout(std140) uniform ub_Scene
+{
+	highp mat4 iu_XForm;
+	highp mat4 iu_WVP;
+};
+
+out mediump vec3 v_Normal;
+
+void main() {
+	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
+	v_Normal = normalize(l_Position_L);
+	gl_Position = iu_WVP * pos_W;
+}
+)";
+
+static const_cstr s_CubeMapFS = R"(
+#version 300 es
+
+layout (location = 0) out mediump vec4 o_Color;
+
+uniform mediump samplerCube u_Tex;
+in mediump vec3 v_Normal;
+
+void main()
+{
+	mediump vec3 outColor = texture(u_Tex, v_Normal).rgb;
+	o_Color = vec4(outColor, 1.0f);
+}
+)";
 
 static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
@@ -23,7 +58,6 @@ out mediump vec3 v_Normal;
 
 void main() {
 	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
-	//v_Normal = normalize(iu_XForm * vec4(l_Position_L, 0.0f)).xyz;
 	v_Normal = normalize(l_Position_L);
 	gl_Position = iu_WVP * pos_W;
 }
@@ -68,13 +102,13 @@ mediump vec3 evalSH(in mediump vec3 i_normal)
 void main()
 {
 	mediump vec3 c = evalSH(v_Normal);
-	o_Color = vec4(c, 1.0f);
+	o_Color = vec4(v_Normal, 1.0f);
 }
 )";
 
 SHMath::SHMath()
 {
-	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
+	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(48));
 }
 
 SHMath::~SHMath()
@@ -83,60 +117,13 @@ SHMath::~SHMath()
 
 void SHMath::OnInitialize()
 {
-	m_Vertices.init(256u, &g_StreammingAllocator);
-	m_Indices.init(512u, &g_StreammingAllocator);
-	m_SHFileData.init(27u, &g_StreammingAllocator);
-	m_SHData.init(125u, &g_StreammingAllocator);
-	m_SHPos.init(125u, &g_StreammingAllocator);
+	m_Vertices.init(1024u, &g_StreammingAllocator);
+	m_Indices.init(4096u, &g_StreammingAllocator);
 
 	{
 		{
-			floral::mat4x4f m = floral::construct_scaling3d(0.15f, 0.15f, 0.15f);
+			floral::mat4x4f m = floral::construct_scaling3d(0.7f, 0.7f, 0.7f);
 			GenIcosphere_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-	}
-
-	// sh data
-	{
-		floral::file_info shFile = floral::open_file("27probes.cbsh");
-		floral::file_stream dataStream;
-
-		dataStream.buffer = (p8)m_MemoryArena->allocate(shFile.file_size);
-		floral::read_all_file(shFile, dataStream);
-		floral::close_file(shFile);
-
-		for (u32 i = 0; i < 27; i++) {
-			SHData shData;
-			for (u32 j = 0; j < 9; j++) {
-				floral::vec3f shBand;
-				dataStream.read_bytes((p8)&shBand, sizeof(floral::vec3f));
-				shData.CoEffs[j] = floral::vec4f(shBand.x, shBand.y, shBand.z, 0.0f);
-			}
-			m_SHFileData.push_back(shData);
-		}
-
-		m_MemoryArena->free_all();
-
-		const u32 steps = 5; // 5 steps
-		const f32 dx = 2.0f;
-		const f32 disp = 0.2f;
-		const f32 stepDist = (dx - disp * 2.0f) / 2.0f;
-		const floral::vec3f minCorner(-4.0f * stepDist / 2.0f);
-
-		for (s32 i = 0; i < steps; i++) {
-			for (s32 j = 0; j < steps; j++) {
-				for (s32 k = 0; k < steps; k++) {
-					floral::vec3f pos(
-							minCorner.x + i * stepDist,
-							minCorner.y + j * stepDist,
-							minCorner.z + k * stepDist);
-					m_SHPos.push_back(pos);
-					s32 ii = (i - 1 < 0) ? 0 : ((i - 1 > 2) ? 2 : i - 1);
-					s32 jj = (j - 1 < 0) ? 0 : ((j - 1 > 2) ? 2 : j - 1);
-					s32 kk = (k - 1 < 0) ? 0 : ((k - 1 > 2) ? 2 : k - 1);
-					m_SHData.push_back(m_SHFileData[kk * 9 + jj * 3 + ii]);
-				}
-			}
 		}
 	}
 
@@ -239,75 +226,88 @@ void SHMath::OnInitialize()
 			m_Material.uniform_blocks[ubSlot].value = m_SHUB;
 		}
 	}
+
+	// cubemap
+	{
+		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/cubeuvchecker.cbskb");
+		floral::file_stream dataStream;
+
+		dataStream.buffer = (p8)m_MemoryArena->allocate(texFile.file_size);
+		floral::read_all_file(texFile, dataStream);
+		floral::close_file(texFile);
+
+		c8 magicChars[4];
+		dataStream.read_bytes(magicChars, 4);
+
+		s32 colorRange = 0;
+		s32 colorSpace = 0;
+		s32 colorChannel = 0;
+		f32 encodeGamma = 0.0f;
+		s32 mipsCount = 0;
+		dataStream.read<s32>(&colorRange);
+		dataStream.read<s32>(&colorSpace);
+		dataStream.read<s32>(&colorChannel);
+		dataStream.read<f32>(&encodeGamma);
+		dataStream.read<s32>(&mipsCount);	
+
+		insigne::texture_desc_t demoTexDesc;
+		demoTexDesc.width = 512;
+		demoTexDesc.height = 512;
+		demoTexDesc.format = insigne::texture_format_e::hdr_rgb;
+		demoTexDesc.min_filter = insigne::filtering_e::linear_mipmap_linear;
+		demoTexDesc.mag_filter = insigne::filtering_e::linear;
+		demoTexDesc.dimension = insigne::texture_dimension_e::tex_cube;
+		demoTexDesc.has_mipmap = true;
+		const size dataSize = insigne::prepare_texture_desc(demoTexDesc);
+		p8 pData = (p8)demoTexDesc.data;
+		// > This is where it get *really* interesting
+		// 	Totally opposite of normal 2D texture mapping, CubeMapping define the origin of the texture sampling coordinate
+		// 	from the lower left corner. OmegaLUL
+		// > Reason: historical reason (from Renderman)
+		dataStream.read_bytes((p8)demoTexDesc.data, dataSize);
+
+		m_Texture = insigne::create_texture(demoTexDesc);
+
+		m_MemoryArena->free_all();
+	}
+
+	{
+		insigne::shader_desc_t desc = insigne::create_shader_desc();
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler_cube));
+
+		strcpy(desc.vs, s_CubeMapVS);
+		strcpy(desc.fs, s_CubeMapFS);
+
+		m_CubeShader = insigne::create_shader(desc);
+		insigne::infuse_material(m_CubeShader, m_CubeMaterial);
+
+		{
+			s32 ubSlot = insigne::get_material_uniform_block_slot(m_CubeMaterial, "ub_Scene");
+			m_CubeMaterial.uniform_blocks[ubSlot].value = m_UB;
+		}
+		{
+			s32 texSlot = insigne::get_material_texture_slot(m_CubeMaterial, "u_Tex");
+			m_CubeMaterial.textures[texSlot].value = m_Texture;
+		}
+	}
+	
 	m_DebugDrawer.Initialize();
 }
 
 void SHMath::OnUpdate(const f32 i_deltaMs)
 {
 	m_DebugDrawer.BeginFrame();
-	for (u32 i = 0; i < 64; i++) {
-		floral::aabb3f aabb;
-		u32 kk = i / 16;						// z
-		u32 jj = (i % 16) / 4;					// y
-		u32 ii = (i % 16) % 4;					// x
-
-		aabb.min_corner = m_SHPos[kk * 25 + jj * 5 + ii];
-		aabb.max_corner = m_SHPos[(kk + 1) * 25 + (jj + 1) * 5 + ii + 1];
-		m_DebugDrawer.DrawAABB3D(aabb, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-	}
 	m_DebugDrawer.EndFrame();
 }
 
 void SHMath::OnRender(const f32 i_deltaMs)
 {
-	static f32 elapsedTime = 0.0f;
-	elapsedTime += i_deltaMs;
-
-	floral::vec4f camPos(7.0f, 0.5f, 0.0f, 1.0f);
-	camPos = m_CameraMotion.GetRotation().normalize().to_transform() * camPos;
-	m_CamView.position = floral::vec3f(camPos.x, camPos.y, camPos.z);
-
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-#if 0
-	{
-		const u32 steps = 2;
-		const f32 dx = 2.0f;
-		const f32 dy = 2.0f;
-		const f32 dz = 2.0f;
-		const f32 disp = 0.2f;
-		const f32 stepDist = (dx - disp * 2.0f) / (f32)steps;
-		const floral::vec3f minCorner(-1.0f);
-
-		u32 shidx = 0;
-
-		for (u32 i = 0; i <= steps; i++) {
-			for (u32 j = 0; j <= steps; j++) {
-				for (u32 k = 0; k <= steps; k++) {
-					floral::vec3f pos(
-							minCorner.x + disp + i * stepDist,
-							minCorner.y + disp + j * stepDist,
-							minCorner.z + disp + k * stepDist);
-					m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
-					m_SceneData.XForm = floral::construct_translation3d(pos);
-					insigne::copy_update_ub(m_SHUB, &m_SHData[shidx], sizeof(SHData), 0);
-					shidx++;
-					insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
-					insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
-					insigne::dispatch_render_pass();
-				}
-			}
-		}
-	}
-#else
-	for (s32 i = 0; i < 125; i++) {
-		m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
-		m_SceneData.XForm = floral::construct_translation3d(m_SHPos[i]);
-		insigne::copy_update_ub(m_SHUB, &m_SHData[i], sizeof(SHData), 0);
-		insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
-		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
-		insigne::dispatch_render_pass();
-	}
-#endif
+	m_SceneData.XForm = m_CameraMotion.GetRotation().normalize().to_transform();
+	insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
+	insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_CubeMaterial);
+	insigne::dispatch_render_pass();
 	m_DebugDrawer.Render(m_DebugWVP);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();

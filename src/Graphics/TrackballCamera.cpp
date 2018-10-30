@@ -40,7 +40,7 @@ void TrackballCamera::OnCursorMove(const u32 i_x, const u32 i_y)
 		m_EndCoord = floral::normalize(floral::vec3f(p.x, p.y, p.z));
 
 		floral::vec3f n = floral::cross(m_StartCoord, m_EndCoord);
-		f32 theta = floral::to_degree(floral::angle(m_StartCoord, m_EndCoord));
+		f32 theta = floral::to_degree(floral::angle(m_StartCoord, m_EndCoord)) * 6.0f;
 		floral::quaternionf q = floral::construct_quaternion_axis(n, theta);
 		m_Rotation = q;
 	}

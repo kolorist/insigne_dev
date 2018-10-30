@@ -41,10 +41,6 @@ class SHMath : public ITestSuite {
 			floral::vec4f						CoEffs[9];
 		};
 
-		floral::fixed_array<SHData, LinearAllocator>	m_SHFileData;
-		floral::fixed_array<SHData, LinearAllocator>	m_SHData;
-		floral::fixed_array<floral::vec3f, LinearAllocator>	m_SHPos;
-
 		SceneData								m_SceneData;
 
 		insigne::vb_handle_t					m_VB;
@@ -53,6 +49,10 @@ class SHMath : public ITestSuite {
 		insigne::ub_handle_t					m_SHUB;
 		insigne::shader_handle_t				m_Shader;
 		insigne::material_desc_t				m_Material;
+
+		insigne::texture_handle_t				m_Texture;
+		insigne::shader_handle_t				m_CubeShader;
+		insigne::material_desc_t				m_CubeMaterial;
 
 		LinearArena*							m_MemoryArena;
 

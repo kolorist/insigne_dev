@@ -182,13 +182,48 @@ void GenIcosahedron_Tris_PosColor(const floral::vec4f& i_color, const floral::ma
 	}
 }
 
-inline s32 SearchForVertices(const floral::vec3f& i_vertex, floral::inplace_array<floral::vec3f, 64u>& i_vertices,
+inline s32 SearchForVertices(const floral::vec3f& i_vertex, floral::inplace_array<floral::vec3f, 1024u>& i_vertices,
 		const f32 i_delta)
 {
 	for (u32 i = 0; i < i_vertices.get_size(); i++) {
 		if (floral::length(i_vertex - i_vertices[i]) < i_delta) return i;
 	}
 	return -1;
+}
+
+inline void TesselateIcosphere(
+		floral::inplace_array<floral::vec3f, 1024u>& i_fromVtx,
+		floral::inplace_array<u32, 4096u>& i_fromIdx,
+		floral::inplace_array<floral::vec3f, 1024u>& o_toVtx,
+		floral::inplace_array<u32, 4096u>& o_toIdx)
+{
+	o_toVtx.empty();
+	o_toIdx.empty();
+
+	static const u32 tmpIdx[12] = {
+		0,3,5,	3,1,4,	3,4,5,	5,4,2
+	};
+
+	for (u32 i = 0; i < i_fromIdx.get_size() / 3; i++) {
+		floral::vec3f v[6];
+		v[0] = i_fromVtx[i_fromIdx[i * 3]];
+		v[1] = i_fromVtx[i_fromIdx[i * 3 + 1]];
+		v[2] = i_fromVtx[i_fromIdx[i * 3 + 2]];
+
+		v[3] = floral::normalize((v[0] + v[1]) / 2.0f);
+		v[4] = floral::normalize((v[1] + v[2]) / 2.0f);
+		v[5] = floral::normalize((v[2] + v[0]) / 2.0f);
+
+		for (u32 k = 0; k < 12; k++) {
+			s32 index = SearchForVertices(v[tmpIdx[k]], o_toVtx, 0.005f);
+			if (index < 0) {
+				o_toVtx.push_back(v[tmpIdx[k]]);
+				o_toIdx.push_back(o_toVtx.get_size() - 1);
+			} else {
+				o_toIdx.push_back(index);
+			}
+		}
+	}
 }
 
 template <typename TAllocator>
@@ -211,45 +246,27 @@ void GenIcosphere_Tris_PosColor(const floral::vec4f& i_color, const floral::mat4
 		6,1,10,	9,0,11,	9,11,2,	9,2,5,	7,2,11
 	};
 
-	static const u32 tmpIdx[12] = {
-		0,3,5,	3,1,4,	3,4,5,	5,4,2
-	};
+	floral::inplace_array<floral::vec3f, 1024u> svBuff0;
+	floral::inplace_array<floral::vec3f, 1024u> svBuff1;
+	floral::inplace_array<u32, 4096u> siBuff0;
+	floral::inplace_array<u32, 4096u> siBuff1;
 
-	floral::inplace_array<floral::vec3f, 64u> sphereVertices;
-	floral::inplace_array<u32, 256u> sphereIndices;
+	for (u32 i = 0; i < 12; i++) svBuff0.push_back(positions[i]);
+	for (u32 i = 0; i < 60; i++) siBuff0.push_back(indices[i]);
 
-	{
-		for (u32 i = 0; i < 20; i++) {
-			floral::vec3f v[6];
-			v[0] = positions[indices[i * 3]];
-			v[1] = positions[indices[i * 3 + 1]];
-			v[2] = positions[indices[i * 3 + 2]];
-
-			v[3] = floral::normalize((v[0] + v[1]) / 2.0f);
-			v[4] = floral::normalize((v[1] + v[2]) / 2.0f);
-			v[5] = floral::normalize((v[2] + v[0]) / 2.0f);
-			
-			for (u32 k = 0; k < 12; k++) {
-				s32 index = SearchForVertices(v[tmpIdx[k]], sphereVertices, 0.005f);
-				if (index < 0) {
-					sphereVertices.push_back(v[tmpIdx[k]]);
-					sphereIndices.push_back(sphereVertices.get_size() - 1);
-				} else {
-					sphereIndices.push_back(index);
-				}
-			}
-		}
-	}
+	TesselateIcosphere(svBuff0, siBuff0, svBuff1, siBuff1);
+	TesselateIcosphere(svBuff1, siBuff1, svBuff0, siBuff0);
+	TesselateIcosphere(svBuff0, siBuff0, svBuff1, siBuff1);
 
 	u32 lastIdx = o_vertices.get_size();
 
-	for (u32 i = 0; i < sphereVertices.get_size(); i++) {
-		floral::vec4f xformPos = i_xform * floral::vec4f(sphereVertices[i].x, sphereVertices[i].y, sphereVertices[i].z, 1.0f);
+	for (u32 i = 0; i < svBuff1.get_size(); i++) {
+		floral::vec4f xformPos = i_xform * floral::vec4f(svBuff1[i].x, svBuff1[i].y, svBuff1[i].z, 1.0f);
 		o_vertices.push_back( { floral::vec3f(xformPos.x, xformPos.y, xformPos.z), i_color } );
 	}
 
-	for (u32 i = 0; i < sphereIndices.get_size(); i++) {
-		o_indices.push_back(lastIdx + sphereIndices[i]);
+	for (u32 i = 0; i < siBuff1.get_size(); i++) {
+		o_indices.push_back(lastIdx + siBuff1[i]);
 	}
 }
 
