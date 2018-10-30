@@ -149,10 +149,27 @@ void main()
 
 GlobalIllumination::GlobalIllumination()
 {
+	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 }
 
 GlobalIllumination::~GlobalIllumination()
 {
+}
+
+inline bool IsInsideAABB(const floral::vec3f& i_v, const floral::aabb3f& i_aabb)
+{
+	return (i_v.x >= i_aabb.min_corner.x && i_v.x <= i_aabb.max_corner.x
+			&& i_v.y >= i_aabb.min_corner.y && i_v.y <= i_aabb.max_corner.y
+			&& i_v.z >= i_aabb.min_corner.z && i_v.z <= i_aabb.max_corner.z);
+}
+
+GlobalIllumination::SHData GlobalIllumination::LinearInterpolate(const SHData& d0, const SHData& d1, const f32 weight)
+{
+	SHData d;
+	for (u32 i = 0; i < 9; i++) {
+		d.CoEffs[i] = d0.CoEffs[i] * weight + d1.CoEffs[i] * (1.0f - weight);
+	}
+	return d;
 }
 
 void GlobalIllumination::OnInitialize()
@@ -163,9 +180,56 @@ void GlobalIllumination::OnInitialize()
 	m_SSIndices.init(6u, &g_StreammingAllocator);
 	m_SHCamPos.init(27u, &g_StreammingAllocator);
 	m_SHWVPs.init(27 * 6, &g_StreammingAllocator);
+	m_SHData.init(125u, &g_StreammingAllocator);
+	m_SHPos.init(125u, &g_StreammingAllocator);
+
+	// sh data
+	{
+		floral::file_info shFile = floral::open_file("27probes.cbsh");
+		floral::file_stream dataStream;
+
+		dataStream.buffer = (p8)m_MemoryArena->allocate(shFile.file_size);
+		floral::read_all_file(shFile, dataStream);
+		floral::close_file(shFile);
+
+		floral::inplace_array<SHData, 27u> shDatas;
+
+		for (u32 i = 0; i < 27; i++) {
+			SHData shData;
+			for (u32 j = 0; j < 9; j++) {
+				floral::vec3f shBand;
+				dataStream.read_bytes((p8)&shBand, sizeof(floral::vec3f));
+				shData.CoEffs[j] = floral::vec4f(shBand.x, shBand.y, shBand.z, 0.0f);
+			}
+			shDatas.push_back(shData);
+		}
+
+		const u32 steps = 5; // 5 steps
+		const f32 dx = 2.0f;
+		const f32 disp = 0.2f;
+		const f32 stepDist = (dx - disp * 2.0f) / 2.0f;
+		const floral::vec3f minCorner(-4.0f * stepDist / 2.0f);
+
+		for (s32 i = 0; i < steps; i++) {
+			for (s32 j = 0; j < steps; j++) {
+				for (s32 k = 0; k < steps; k++) {
+					floral::vec3f pos(
+							minCorner.x + i * stepDist,
+							minCorner.y + j * stepDist,
+							minCorner.z + k * stepDist);
+					m_SHPos.push_back(pos);
+					s32 ii = (i - 1 < 0) ? 0 : ((i - 1 > 2) ? 2 : i - 1);
+					s32 jj = (j - 1 < 0) ? 0 : ((j - 1 > 2) ? 2 : j - 1);
+					s32 kk = (k - 1 < 0) ? 0 : ((k - 1 > 2) ? 2 : k - 1);
+					m_SHData.push_back(shDatas[kk * 9 + jj * 3 + ii]);
+				}
+			}
+		}
+
+		m_MemoryArena->free_all();
+	}
 
 	floral::aabb3f sceneBB;
-
 	{
 		m_SSVertices.push_back({ floral::vec3f(-1.0f, -1.0f, 0.0f), floral::vec2f(0.0f, 0.0f) });
 		m_SSVertices.push_back({ floral::vec3f(1.0f, -1.0f, 0.0f), floral::vec2f(1.0f, 0.0f) });
@@ -308,6 +372,10 @@ void GlobalIllumination::OnInitialize()
 				}
 			}
 		}
+	}
+
+	// SH interpolation: trilinear
+	{
 	}
 
 	// ss quad
@@ -584,11 +652,24 @@ void GlobalIllumination::OnUpdate(const f32 i_deltaMs)
 	for (u32 i = 0; i < 27; i++) {
 		m_DebugDrawer.DrawIcosahedron3D(m_SHCamPos[i], 0.1f, floral::vec4f(1.0f, 0.0f, 1.0f, 1.0f));
 	}
+	for (u32 i = 0; i < 64; i++) {
+		floral::aabb3f aabb;
+		u32 kk = i / 16;						// z
+		u32 jj = (i % 16) / 4;					// y
+		u32 ii = (i % 16) % 4;					// x
+
+		aabb.min_corner = m_SHPos[kk * 25 + jj * 5 + ii];
+		aabb.max_corner = m_SHPos[(kk + 1) * 25 + (jj + 1) * 5 + ii + 1];
+		m_DebugDrawer.DrawAABB3D(aabb, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	}
 	m_DebugDrawer.EndFrame();
 }
 
 void GlobalIllumination::OnRender(const f32 i_deltaMs)
 {
+	floral::vec4f camPos(5.0f, 0.5f, 0.0f, 1.0f);
+	camPos = m_CameraMotion.GetRotation().normalize().to_transform() * camPos;
+	m_CamView.position = floral::vec3f(camPos.x, camPos.y, camPos.z);
 
 	insigne::begin_render_pass(m_ShadowRenderBuffer);
 	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_ShadowMaterial);
@@ -596,7 +677,7 @@ void GlobalIllumination::OnRender(const f32 i_deltaMs)
 	insigne::dispatch_render_pass();
 
 	{
-		static bool shPopulated = false;
+		static bool shPopulated = true;
 		if (!shPopulated)
 		{
 			for (u32 i = 0; i < 27; i++) {
@@ -617,6 +698,7 @@ void GlobalIllumination::OnRender(const f32 i_deltaMs)
 	}
 
 	insigne::begin_render_pass(m_MainRenderBuffer);
+	m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
 	insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
 	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
 	m_DebugDrawer.Render(m_SceneData.WVP);

@@ -8,11 +8,16 @@
 #include "Memory/MemorySystem.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/DebugDrawer.h"
+#include "Graphics/TrackballCamera.h"
 
 namespace stone {
 
 class GlobalIllumination : public ITestSuite {
 	public:
+		struct SHData {
+			floral::vec4f						CoEffs[9];
+		};
+
 		GlobalIllumination();
 		~GlobalIllumination();
 
@@ -21,8 +26,13 @@ class GlobalIllumination : public ITestSuite {
 		void									OnRender(const f32 i_deltaMs) override;
 		void									OnCleanUp() override;
 
+		static SHData							LinearInterpolate(const SHData& d0, const SHData& d1, const f32 weight);
+
+		ICameraMotion*							GetCameraMotion() override { return &m_CameraMotion; }
+
 	private:
 		DebugDrawer								m_DebugDrawer;
+		TrackballCamera							m_CameraMotion;
 
 		floral::fixed_array<VertexPNC, LinearAllocator>		m_Vertices;
 		floral::fixed_array<DemoTexturedVertex, LinearAllocator>	m_SSVertices;
@@ -41,6 +51,9 @@ class GlobalIllumination : public ITestSuite {
 			floral::mat4x4f						WVP;
 			floral::vec4f						CameraPos;
 		};
+
+		floral::fixed_array<floral::vec3f, LinearAllocator>	m_SHPos;
+		floral::fixed_array<SHData, LinearAllocator>	m_SHData;
 
 		SceneData								m_SceneData;
 		LightData								m_LightData;
@@ -73,6 +86,7 @@ class GlobalIllumination : public ITestSuite {
 
 		floral::camera_view_t					m_ShadowCamView;
 		floral::camera_ortho_t					m_ShadowCamProj;
+		LinearArena*							m_MemoryArena;
 };
 
 }

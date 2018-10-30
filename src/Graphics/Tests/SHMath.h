@@ -41,7 +41,9 @@ class SHMath : public ITestSuite {
 			floral::vec4f						CoEffs[9];
 		};
 
+		floral::fixed_array<SHData, LinearAllocator>	m_SHFileData;
 		floral::fixed_array<SHData, LinearAllocator>	m_SHData;
+		floral::fixed_array<floral::vec3f, LinearAllocator>	m_SHPos;
 
 		SceneData								m_SceneData;
 

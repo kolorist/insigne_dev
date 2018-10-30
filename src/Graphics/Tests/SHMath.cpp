@@ -85,7 +85,9 @@ void SHMath::OnInitialize()
 {
 	m_Vertices.init(256u, &g_StreammingAllocator);
 	m_Indices.init(512u, &g_StreammingAllocator);
-	m_SHData.init(27u, &g_StreammingAllocator);
+	m_SHFileData.init(27u, &g_StreammingAllocator);
+	m_SHData.init(125u, &g_StreammingAllocator);
+	m_SHPos.init(125u, &g_StreammingAllocator);
 
 	{
 		{
@@ -110,10 +112,32 @@ void SHMath::OnInitialize()
 				dataStream.read_bytes((p8)&shBand, sizeof(floral::vec3f));
 				shData.CoEffs[j] = floral::vec4f(shBand.x, shBand.y, shBand.z, 0.0f);
 			}
-			m_SHData.push_back(shData);
+			m_SHFileData.push_back(shData);
 		}
 
 		m_MemoryArena->free_all();
+
+		const u32 steps = 5; // 5 steps
+		const f32 dx = 2.0f;
+		const f32 disp = 0.2f;
+		const f32 stepDist = (dx - disp * 2.0f) / 2.0f;
+		const floral::vec3f minCorner(-4.0f * stepDist / 2.0f);
+
+		for (s32 i = 0; i < steps; i++) {
+			for (s32 j = 0; j < steps; j++) {
+				for (s32 k = 0; k < steps; k++) {
+					floral::vec3f pos(
+							minCorner.x + i * stepDist,
+							minCorner.y + j * stepDist,
+							minCorner.z + k * stepDist);
+					m_SHPos.push_back(pos);
+					s32 ii = (i - 1 < 0) ? 0 : ((i - 1 > 2) ? 2 : i - 1);
+					s32 jj = (j - 1 < 0) ? 0 : ((j - 1 > 2) ? 2 : j - 1);
+					s32 kk = (k - 1 < 0) ? 0 : ((k - 1 > 2) ? 2 : k - 1);
+					m_SHData.push_back(m_SHFileData[kk * 9 + jj * 3 + ii]);
+				}
+			}
+		}
 	}
 
 	{
@@ -221,16 +245,16 @@ void SHMath::OnInitialize()
 void SHMath::OnUpdate(const f32 i_deltaMs)
 {
 	m_DebugDrawer.BeginFrame();
-	floral::vec3f s = m_CameraMotion.GetStartCoord();
-	floral::vec3f e = m_CameraMotion.GetEndCoord();
-	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), s, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), e, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
-	floral::vec4f p(0.0f, 0.0f, 1.0f, 1.0f);
-	floral::mat4x4f r = m_CameraMotion.GetRotation().normalize().to_transform();
-	p = r * p;
-	floral::vec3f pp(p.x, p.y, p.z);
-	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), pp, floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f));
-	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, floral::length(pp), 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	for (u32 i = 0; i < 64; i++) {
+		floral::aabb3f aabb;
+		u32 kk = i / 16;						// z
+		u32 jj = (i % 16) / 4;					// y
+		u32 ii = (i % 16) % 4;					// x
+
+		aabb.min_corner = m_SHPos[kk * 25 + jj * 5 + ii];
+		aabb.max_corner = m_SHPos[(kk + 1) * 25 + (jj + 1) * 5 + ii + 1];
+		m_DebugDrawer.DrawAABB3D(aabb, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	}
 	m_DebugDrawer.EndFrame();
 }
 
@@ -244,6 +268,7 @@ void SHMath::OnRender(const f32 i_deltaMs)
 	m_CamView.position = floral::vec3f(camPos.x, camPos.y, camPos.z);
 
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
+#if 0
 	{
 		const u32 steps = 2;
 		const f32 dx = 2.0f;
@@ -273,6 +298,16 @@ void SHMath::OnRender(const f32 i_deltaMs)
 			}
 		}
 	}
+#else
+	for (s32 i = 0; i < 125; i++) {
+		m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
+		m_SceneData.XForm = floral::construct_translation3d(m_SHPos[i]);
+		insigne::copy_update_ub(m_SHUB, &m_SHData[i], sizeof(SHData), 0);
+		insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
+		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
+		insigne::dispatch_render_pass();
+	}
+#endif
 	m_DebugDrawer.Render(m_DebugWVP);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
