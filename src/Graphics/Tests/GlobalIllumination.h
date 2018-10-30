@@ -15,7 +15,7 @@ namespace stone {
 class GlobalIllumination : public ITestSuite {
 	public:
 		struct SHData {
-			floral::vec4f						CoEffs[9];
+			floral::vec3f						CoEffs[9];
 		};
 
 		GlobalIllumination();
@@ -29,6 +29,9 @@ class GlobalIllumination : public ITestSuite {
 		static SHData							LinearInterpolate(const SHData& d0, const SHData& d1, const f32 weight);
 
 		ICameraMotion*							GetCameraMotion() override { return &m_CameraMotion; }
+
+	private:
+		floral::vec3f							EvalSH(const SHData& i_shData, const floral::vec3f& i_normal);
 
 	private:
 		DebugDrawer								m_DebugDrawer;

@@ -142,8 +142,8 @@ void main()
 	highp float sld = v_LightSpacePos.z * 0.5f + 0.5f;
 	mediump float shadowMask = 1.0f - step(0.0002f, sld - ld);
 
-	o_Color = vec4(color * shadowMask, 1.0f);
-	//o_Color = vec4(color, 1.0f);
+	//o_Color = vec4(color * shadowMask, 1.0f);
+	o_Color = vec4(v_VertexColor);
 }
 )";
 
@@ -170,6 +170,31 @@ GlobalIllumination::SHData GlobalIllumination::LinearInterpolate(const SHData& d
 		d.CoEffs[i] = d0.CoEffs[i] * weight + d1.CoEffs[i] * (1.0f - weight);
 	}
 	return d;
+}
+
+floral::vec3f GlobalIllumination::EvalSH(const SHData& i_shData, const floral::vec3f& i_normal)
+{
+	const f32 c1 = 0.429043f;
+	const f32 c2 = 0.511664f;
+	const f32 c3 = 0.743125f;
+	const f32 c4 = 0.886227f;
+	const f32 c5 = 0.247708f;
+
+	floral::vec3f constantTerm = c4 * i_shData.CoEffs[0];
+
+	floral::vec3f yAxisTerm = 2.0f * c2 * i_shData.CoEffs[1] * i_normal.y;
+	floral::vec3f xAxisTerm = 2.0f * c2 * i_shData.CoEffs[2] * i_normal.x;
+	floral::vec3f zAxisTerm = 2.0f * c2 * i_shData.CoEffs[3] * i_normal.z;
+
+	floral::vec3f band2t1 = 2.0f * c1 * i_shData.CoEffs[4] * i_normal.x * i_normal.y;
+	floral::vec3f band2t2 = 2.0f * c1 * i_shData.CoEffs[5] * i_normal.y * i_normal.z;
+	floral::vec3f band2t3 = c3 * i_shData.CoEffs[6] * i_normal.z * i_normal.z - c5 * i_shData.CoEffs[6];
+	floral::vec3f band2t4 = 2.0f * c1 * i_shData.CoEffs[7] * i_normal.x * i_normal.z;
+	floral::vec3f band2t5 = c1 * i_shData.CoEffs[8] * (i_normal.x * i_normal.x - i_normal.y * i_normal.y);
+
+	return (constantTerm +
+			yAxisTerm + xAxisTerm + zAxisTerm +
+			band2t1 + band2t2 + band2t3 + band2t4 + band2t5);
 }
 
 void GlobalIllumination::OnInitialize()
@@ -199,7 +224,7 @@ void GlobalIllumination::OnInitialize()
 			for (u32 j = 0; j < 9; j++) {
 				floral::vec3f shBand;
 				dataStream.read_bytes((p8)&shBand, sizeof(floral::vec3f));
-				shData.CoEffs[j] = floral::vec4f(shBand.x, shBand.y, shBand.z, 0.0f);
+				shData.CoEffs[j] = shBand;
 			}
 			shDatas.push_back(shData);
 		}
@@ -376,6 +401,39 @@ void GlobalIllumination::OnInitialize()
 
 	// SH interpolation: trilinear
 	{
+		for (u32 i = 0; i < m_Vertices.get_size(); i++) {
+			VertexPNC& vtx = m_Vertices[i];
+			for (u32 j = 0; j < 64; j++) {
+				floral::aabb3f aabb;
+				u32 kk = j / 16;				// z
+				u32 jj = (j % 16) / 4;			// y
+				u32 ii = (j % 16) % 4;			// x
+
+				aabb.min_corner = m_SHPos[kk * 25 + jj * 5 + ii];
+				aabb.max_corner = m_SHPos[(kk + 1) * 25 + (jj + 1) * 5 + ii + 1];
+				bool inside = IsInsideAABB(vtx.Position, aabb);
+				if (inside) {
+					f32 dx = aabb.max_corner.x - aabb.min_corner.x;
+					f32 dy = aabb.max_corner.y - aabb.min_corner.y;
+					f32 dz = aabb.max_corner.z - aabb.min_corner.z;
+
+					f32 wx = (vtx.Position.x - aabb.min_corner.x) / dx;
+					f32 wy = (vtx.Position.y - aabb.min_corner.y) / dy;
+					f32 wz = (vtx.Position.z - aabb.min_corner.z) / dz;
+
+					SHData d0 = LinearInterpolate(m_SHData[kk * 25 + jj * 5 + ii], m_SHData[kk * 25 + jj * 5 + ii + 1], wx);
+					SHData d1 = LinearInterpolate(m_SHData[(kk + 1) * 25 + jj * 5 + ii], m_SHData[(kk + 1) * 25 + jj * 5 + ii + 1], wx);
+					SHData d01 = LinearInterpolate(d0, d1, wz);
+					SHData d2 = LinearInterpolate(m_SHData[kk * 25 + (jj + 1) * 5 + ii], m_SHData[kk * 25 + (jj + 1) * 5 + ii + 1], wx);
+					SHData d3 = LinearInterpolate(m_SHData[(kk + 1) * 25 + (jj + 1) * 5 + ii], m_SHData[(kk + 1) * 25 + (jj + 1) * 5 + ii + 1], wx);
+					SHData d23 = LinearInterpolate(d2, d3, dz);
+					SHData d = LinearInterpolate(d01, d23, wy);
+					floral::vec3f shColor = EvalSH(d, vtx.Normal);
+					vtx.Color = floral::vec4f(shColor.x, shColor.y, shColor.z, 1.0f);
+					break;
+				}
+			}
+		}
 	}
 
 	// ss quad
