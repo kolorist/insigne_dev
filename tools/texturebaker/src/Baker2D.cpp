@@ -98,14 +98,14 @@ void BuildNormalizerHStrip(const s32 i_size, f32* o_output)
 		f32 *texelPtr = o_output;
 		for(s32 v = 0; v < i_size; v++) // scanline
 		{
-			for(s32 u=0; u < i_size; u++) // pixel
+			for(s32 u = 0; u < i_size; u++) // pixel
 			{
-				floral::vec3f cubeCoord = floral::texel_coord_to_cube_coord(iCubeFace, (f32)u, (f32)v, i_size);
+				floral::vec3f cubeCoord = floral::texel_coord_to_cube_coord(iCubeFace, (f32)u, (f32)(i_size - 1 - v), i_size);
 				texelPtr[(v * stripWidth + iCubeFace * i_size + u) * 4] = cubeCoord.x;
 				texelPtr[(v * stripWidth + iCubeFace * i_size + u) * 4 + 1] = cubeCoord.y;
 				texelPtr[(v * stripWidth + iCubeFace * i_size + u) * 4 + 2] = cubeCoord.z;
 				texelPtr[(v * stripWidth + iCubeFace * i_size + u) * 4 + 3] =
-					floral::texel_coord_to_solid_angle(iCubeFace, (f32)u, (f32)v, i_size);
+					floral::texel_coord_to_solid_angle(iCubeFace, (f32)u, (f32)(i_size - 1 - v), i_size);
 			}
 		}
 	}

@@ -257,8 +257,10 @@ int main(int argc, char** argv)
 	} else if (strcmp(argv[1], "-p") == 0) {
 		ConvertProbe(argv[2], argv[6]);
 	} else if (strcmp(argv[1], "-s") == 0) {
+		// hstrip input, order: +x -x +y -y +z -z
 		ConvertTextureCubeHStrip(argv[2], argv[6], atoi(argv[4]));
 	} else if (strcmp(argv[1], "-sh") == 0) {
+		// hstrip input, order: +x -x +y -y +z -z
 		ComputeSH(argv[2], argv[4]);
 	}
 
