@@ -187,7 +187,7 @@ void PlainQuadTest::OnInitialize()
 		insigne::infuse_material(m_Shader, m_Material);
 
 		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Data");
-		m_Material.uniform_blocks[ubSlot].value = m_UB;
+		m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t{0, 0, m_UB};
 	}
 	// flush the initialization pass
 	insigne::dispatch_render_pass();

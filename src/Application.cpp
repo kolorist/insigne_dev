@@ -46,10 +46,10 @@ Application::Application(Controller* i_controller)
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
 }
 
@@ -135,17 +135,20 @@ void Application::OnKeyInput(u32 i_keyCode, u32 i_keyStatus)
 	if (i_keyStatus == 0) { // pressed
 	} else if (i_keyStatus == 2) { // up
 	}
-	m_CurrentTestSuite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
+	if (m_CurrentTestSuite->GetCameraMotion())
+		m_CurrentTestSuite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
 }
 
 void Application::OnCursorMove(u32 i_x, u32 i_y)
 {
-	m_CurrentTestSuite->GetCameraMotion()->OnCursorMove(i_x, i_y);
+	if (m_CurrentTestSuite->GetCameraMotion())
+		m_CurrentTestSuite->GetCameraMotion()->OnCursorMove(i_x, i_y);
 }
 
 void Application::OnCursorInteract(bool i_pressed, u32 i_buttonId)
 {
-	m_CurrentTestSuite->GetCameraMotion()->OnCursorInteract(i_pressed);
+	if (m_CurrentTestSuite->GetCameraMotion())
+		m_CurrentTestSuite->GetCameraMotion()->OnCursorInteract(i_pressed);
 }
 
 }

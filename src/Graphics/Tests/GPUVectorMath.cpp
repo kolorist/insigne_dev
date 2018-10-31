@@ -211,7 +211,7 @@ void GPUVectorMath::OnInitialize()
 		// static uniform data
 		{
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Static");
-			m_Material.uniform_blocks[ubSlot].value = m_StaticDataUB;
+			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_StaticDataUB };
 		}
 	}
 
@@ -229,19 +229,19 @@ void GPUVectorMath::OnRender(const f32 i_deltaMs)
 
 	{
 		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Dynamic");
-		m_Material.uniform_blocks[ubSlot].value = m_DynamicDataUB[0];
+		m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_DynamicDataUB[0] };
 		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
 	}
 
 	{
 		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Dynamic");
-		m_Material.uniform_blocks[ubSlot].value = m_DynamicDataUB[1];
+		m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_DynamicDataUB[1] };
 		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
 	}
 
 	{
 		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Dynamic");
-		m_Material.uniform_blocks[ubSlot].value = m_DynamicDataUB[2];
+		m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_DynamicDataUB[2] };
 		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
 	}
 

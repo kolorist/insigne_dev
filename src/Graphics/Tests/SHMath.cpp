@@ -29,8 +29,7 @@ void main() {
 }
 )";
 
-static const_cstr s_CubeMapFS = R"(
-#version 300 es
+static const_cstr s_CubeMapFS = R"(#version 300 es
 
 layout (location = 0) out mediump vec4 o_Color;
 
@@ -44,6 +43,38 @@ void main()
 	mediump vec3 color2 = texture(u_Tex2, v_Normal).rgb;
 	mediump vec3 outColor = color2;
 	o_Color = vec4(outColor, 1.0f);
+}
+)";
+
+static const_cstr s_SHDiffuseVS = R"(#version 300 es
+layout (location = 0) in highp vec3 l_Position_L;
+layout (location = 1) in highp vec3 l_Normal_L;
+layout (location = 2) in mediump vec4 l_Color;
+
+layout(std140) uniform ub_Scene
+{
+	highp mat4 iu_XForm;
+	highp mat4 iu_WVP;
+};
+
+out mediump vec3 v_Color;
+
+void main() {
+	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
+	v_Color = l_Color.xyz;
+	gl_Position = iu_WVP * pos_W;
+}
+)";
+
+static const_cstr s_SHDiffuseFS = R"(#version 300 es
+
+layout (location = 0) out mediump vec4 o_Color;
+
+in mediump vec3 v_Color;
+
+void main()
+{
+	o_Color = vec4(v_Color, 1.0f);
 }
 )";
 
@@ -118,16 +149,23 @@ void SHMath::OnInitialize()
 {
 	m_Vertices.init(1024u, &g_StreammingAllocator);
 	m_Indices.init(4096u, &g_StreammingAllocator);
+	m_SurfVertices.init(512u, &g_StreammingAllocator);
+	m_SurfIndices.init(1024u, &g_StreammingAllocator);
 
 	floral::vec3f cubeCoord = floral::texel_coord_to_cube_coord(2, 128, 128, 256);
 
 	{
 		{
-			floral::mat4x4f m = floral::construct_scaling3d(0.7f, 0.7f, 0.7f);
+			floral::mat4x4f m = floral::construct_scaling3d(0.4f, 0.4f, 0.4f);
 			GenIcosphere_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
+		}
+		{
+			floral::mat4x4f m = floral::construct_scaling3d(0.3f, 0.3f, 2.0f);
+			GenBox_Tris_PosNormalColor(floral::vec4f(1.0f, 1.0f, 1.0f, 1.0f), m, m_SurfVertices, m_SurfIndices);
 		}
 	}
 
+	// sphere
 	{
 		insigne::vbdesc_t desc;
 		desc.region_size = SIZE_KB(64);
@@ -151,6 +189,31 @@ void SHMath::OnInitialize()
 		insigne::ib_handle_t newIB = insigne::create_ib(desc);
 		insigne::update_ib(newIB, &m_Indices[0], m_Indices.get_size(), 0);
 		m_IB = newIB;
+	}
+
+	// surface
+	{
+		insigne::vbdesc_t desc;
+		desc.region_size = SIZE_KB(64);
+		desc.stride = sizeof(VertexPNC);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::vb_handle_t newVB = insigne::create_vb(desc);
+		m_SurfVB = newVB;
+	}
+
+	{
+		insigne::ibdesc_t desc;
+		desc.region_size = SIZE_KB(16);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ib_handle_t newIB = insigne::create_ib(desc);
+		insigne::update_ib(newIB, &m_SurfIndices[0], m_SurfIndices.get_size(), 0);
+		m_SurfIB = newIB;
 	}
 
 	{
@@ -187,20 +250,10 @@ void SHMath::OnInitialize()
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 
 		insigne::ub_handle_t newUB = insigne::create_ub(desc);
-
-		SHData shData;
-		shData.CoEffs[0] = floral::vec4f(0.295409f, 0.147975f, 0.147705f, 0.0f);    
-		shData.CoEffs[1] = floral::vec4f(-0.425180f, -0.212434f, -0.212590f, 0.0f); 
-		shData.CoEffs[2] = floral::vec4f(-0.171174f, 0.085743f, 0.085587f, 0.0f);   
-		shData.CoEffs[3] = floral::vec4f(0.000000f, -0.085276f, 0.085587f, 0.0f);   
-		shData.CoEffs[4] = floral::vec4f(-0.000000f, 0.152628f, -0.152395f, 0.0f);  
-		shData.CoEffs[5] = floral::vec4f(0.304790f, -0.152395f, -0.152395f, 0.0f);  
-		shData.CoEffs[6] = floral::vec4f(-0.181933f, -0.091017f, -0.090966f, 0.0f); 
-		shData.CoEffs[7] = floral::vec4f(-0.000000f, -0.059217f, 0.059450f, 0.0f);  
-		shData.CoEffs[8] = floral::vec4f(-0.315117f, -0.157471f, -0.157558f, 0.0f); 
-
-		insigne::copy_update_ub(newUB, &shData, sizeof(SHData), 0);
 		m_SHUB = newUB;
+
+		m_RedSH = ReadSHDataFromFile("gfx/envi/textures/demo/posy_shr.cbsh");
+		m_GreenSH = ReadSHDataFromFile("gfx/envi/textures/demo/posy_shg.cbsh");
 	}
 
 	{
@@ -219,12 +272,12 @@ void SHMath::OnInitialize()
 		// static uniform data
 		{
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Scene");
-			m_Material.uniform_blocks[ubSlot].value = m_UB;
+			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
 		}
 
 		{
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_SHData");
-			m_Material.uniform_blocks[ubSlot].value = m_SHUB;
+			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_SHUB };
 		}
 	}
 
@@ -331,7 +384,7 @@ void SHMath::OnInitialize()
 
 		{
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_CubeMaterial, "ub_Scene");
-			m_CubeMaterial.uniform_blocks[ubSlot].value = m_UB;
+			m_CubeMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
 		}
 		{
 			s32 texSlot = insigne::get_material_texture_slot(m_CubeMaterial, "u_Tex");
@@ -342,6 +395,33 @@ void SHMath::OnInitialize()
 			m_CubeMaterial.textures[texSlot].value = m_Texture2;
 		}
 	}
+
+	{
+		insigne::shader_desc_t desc = insigne::create_shader_desc();
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
+
+		strcpy(desc.vs, s_SHDiffuseVS);
+		strcpy(desc.fs, s_SHDiffuseFS);
+
+		m_SurfShader = insigne::create_shader(desc);
+		insigne::infuse_material(m_SurfShader, m_SurfMaterial);
+
+		{
+			s32 ubSlot = insigne::get_material_uniform_block_slot(m_CubeMaterial, "ub_Scene");
+			m_SurfMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
+		}
+	}
+
+	// eval sh
+	{
+		for (u32 i = 0; i < m_SurfVertices.get_size(); i++) {
+			VertexPNC& vtx = m_SurfVertices[i];
+			SHData shData = LinearInterpolate(m_GreenSH, m_RedSH, vtx.Position.z / 4.0f + 0.5f);
+			floral::vec3f shColor = EvalSH(shData, vtx.Normal);
+			vtx.Color = floral::vec4f(shColor.x, shColor.y, shColor.z, 1.0f);
+		}
+	}
+	insigne::update_vb(m_SurfVB, &m_SurfVertices[0], m_SurfVertices.get_size(), 0);
 
 	m_DebugDrawer.Initialize();
 }
@@ -354,21 +434,48 @@ void SHMath::OnUpdate(const f32 i_deltaMs)
 
 void SHMath::OnRender(const f32 i_deltaMs)
 {
+	static f32 elapsedTime = 0.0f;
+	elapsedTime += i_deltaMs;
+	f32 xPos = 2.0f * sinf(floral::to_radians(elapsedTime / 10.0f));
+
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	{
 		SceneData sceneData;
-		sceneData.XForm = floral::construct_translation3d(0.0f, 0.0f, -1.5f) * m_CameraMotion.GetRotation().normalize().to_transform();
+		sceneData.XForm = floral::construct_translation3d(0.0f, 1.5f, -2.0f) * m_CameraMotion.GetRotation().normalize().to_transform();
 		sceneData.WVP = m_SceneData.WVP;
 		insigne::copy_update_ub(m_UB, &sceneData, sizeof(SceneData), 0);
-		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_CubeMaterial);
+		insigne::copy_update_ub(m_SHUB, &m_RedSH, sizeof(SHData), 0);
+		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
 		insigne::dispatch_render_pass();
 	}
+
 	{
 		SceneData sceneData;
-		sceneData.XForm = floral::construct_translation3d(0.0f, 0.0f, 1.5f) * m_CameraMotion.GetRotation().normalize().to_transform();
+		sceneData.XForm = floral::construct_translation3d(0.0f, 1.5f, 2.0f) * m_CameraMotion.GetRotation().normalize().to_transform();
 		sceneData.WVP = m_SceneData.WVP;
 		insigne::copy_update_ub(m_UB, &sceneData, sizeof(SceneData), 0);
+		insigne::copy_update_ub(m_SHUB, &m_GreenSH, sizeof(SHData), 0);
 		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
+		insigne::dispatch_render_pass();
+	}
+
+	{
+		SceneData sceneData;
+		sceneData.XForm = floral::construct_translation3d(0.0f, 0.5f, xPos) * m_CameraMotion.GetRotation().normalize().to_transform();
+		sceneData.WVP = m_SceneData.WVP;
+		insigne::copy_update_ub(m_UB, &sceneData, sizeof(SceneData), 0);
+		m_AvgSH = LinearInterpolate(m_GreenSH, m_RedSH, xPos / 4.0f + 0.5f);
+		insigne::copy_update_ub(m_SHUB, &m_AvgSH, sizeof(SHData), 0);
+		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
+		insigne::dispatch_render_pass();
+	}
+
+	{
+		SceneData sceneData;
+		sceneData.XForm = floral::construct_translation3d(0.0f, -0.5f, 0.0f) * m_CameraMotion.GetRotation().normalize().to_transform();
+		sceneData.WVP = m_SceneData.WVP;
+		insigne::copy_update_ub(m_UB, &sceneData, sizeof(SceneData), 0);
+		insigne::draw_surface<SurfacePNC>(m_SurfVB, m_SurfIB, m_SurfMaterial);
 		insigne::dispatch_render_pass();
 	}
 	m_DebugDrawer.Render(m_DebugWVP);
@@ -379,6 +486,61 @@ void SHMath::OnRender(const f32 i_deltaMs)
 
 void SHMath::OnCleanUp()
 {
+}
+
+// ---------------------------------------------
+SHMath::SHData SHMath::ReadSHDataFromFile(const_cstr i_filePath)
+{
+	floral::file_info shFile = floral::open_file(i_filePath);
+	floral::file_stream dataStream;
+
+	dataStream.buffer = (p8)m_MemoryArena->allocate(shFile.file_size);
+	floral::read_all_file(shFile, dataStream);
+	floral::close_file(shFile);
+
+	floral::inplace_array<SHData, 27u> shDatas;
+
+	SHData shData;
+	for (u32 j = 0; j < 9; j++) {
+		floral::vec3f shBand;
+		dataStream.read_bytes((p8)&shBand, sizeof(floral::vec3f));
+		shData.CoEffs[j] = floral::vec4f(shBand.x, shBand.y, shBand.z, 0.0f);
+	}
+
+	m_MemoryArena->free_all();
+
+	return shData;
+}
+
+SHMath::SHData SHMath::LinearInterpolate(const SHData& d0, const SHData& d1, const f32 weight)
+{
+	SHData d;
+	for (u32 i = 0; i < 9; i++) {
+		d.CoEffs[i] = d0.CoEffs[i] * weight + d1.CoEffs[i] * (1.0f - weight);
+	}
+	return d;
+}
+
+floral::vec3f SHMath::EvalSH(const SHData& i_shData, const floral::vec3f& i_normal)
+{
+	const f32 c0 = 0.2820947918f;
+	const f32 c1 = 0.4886025119f;
+	const f32 c2 = 2.185096861f;	// sqrt(15/pi)
+	const f32 c3 = 1.261566261f;	// sqrt(5/pi)
+
+	floral::vec4f color =
+		c0 * i_shData.CoEffs[0]
+
+		- c1 * i_normal.y * i_shData.CoEffs[1] * 0.667f
+		+ c1 * i_normal.z * i_shData.CoEffs[2] * 0.667f
+		- c1 * i_normal.x * i_shData.CoEffs[3] * 0.667f
+
+		+ c2 * i_normal.x * i_normal.y * 0.5f * i_shData.CoEffs[4] * 0.25f
+		- c2 * i_normal.y * i_normal.z * 0.5f * i_shData.CoEffs[5] * 0.25f
+		+ c3 * (-1.0f + 3.0f * i_normal.z * i_normal.z) * 0.25f * i_shData.CoEffs[6] * 0.25f
+		- c2 * i_normal.x * i_normal.z * 0.5f * i_shData.CoEffs[7] * 0.25f
+		+ c2 * (i_normal.x * i_normal.x - i_normal.y * i_normal.y) * 0.25f * i_shData.CoEffs[8] * 0.25f;
+	return floral::vec3f(color.x, color.y, color.z);
 }
 
 }

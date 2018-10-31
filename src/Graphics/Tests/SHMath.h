@@ -12,31 +12,12 @@
 
 namespace stone {
 
-#if 0
-const mediump float c1 = 0.429043f;
-const mediump float c2 = 0.511664f;
-const mediump float c3 = 0.743125f;
-const mediump float c4 = 0.886227f;
-const mediump float c5 = 0.247708f;
-
-	return
-		// constant term, lowest frequency //////
-		c4 * iu_Coeffs[0].xyz +
-
-		// axis aligned terms ///////////////////
-		2.0f * c2 * iu_Coeffs[1].xyz * i_normal.y +
-		2.0f * c2 * iu_Coeffs[2].xyz * i_normal.z +
-		2.0f * c2 * iu_Coeffs[3].xyz * i_normal.x +
-
-		// band 2 terms /////////////////////////
-		2.0f * c1 * iu_Coeffs[4].xyz * i_normal.x * i_normal.y +
-		2.0f * c1 * iu_Coeffs[5].xyz * i_normal.y * i_normal.z +
-		2.0f * c1 * iu_Coeffs[7].xyz * i_normal.x * i_normal.z +
-		c3 * iu_Coeffs[6].xyz * i_normal.z * i_normal.z - c5 * iu_Coeffs[6].xyz +
-		c1 * iu_Coeffs[8].xyz * (i_normal.x * i_normal.x - i_normal.y * i_normal.y);
-#endif
-
 class SHMath : public ITestSuite {
+	public:
+		struct SHData {
+			floral::vec4f						CoEffs[9];
+		};
+
 	public:
 		SHMath();
 		~SHMath();
@@ -49,26 +30,35 @@ class SHMath : public ITestSuite {
 		ICameraMotion*							GetCameraMotion() override { return &m_CameraMotion; }
 
 	private:
+		SHData									ReadSHDataFromFile(const_cstr i_filePath);
+		SHData									LinearInterpolate(const SHData& d0, const SHData& d1, const f32 weight);
+		floral::vec3f							EvalSH(const SHData& i_shData, const floral::vec3f& i_normal);
+
+	private:
 		// camera motion
 		DebugDrawer								m_DebugDrawer;
 		TrackballCamera							m_CameraMotion;
 
 		floral::fixed_array<DemoVertex, LinearAllocator>	m_Vertices;
 		floral::fixed_array<u32, LinearAllocator>			m_Indices;
+		floral::fixed_array<VertexPNC, LinearAllocator>		m_SurfVertices;
+		floral::fixed_array<u32, LinearAllocator>			m_SurfIndices;
 
 		struct SceneData {
 			floral::mat4x4f						XForm;
 			floral::mat4x4f						WVP;
 		};
 
-		struct SHData {
-			floral::vec4f						CoEffs[9];
-		};
-
 		SceneData								m_SceneData;
 
+		SHData									m_RedSH;
+		SHData									m_GreenSH;
+		SHData									m_AvgSH;
+
 		insigne::vb_handle_t					m_VB;
+		insigne::vb_handle_t					m_SurfVB;
 		insigne::ib_handle_t					m_IB;
+		insigne::ib_handle_t					m_SurfIB;
 		insigne::ub_handle_t					m_UB;
 		insigne::ub_handle_t					m_SHUB;
 		insigne::shader_handle_t				m_Shader;
@@ -78,6 +68,8 @@ class SHMath : public ITestSuite {
 		insigne::texture_handle_t				m_Texture2;
 		insigne::shader_handle_t				m_CubeShader;
 		insigne::material_desc_t				m_CubeMaterial;
+		insigne::shader_handle_t				m_SurfShader;
+		insigne::material_desc_t				m_SurfMaterial;
 
 		LinearArena*							m_MemoryArena;
 

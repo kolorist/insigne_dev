@@ -186,7 +186,7 @@ void CornelBox::OnInitialize()
 		// static uniform data
 		{
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Scene");
-			m_Material.uniform_blocks[ubSlot].value = m_UB;
+			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
 		}
 	}
 }

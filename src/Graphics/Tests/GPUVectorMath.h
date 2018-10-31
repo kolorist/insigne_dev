@@ -10,6 +10,8 @@
 
 namespace stone {
 
+class ICameraMotion;
+
 class GPUVectorMath : public ITestSuite {
 	public:
 		GPUVectorMath();
@@ -19,6 +21,8 @@ class GPUVectorMath : public ITestSuite {
 		void									OnUpdate(const f32 i_deltaMs) override;
 		void									OnRender(const f32 i_deltaMs) override;
 		void									OnCleanUp() override;
+
+		ICameraMotion*							GetCameraMotion() override { return nullptr; }
 
 	private:
 		floral::fixed_array<DemoVertex, LinearAllocator>	m_Vertices;
