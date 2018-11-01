@@ -166,9 +166,7 @@ void GPUVectorMath::OnInitialize()
 		desc.data_size = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 
-		insigne::ub_handle_t newUB0 = insigne::create_ub(desc);
-		insigne::ub_handle_t newUB1 = insigne::create_ub(desc);
-		insigne::ub_handle_t newUB2 = insigne::create_ub(desc);
+		insigne::ub_handle_t newUB = insigne::create_ub(desc);
 
 		m_DynamicData[0].XForm =
 			floral::construct_translation3d(0.0f, 0.0f, 2.0f) *
@@ -188,12 +186,10 @@ void GPUVectorMath::OnInitialize()
 			floral::construct_scaling3d(0.3f, 0.3f, 0.3f);
 		m_DynamicData[2].Color = floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f);
 
-		insigne::update_ub(newUB0, &m_DynamicData[0], sizeof(DynamicData), 0);
-		insigne::update_ub(newUB1, &m_DynamicData[1], sizeof(DynamicData), 0);
-		insigne::update_ub(newUB2, &m_DynamicData[2], sizeof(DynamicData), 0);
-		m_DynamicDataUB[0] = newUB0;
-		m_DynamicDataUB[1] = newUB1;
-		m_DynamicDataUB[2] = newUB2;
+		insigne::update_ub(newUB, &m_DynamicData[0], sizeof(DynamicData), 0);
+		insigne::update_ub(newUB, &m_DynamicData[1], sizeof(DynamicData), 256);
+		insigne::update_ub(newUB, &m_DynamicData[2], sizeof(DynamicData), 512);
+		m_DynamicDataUB = newUB;
 	}
 
 	// shader
@@ -213,6 +209,12 @@ void GPUVectorMath::OnInitialize()
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Static");
 			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_StaticDataUB };
 		}
+
+		// dynamic uniform data
+		{
+			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Dynamic");
+			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 256, m_DynamicDataUB };
+		}
 	}
 
 	SnapshotAllocatorInfos();
@@ -229,19 +231,14 @@ void GPUVectorMath::OnRender(const f32 i_deltaMs)
 
 	{
 		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Dynamic");
-		m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_DynamicDataUB[0] };
-		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
-	}
 
-	{
-		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Dynamic");
-		m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_DynamicDataUB[1] };
+		m_Material.uniform_blocks[ubSlot].value.offset = 0;
 		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
-	}
 
-	{
-		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Dynamic");
-		m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_DynamicDataUB[2] };
+		m_Material.uniform_blocks[ubSlot].value.offset = 256;
+		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
+
+		m_Material.uniform_blocks[ubSlot].value.offset = 512;
 		insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
 	}
 

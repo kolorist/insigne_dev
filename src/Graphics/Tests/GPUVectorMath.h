@@ -43,7 +43,7 @@ class GPUVectorMath : public ITestSuite {
 		insigne::vb_handle_t					m_VB;
 		insigne::ib_handle_t					m_IB;
 		insigne::ub_handle_t					m_StaticDataUB;
-		insigne::ub_handle_t					m_DynamicDataUB[3];
+		insigne::ub_handle_t					m_DynamicDataUB;
 		insigne::shader_handle_t				m_Shader;
 		insigne::material_desc_t				m_Material;
 

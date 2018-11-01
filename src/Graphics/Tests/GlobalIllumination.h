@@ -26,12 +26,17 @@ class GlobalIllumination : public ITestSuite {
 		void									OnRender(const f32 i_deltaMs) override;
 		void									OnCleanUp() override;
 
-		static SHData							LinearInterpolate(const SHData& d0, const SHData& d1, const f32 weight);
-
 		ICameraMotion*							GetCameraMotion() override { return &m_CameraMotion; }
 
 	private:
+		void									InitCPUBuffers();
+		void									BuildGeometry();
+		void									InitBuffers();
+		void									InitMaterials();
+		void									ComputeSHDiffuse();
+
 		floral::vec3f							EvalSH(const SHData& i_shData, const floral::vec3f& i_normal);
+		SHData									LinearInterpolate(const SHData& d0, const SHData& d1, const f32 weight);
 
 	private:
 		DebugDrawer								m_DebugDrawer;
@@ -57,6 +62,7 @@ class GlobalIllumination : public ITestSuite {
 
 		floral::fixed_array<floral::vec3f, LinearAllocator>	m_SHPos;
 		floral::fixed_array<SHData, LinearAllocator>	m_SHData;
+		f32*									m_FramePixelData;
 
 		SceneData								m_SceneData;
 		LightData								m_LightData;

@@ -46,11 +46,11 @@ Application::Application(Controller* i_controller)
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
 }
 
 Application::~Application()

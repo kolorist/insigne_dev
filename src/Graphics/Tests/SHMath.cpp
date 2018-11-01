@@ -98,7 +98,6 @@ void main() {
 )";
 
 static const_cstr s_FragmentShader = R"(#version 300 es
-
 layout (location = 0) out mediump vec4 o_Color;
 
 layout(std140) uniform ub_SHData

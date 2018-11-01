@@ -1,151 +1,132 @@
 #include "GlobalIllumination.h"
 
 #include <insigne/commons.h>
+#include <insigne/counters.h>
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
 
 #include "Graphics/GeometryBuilder.h"
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "Graphics/stb_image_write.h"
+
+#include "GIShader.h"
 
 namespace stone {
-// final blit
-static const_cstr s_FinalBlitVS = R"(#version 300 es
-layout (location = 0) in highp vec3 l_Position_L;
-layout (location = 1) in highp vec2 l_TexCoord;
 
-out mediump vec2 v_TexCoord;
+// utils----------------------------------------
+floral::vec3f GlobalIllumination::EvalSH(const SHData& i_shData, const floral::vec3f& i_normal)
+{
+	const f32 c0 = 0.2820947918f;
+	const f32 c1 = 0.4886025119f;
+	const f32 c2 = 2.185096861f;	// sqrt(15/pi)
+	const f32 c3 = 1.261566261f;	// sqrt(5/pi)
 
-void main() {
-	v_TexCoord = l_TexCoord;
-	gl_Position = vec4(l_Position_L, 1.0f);
+	floral::vec3f color =
+		c0 * i_shData.CoEffs[0]
+
+		- c1 * i_normal.y * i_shData.CoEffs[1] * 0.667f
+		+ c1 * i_normal.z * i_shData.CoEffs[2] * 0.667f
+		- c1 * i_normal.x * i_shData.CoEffs[3] * 0.667f
+
+		+ c2 * i_normal.x * i_normal.y * 0.5f * i_shData.CoEffs[4] * 0.25f
+		- c2 * i_normal.y * i_normal.z * 0.5f * i_shData.CoEffs[5] * 0.25f
+		+ c3 * (-1.0f + 3.0f * i_normal.z * i_normal.z) * 0.25f * i_shData.CoEffs[6] * 0.25f
+		- c2 * i_normal.x * i_normal.z * 0.5f * i_shData.CoEffs[7] * 0.25f
+		+ c2 * (i_normal.x * i_normal.x - i_normal.y * i_normal.y) * 0.25f * i_shData.CoEffs[8] * 0.25f;
+	return color;
 }
-)";
 
-static const_cstr s_FinalBlitFS = R"(#version 300 es
-layout (location = 0) out mediump vec4 o_Color;
-
-in mediump vec2 v_TexCoord;
-
-uniform mediump sampler2D iu_Tex;
-
-void main() {
-	mediump vec3 color = texture(iu_Tex, v_TexCoord).rgb;
-	o_Color = vec4(color, 1.0f);
-	//o_Color = vec4(v_TexCoord.x, v_TexCoord.y, 0.0f, 1.0f);
+GlobalIllumination::SHData GlobalIllumination::LinearInterpolate(const SHData& d0, const SHData& d1, const f32 weight)
+{
+	SHData d;
+	for (u32 i = 0; i < 9; i++) {
+		d.CoEffs[i] = d0.CoEffs[i] * weight + d1.CoEffs[i] * (1.0f - weight);
+	}
+	return d;
 }
-)";
-
-// shadow
-static const_cstr s_ShadowVS = R"(#version 300 es
-layout (location = 0) in highp vec3 l_Position_L;
-
-layout(std140) uniform ub_Scene
+// ---------------------------------------------
+void GlobalIllumination::InitCPUBuffers()
 {
-	highp mat4 iu_XForm;
-	highp mat4 iu_WVP;
-};
-
-void main() {
-	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
-	gl_Position = iu_WVP * pos_W;
+	m_Vertices.init(128u, &g_StreammingAllocator);
+	m_Indices.init(256u, &g_StreammingAllocator);
+	m_SSVertices.init(4u, &g_StreammingAllocator);
+	m_SSIndices.init(6u, &g_StreammingAllocator);
+	m_SHCamPos.init(27u, &g_StreammingAllocator);
+	m_SHWVPs.init(27 * 6, &g_StreammingAllocator);
+	m_SHData.init(125u, &g_StreammingAllocator);
+	m_SHPos.init(125u, &g_StreammingAllocator);
 }
-)";
 
-static const_cstr s_ShadowFS = R"(#version 300 es
-layout (location = 0) out mediump vec4 o_Color;
-
-void main()
+void GlobalIllumination::BuildGeometry()
 {
-	o_Color = vec4(1.0f);
-	// nothing :)
+	// bottom
+	{
+		floral::mat4x4f m =
+			floral::construct_translation3d(0.0f, -1.0f, 0.0f);
+		Gen3DPlane_Tris_PosNormalColor(floral::vec4f(0.3f), m, m_Vertices, m_Indices);
+	}
+
+	// right
+	{
+		floral::mat4x4f m =
+			floral::construct_translation3d(0.0f, 0.0f, -1.0f) *
+			floral::construct_quaternion_euler(90.0f, 0.0f, 0.0f).to_transform();
+		Gen3DPlane_Tris_PosNormalColor(floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
+	}
+
+	// left
+	{
+		floral::mat4x4f m =
+			floral::construct_translation3d(0.0f, 0.0f, 1.0f) *
+			floral::construct_quaternion_euler(-90.0f, 0.0f, 0.0f).to_transform();
+		Gen3DPlane_Tris_PosNormalColor(floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
+	}
+
+	// back
+	{
+		floral::mat4x4f m =
+			floral::construct_translation3d(-1.0f, 0.0f, 0.0f) *
+			floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
+		Gen3DPlane_Tris_PosNormalColor(floral::vec4f(0.3f), m, m_Vertices, m_Indices);
+	}
+
+	// small box
+	{
+		floral::mat4x4f m =
+			floral::construct_translation3d(0.0f, -0.6f, 0.45f) *
+			floral::construct_quaternion_euler(0.0f, 35.0f, 0.0f).to_transform() *
+			floral::construct_scaling3d(0.2f, 0.4f, 0.2f);
+		GenBox_Tris_PosNormalColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
+	}
+
+	// large box
+	{
+		floral::mat4x4f m =
+			floral::construct_translation3d(0.2f, -0.4f, -0.4f) *
+			floral::construct_quaternion_euler(0.0f, -15.0f, 0.0f).to_transform() *
+			floral::construct_scaling3d(0.3f, 0.6f, 0.3f);
+		GenBox_Tris_PosNormalColor(floral::vec4f(1.0f, 0.0f, 1.0f, 1.0f), m, m_Vertices, m_Indices);
+	}
+
+	// calculate scene bounding box
+	floral::aabb3f sceneBB;
+	{
+		sceneBB.min_corner = floral::vec3f(99.9f);
+		sceneBB.max_corner = floral::vec3f(-99.9f);
+		for (u32 i = 0; i < m_Vertices.get_size(); i++) {
+			if (m_Vertices[i].Position.x < sceneBB.min_corner.x) sceneBB.min_corner.x = m_Vertices[i].Position.x;
+			if (m_Vertices[i].Position.y < sceneBB.min_corner.y) sceneBB.min_corner.y = m_Vertices[i].Position.y;
+			if (m_Vertices[i].Position.z < sceneBB.min_corner.z) sceneBB.min_corner.z = m_Vertices[i].Position.z;
+
+			if (m_Vertices[i].Position.x > sceneBB.max_corner.x) sceneBB.max_corner.x = m_Vertices[i].Position.x;
+			if (m_Vertices[i].Position.y > sceneBB.max_corner.y) sceneBB.max_corner.y = m_Vertices[i].Position.y;
+			if (m_Vertices[i].Position.z > sceneBB.max_corner.z) sceneBB.max_corner.z = m_Vertices[i].Position.z;
+		}
+	}
+	m_SceneAABB = sceneBB;
 }
-)";
-
-// material
-static const_cstr s_VertexShader = R"(#version 300 es
-layout (location = 0) in highp vec3 l_Position_L;
-layout (location = 1) in highp vec3 l_Normal_L;
-layout (location = 2) in mediump vec4 l_Color;
-
-layout(std140) uniform ub_Scene
-{
-	highp mat4 iu_XForm;
-	highp mat4 iu_WVP;
-	highp vec4 iu_CameraPos;
-};
-
-layout(std140) uniform ub_LightScene
-{
-	highp mat4 iu_LightXForm;
-	highp mat4 iu_LightWVP;
-};
-
-layout(std140) uniform ub_Light
-{
-	highp vec4 iu_LightDirection;
-	mediump vec4 iu_LightColor;
-	mediump vec4 iu_LightRadiance;
-};
-
-out mediump vec4 v_VertexColor;
-out highp vec3 v_Normal;
-out highp vec3 v_LightSpacePos;
-out highp vec3 v_ViewDir;
-
-void main() {
-	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
-	v_VertexColor = l_Color;
-	v_Normal = l_Normal_L;
-	v_ViewDir = normalize(iu_CameraPos.xyz - pos_W.xyz);
-	highp vec4 pos_LS = iu_LightWVP * iu_LightXForm * vec4(l_Position_L, 1.0f);
-	v_LightSpacePos = pos_LS.xyz / pos_LS.w; // perspective division, no need for orthographic anyway
-	gl_Position = iu_WVP * pos_W;
-}
-)";
-
-static const_cstr s_FragmentShader = R"(#version 300 es
-layout (location = 0) out mediump vec4 o_Color;
-
-layout(std140) uniform ub_Light
-{
-	highp vec4 iu_LightDirection;
-	mediump vec4 iu_LightColor;
-	mediump vec4 iu_LightRadiance;
-};
-
-uniform highp sampler2D iu_ShadowMap;
-
-in mediump vec4 v_VertexColor;
-in highp vec3 v_Normal;
-in highp vec3 v_LightSpacePos;
-in highp vec3 v_ViewDir;
-
-void main()
-{
-	highp vec3 n = normalize(v_Normal);
-	highp vec3 l = normalize(iu_LightDirection.xyz);
-	highp vec3 v = normalize(v_ViewDir);
-	highp vec3 h = normalize(l + v);
-
-	mediump float nol = max(dot(n, l), 0.0f);
-	mediump float noh = max(dot(n, h), 0.0f);
-
-	mediump vec3 r = normalize(- l - 2.0f * dot(n, -l) * n);
-	mediump float rov = max(dot(r, v), 0.0f);
-	mediump vec3 diff = v_VertexColor.xyz * iu_LightRadiance.xyz * nol;
-	mediump vec3 spec = v_VertexColor.xyz * iu_LightRadiance.xyz * pow(noh, 90.0f);
-	mediump vec3 color = diff + spec;
-
-	// shadow
-	highp vec2 smUV = (v_LightSpacePos.xy + vec2(1.0f)) / vec2(2.0f);
-	highp float ld = texture(iu_ShadowMap, smUV).r;
-	highp float sld = v_LightSpacePos.z * 0.5f + 0.5f;
-	mediump float shadowMask = 1.0f - step(0.0002f, sld - ld);
-
-	//o_Color = vec4(color * shadowMask, 1.0f);
-	o_Color = vec4(v_VertexColor);
-}
-)";
+// ---------------------------------------------
 
 GlobalIllumination::GlobalIllumination()
 {
@@ -163,54 +144,12 @@ inline bool IsInsideAABB(const floral::vec3f& i_v, const floral::aabb3f& i_aabb)
 			&& i_v.z >= i_aabb.min_corner.z && i_v.z <= i_aabb.max_corner.z);
 }
 
-GlobalIllumination::SHData GlobalIllumination::LinearInterpolate(const SHData& d0, const SHData& d1, const f32 weight)
-{
-	SHData d;
-	for (u32 i = 0; i < 9; i++) {
-		d.CoEffs[i] = d0.CoEffs[i] * weight + d1.CoEffs[i] * (1.0f - weight);
-	}
-	return d;
-}
-
-floral::vec3f GlobalIllumination::EvalSH(const SHData& i_shData, const floral::vec3f& i_normal)
-{
-	const f32 c1 = 0.429043f;
-	const f32 c2 = 0.511664f;
-	const f32 c3 = 0.743125f;
-	const f32 c4 = 0.886227f;
-	const f32 c5 = 0.247708f;
-
-	floral::vec3f constantTerm = c4 * i_shData.CoEffs[0];
-
-	floral::vec3f yAxisTerm = 2.0f * c2 * i_shData.CoEffs[1] * i_normal.y;
-	floral::vec3f xAxisTerm = 2.0f * c2 * i_shData.CoEffs[2] * i_normal.x;
-	floral::vec3f zAxisTerm = 2.0f * c2 * i_shData.CoEffs[3] * i_normal.z;
-
-	floral::vec3f band2t1 = 2.0f * c1 * i_shData.CoEffs[4] * i_normal.x * i_normal.y;
-	floral::vec3f band2t2 = 2.0f * c1 * i_shData.CoEffs[5] * i_normal.y * i_normal.z;
-	floral::vec3f band2t3 = c3 * i_shData.CoEffs[6] * i_normal.z * i_normal.z - c5 * i_shData.CoEffs[6];
-	floral::vec3f band2t4 = 2.0f * c1 * i_shData.CoEffs[7] * i_normal.x * i_normal.z;
-	floral::vec3f band2t5 = c1 * i_shData.CoEffs[8] * (i_normal.x * i_normal.x - i_normal.y * i_normal.y);
-
-	return (constantTerm +
-			yAxisTerm + xAxisTerm + zAxisTerm +
-			band2t1 + band2t2 + band2t3 + band2t4 + band2t5);
-}
-
 void GlobalIllumination::OnInitialize()
 {
-	m_Vertices.init(128u, &g_StreammingAllocator);
-	m_Indices.init(256u, &g_StreammingAllocator);
-	m_SSVertices.init(4u, &g_StreammingAllocator);
-	m_SSIndices.init(6u, &g_StreammingAllocator);
-	m_SHCamPos.init(27u, &g_StreammingAllocator);
-	m_SHWVPs.init(27 * 6, &g_StreammingAllocator);
-	m_SHData.init(125u, &g_StreammingAllocator);
-	m_SHPos.init(125u, &g_StreammingAllocator);
-
+	InitCPUBuffers();
 	// sh data
 	{
-		floral::file_info shFile = floral::open_file("27probes.cbsh");
+		floral::file_info shFile = floral::open_file("gfx/envi/textures/demo/27probes.cbsh");
 		floral::file_stream dataStream;
 
 		dataStream.buffer = (p8)m_MemoryArena->allocate(shFile.file_size);
@@ -254,7 +193,6 @@ void GlobalIllumination::OnInitialize()
 		m_MemoryArena->free_all();
 	}
 
-	floral::aabb3f sceneBB;
 	{
 		m_SSVertices.push_back({ floral::vec3f(-1.0f, -1.0f, 0.0f), floral::vec2f(0.0f, 0.0f) });
 		m_SSVertices.push_back({ floral::vec3f(1.0f, -1.0f, 0.0f), floral::vec2f(1.0f, 0.0f) });
@@ -265,103 +203,32 @@ void GlobalIllumination::OnInitialize()
 		m_SSIndices.push_back(2); m_SSIndices.push_back(3); m_SSIndices.push_back(0);
 	}
 
+	BuildGeometry();
+
 	{
-		// bottom
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, -1.0f, 0.0f);
-			Gen3DPlane_Tris_PosNormalColor(floral::vec4f(1.0f, 1.0f, 1.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// top
-		if (0)
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, 1.0f, 0.0f) *
-				floral::construct_quaternion_euler(180.0f, 0.0f, 0.0f).to_transform();
-			Gen3DPlane_Tris_PosNormalColor(floral::vec4f(1.0f, 1.0f, 1.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// right
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, 0.0f, -1.0f) *
-				floral::construct_quaternion_euler(90.0f, 0.0f, 0.0f).to_transform();
-			Gen3DPlane_Tris_PosNormalColor(floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// left
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, 0.0f, 1.0f) *
-				floral::construct_quaternion_euler(-90.0f, 0.0f, 0.0f).to_transform();
-			Gen3DPlane_Tris_PosNormalColor(floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// back
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(-1.0f, 0.0f, 0.0f) *
-				floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
-			Gen3DPlane_Tris_PosNormalColor(floral::vec4f(1.0f, 1.0f, 1.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// small box
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, -0.6f, 0.45f) *
-				floral::construct_quaternion_euler(0.0f, 35.0f, 0.0f).to_transform() *
-				floral::construct_scaling3d(0.2f, 0.4f, 0.2f);
-			GenBox_Tris_PosNormalColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// large box
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.2f, -0.4f, -0.4f) *
-				floral::construct_quaternion_euler(0.0f, -15.0f, 0.0f).to_transform() *
-				floral::construct_scaling3d(0.3f, 0.6f, 0.3f);
-			GenBox_Tris_PosNormalColor(floral::vec4f(1.0f, 0.0f, 1.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// calculate scene bounding box
-		{
-			sceneBB.min_corner = floral::vec3f(99.9f);
-			sceneBB.max_corner = floral::vec3f(-99.9f);
-			for (u32 i = 0; i < m_Vertices.get_size(); i++) {
-				if (m_Vertices[i].Position.x < sceneBB.min_corner.x) sceneBB.min_corner.x = m_Vertices[i].Position.x;
-				if (m_Vertices[i].Position.y < sceneBB.min_corner.y) sceneBB.min_corner.y = m_Vertices[i].Position.y;
-				if (m_Vertices[i].Position.z < sceneBB.min_corner.z) sceneBB.min_corner.z = m_Vertices[i].Position.z;
-
-				if (m_Vertices[i].Position.x > sceneBB.max_corner.x) sceneBB.max_corner.x = m_Vertices[i].Position.x;
-				if (m_Vertices[i].Position.y > sceneBB.max_corner.y) sceneBB.max_corner.y = m_Vertices[i].Position.y;
-				if (m_Vertices[i].Position.z > sceneBB.max_corner.z) sceneBB.max_corner.z = m_Vertices[i].Position.z;
-			}
-		}
-		m_SceneAABB = sceneBB;
 
 		// sh cam pos
 		{
 			static floral::vec3f faceUpDirs[] = {
-				floral::vec3f(0.0f, 1.0f, 0.0f),	// negative Z
-				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Z
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive X
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// negative X
 
 				floral::vec3f(1.0f, 0.0f, 0.0f),	// positive Y
 				floral::vec3f(0.0f, 0.0f, -1.0f),	// negative Y
 
-				floral::vec3f(0.0f, 1.0f, 0.0f),	// negative X
-				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive X
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Z
+				floral::vec3f(0.0f, 1.0f, 0.0f),	// negative Z
 			};
 
 			static floral::vec3f faceLookAtDirs[] = {
-				floral::vec3f(0.0f, 0.0f, -1.0f),	// negative Z
-				floral::vec3f(0.0f, 0.0f, 1.0f),	// positive Z
+				floral::vec3f(1.0f, 0.0f, 0.0f),	// positive X
+				floral::vec3f(-1.0f, 0.0f, 0.0f),	// negative X
 
 				floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Y
 				floral::vec3f(0.0f, -1.0f, 0.0f),	// negative Y
 
-				floral::vec3f(-1.0f, 0.0f, 0.0f),	// negative X
-				floral::vec3f(1.0f, 0.0f, 0.0f),	// positive X
+				floral::vec3f(0.0f, 0.0f, 1.0f),	// positive Z
+				floral::vec3f(0.0f, 0.0f, -1.0f),	// negative Z
 			};
 
 			floral::camera_persp_t camProj;
@@ -400,6 +267,7 @@ void GlobalIllumination::OnInitialize()
 	}
 
 	// SH interpolation: trilinear
+	//if (0)
 	{
 		for (u32 i = 0; i < m_Vertices.get_size(); i++) {
 			VertexPNC& vtx = m_Vertices[i];
@@ -582,15 +450,15 @@ void GlobalIllumination::OnInitialize()
 
 		{
 			floral::inplace_array<floral::vec4f, 8u> bbVertices;
-			bbVertices.push_back(floral::vec4f(sceneBB.min_corner.x, sceneBB.min_corner.y, sceneBB.min_corner.z, 1.0f));
-			bbVertices.push_back(floral::vec4f(sceneBB.max_corner.x, sceneBB.min_corner.y, sceneBB.min_corner.z, 1.0f));
-			bbVertices.push_back(floral::vec4f(sceneBB.max_corner.x, sceneBB.min_corner.y, sceneBB.max_corner.z, 1.0f));
-			bbVertices.push_back(floral::vec4f(sceneBB.min_corner.x, sceneBB.min_corner.y, sceneBB.max_corner.z, 1.0f));
+			bbVertices.push_back(floral::vec4f(m_SceneAABB.min_corner.x, m_SceneAABB.min_corner.y, m_SceneAABB.min_corner.z, 1.0f));
+			bbVertices.push_back(floral::vec4f(m_SceneAABB.max_corner.x, m_SceneAABB.min_corner.y, m_SceneAABB.min_corner.z, 1.0f));
+			bbVertices.push_back(floral::vec4f(m_SceneAABB.max_corner.x, m_SceneAABB.min_corner.y, m_SceneAABB.max_corner.z, 1.0f));
+			bbVertices.push_back(floral::vec4f(m_SceneAABB.min_corner.x, m_SceneAABB.min_corner.y, m_SceneAABB.max_corner.z, 1.0f));
 
-			bbVertices.push_back(floral::vec4f(sceneBB.min_corner.x, sceneBB.max_corner.y, sceneBB.min_corner.z, 1.0f));
-			bbVertices.push_back(floral::vec4f(sceneBB.max_corner.x, sceneBB.max_corner.y, sceneBB.min_corner.z, 1.0f));
-			bbVertices.push_back(floral::vec4f(sceneBB.max_corner.x, sceneBB.max_corner.y, sceneBB.max_corner.z, 1.0f));
-			bbVertices.push_back(floral::vec4f(sceneBB.min_corner.x, sceneBB.max_corner.y, sceneBB.max_corner.z, 1.0f));
+			bbVertices.push_back(floral::vec4f(m_SceneAABB.min_corner.x, m_SceneAABB.max_corner.y, m_SceneAABB.min_corner.z, 1.0f));
+			bbVertices.push_back(floral::vec4f(m_SceneAABB.max_corner.x, m_SceneAABB.max_corner.y, m_SceneAABB.min_corner.z, 1.0f));
+			bbVertices.push_back(floral::vec4f(m_SceneAABB.max_corner.x, m_SceneAABB.max_corner.y, m_SceneAABB.max_corner.z, 1.0f));
+			bbVertices.push_back(floral::vec4f(m_SceneAABB.min_corner.x, m_SceneAABB.max_corner.y, m_SceneAABB.max_corner.z, 1.0f));
 
 			floral::mat4x4f v = floral::construct_lookat_point(m_ShadowCamView);
 			for (u32 i = 0; i < bbVertices.get_size(); i++) {
@@ -620,10 +488,10 @@ void GlobalIllumination::OnInitialize()
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
 		desc.reflection.textures->push_back(insigne::shader_param_t("iu_Tex", insigne::param_data_type_e::param_sampler2d));
 
-		strcpy(desc.vs, s_FinalBlitVS);
-		strcpy(desc.fs, s_FinalBlitFS);
-		desc.vs_path = floral::path("/internal/ssquad_vs");
-		desc.fs_path = floral::path("/internal/ssquad_fs");
+		strcpy(desc.vs, gi::g_FinalBlitVS);
+		strcpy(desc.fs, gi::g_FinalBlitFS);
+		desc.vs_path = floral::path("/internal/finalblit_vs");
+		desc.fs_path = floral::path("/internal/finalblit_fs");
 
 		m_FinalBlitShader = insigne::create_shader(desc);
 		insigne::infuse_material(m_FinalBlitShader, m_FinalBlitMaterial);
@@ -642,8 +510,8 @@ void GlobalIllumination::OnInitialize()
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
 		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
 
-		strcpy(desc.vs, s_ShadowVS);
-		strcpy(desc.fs, s_ShadowFS);
+		strcpy(desc.vs, gi::g_ShadowVS);
+		strcpy(desc.fs, gi::g_ShadowFS);
 		desc.vs_path = floral::path("/internal/shadow_vs");
 		desc.fs_path = floral::path("/internal/shadow_fs");
 
@@ -665,8 +533,8 @@ void GlobalIllumination::OnInitialize()
 		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Light", insigne::param_data_type_e::param_ub));
 		desc.reflection.textures->push_back(insigne::shader_param_t("iu_ShadowMap", insigne::param_data_type_e::param_sampler2d));
 
-		strcpy(desc.vs, s_VertexShader);
-		strcpy(desc.fs, s_FragmentShader);
+		strcpy(desc.vs, gi::g_SurfaceVS);
+		strcpy(desc.fs, gi::g_SurfaceFS);
 		desc.vs_path = floral::path("/internal/cornel_box_vs");
 		desc.fs_path = floral::path("/internal/cornel_box_fs");
 
@@ -735,7 +603,9 @@ void GlobalIllumination::OnRender(const f32 i_deltaMs)
 	insigne::dispatch_render_pass();
 
 	{
-		static bool shPopulated = true;
+		static bool shPopulated = false;
+		static bool probesWritten = false;
+		static u64 frameIdx = 0;
 		if (!shPopulated)
 		{
 			for (u32 i = 0; i < 27; i++) {
@@ -751,7 +621,16 @@ void GlobalIllumination::OnRender(const f32 i_deltaMs)
 					insigne::dispatch_render_pass();
 				}
 			}
+			// 1536 x 6912
+			m_FramePixelData = g_StreammingAllocator.allocate_array<f32>(1536 * 6912 * 3);
+			frameIdx = insigne::schedule_framebuffer_capture(m_SHRenderBuffer, m_FramePixelData);
 			shPopulated = true;
+		}
+
+		if (shPopulated && !probesWritten && insigne::get_current_frame_idx() >= frameIdx) {
+			stbi_flip_vertically_on_write(1);
+			stbi_write_hdr("out.hdr", 1536, 6912, 3, m_FramePixelData);
+			probesWritten = true;
 		}
 	}
 
