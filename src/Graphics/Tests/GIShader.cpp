@@ -145,6 +145,7 @@ layout(std140) uniform ub_Scene
 {
 	highp mat4 iu_XForm;
 	highp mat4 iu_WVP;
+	highp vec4 iu_CameraPos;
 };
 
 out mediump vec3 v_Normal;

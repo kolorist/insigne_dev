@@ -46,14 +46,14 @@ file (GLOB_RECURSE file_list
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainQuad.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainTextureQuad.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CubeMapTexture.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/VectorMath.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GPUVectorMath.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CornelBox.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/OmniShadow.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHMath.cpp"
+	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/VectorMath.cpp"
+	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GPUVectorMath.cpp"
+	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CornelBox.cpp"
+	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/OmniShadow.cpp"
+	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHMath.cpp"
 
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GlobalIllumination.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GIShader.cpp"
+	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GlobalIllumination.cpp"
+	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GIShader.cpp"
 	)
 
 add_definitions(

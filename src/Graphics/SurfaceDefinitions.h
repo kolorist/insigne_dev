@@ -34,7 +34,6 @@ struct SurfacePNC : insigne::renderable_surface_t<SurfacePNC> {
 		detail::set_depth_test<true_type>(compare_func_e::func_less_or_equal);
 		detail::set_depth_write<true_type>();
 		detail::set_scissor_test<false_type>(0, 0, 0, 0);
-
 	}
 
 	static void describe_vertex_data()
