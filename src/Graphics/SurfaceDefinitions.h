@@ -23,7 +23,8 @@ struct VertexPNC {
 	floral::vec4f								Color;
 };
 
-struct SurfacePNC : insigne::renderable_surface_t<SurfacePNC> {
+struct SurfacePNC {
+	static const u32 index = 0;
 	static const insigne::geometry_mode_e s_geometry_mode = insigne::geometry_mode_e::triangles;
 
 	static void setup_states()
@@ -55,7 +56,8 @@ struct DemoVertex {
 	floral::vec4f								Color;
 };
 
-struct DemoSurface : insigne::renderable_surface_t<DemoSurface> {
+struct DemoSurface {
+	static const u32 index = 1;
 	static const insigne::geometry_mode_e s_geometry_mode = insigne::geometry_mode_e::triangles;
 
 	static void setup_states()
@@ -86,7 +88,8 @@ struct DemoTexturedVertex {
 	floral::vec2f								TexCoord;
 };
 
-struct DemoTexturedSurface : insigne::renderable_surface_t<DemoTexturedSurface> {
+struct DemoTexturedSurface {
+	static const u32 index = 2;
 	static const insigne::geometry_mode_e s_geometry_mode = insigne::geometry_mode_e::triangles;
 
 	static void setup_states()
@@ -117,7 +120,8 @@ struct DebugVertex {
 	floral::vec4f								Color;
 };
 
-struct DebugLine : insigne::renderable_surface_t<DebugLine> {
+struct DebugLine {
+	static const u32 index = 3;
 	static const insigne::geometry_mode_e s_geometry_mode = insigne::geometry_mode_e::lines;
 
 	static void setup_states()

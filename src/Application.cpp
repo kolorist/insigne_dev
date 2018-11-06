@@ -42,7 +42,7 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
 
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
@@ -50,7 +50,7 @@ Application::Application(Controller* i_controller)
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
 }
 
 Application::~Application()
@@ -97,14 +97,7 @@ void Application::OnInitialize(int i_param)
 	// graphics init
 	insigne::initialize_driver();
 
-	// the rendering order is
-	// 1- SolidSurface
-	// 2- Skybox
-	// 3- ScreenSpaceSurface
-	// 4- ImGuiSurface
-	// thus the order of declaration must be reversed
-	typedef type_list_4(DebugLine, SurfacePNC, DemoSurface, DemoTexturedSurface)		SurfaceTypeList;
-	insigne::initialize_render_thread<SurfaceTypeList>();
+	insigne::initialize_render_thread(1);
 	insigne::wait_for_initialization();
 
 	if (m_CurrentTestSuite)
