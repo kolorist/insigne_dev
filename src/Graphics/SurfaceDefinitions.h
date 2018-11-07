@@ -24,8 +24,8 @@ struct VertexPNC {
 };
 
 struct SurfacePNC {
-	static const u32 index = 0;
-	static const insigne::geometry_mode_e s_geometry_mode = insigne::geometry_mode_e::triangles;
+	static u32 index;
+	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
 	static void setup_states()
 	{
@@ -57,8 +57,8 @@ struct DemoVertex {
 };
 
 struct DemoSurface {
-	static const u32 index = 1;
-	static const insigne::geometry_mode_e s_geometry_mode = insigne::geometry_mode_e::triangles;
+	static u32 index;
+	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
 	static void setup_states()
 	{
@@ -89,8 +89,8 @@ struct DemoTexturedVertex {
 };
 
 struct DemoTexturedSurface {
-	static const u32 index = 2;
-	static const insigne::geometry_mode_e s_geometry_mode = insigne::geometry_mode_e::triangles;
+	static u32 index;
+	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
 	static void setup_states()
 	{
@@ -121,8 +121,8 @@ struct DebugVertex {
 };
 
 struct DebugLine {
-	static const u32 index = 3;
-	static const insigne::geometry_mode_e s_geometry_mode = insigne::geometry_mode_e::lines;
+	static u32 index;
+	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::lines;
 
 	static void setup_states()
 	{

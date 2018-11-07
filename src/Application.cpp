@@ -96,8 +96,12 @@ void Application::OnInitialize(int i_param)
 	
 	// graphics init
 	insigne::initialize_driver();
+	insigne::allocate_draw_command_buffers(2);
 
-	insigne::initialize_render_thread(1);
+	insigne::register_surface_type<DemoSurface>();
+	insigne::register_surface_type<DebugLine>();
+
+	insigne::initialize_render_thread();
 	insigne::wait_for_initialization();
 
 	if (m_CurrentTestSuite)

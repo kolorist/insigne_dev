@@ -43,6 +43,7 @@ file (GLOB_RECURSE file_list
 	"${PROJECT_SOURCE_DIR}/src/Graphics/DebugDrawer.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/TrackballCamera.cpp"
 
+	"${PROJECT_SOURCE_DIR}/src/Graphics/SurfaceDefinitions.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainQuad.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainTextureQuad.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CubeMapTexture.cpp"

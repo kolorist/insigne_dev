@@ -1,20 +1,10 @@
 #include "SurfaceDefinitions.h"
 
-#include <insigne/buffers.h>
+namespace stone {
 
-namespace insigne {
-
-namespace detail {
-
-template <>
-gpu_command_buffer_t draw_command_buffer_t<stone::DemoSurface>::command_buffer[BUFFERS_COUNT];
-
-template <>
-gpu_command_buffer_t draw_command_buffer_t<stone::DemoTexturedSurface>::command_buffer[BUFFERS_COUNT];
-
-template <>
-gpu_command_buffer_t draw_command_buffer_t<stone::DebugLine>::command_buffer[BUFFERS_COUNT];
-
-}
+u32 SurfacePNC::index = 0;
+u32 DemoSurface::index = 0;
+u32 DemoTexturedSurface::index = 0;
+u32 DebugLine::index = 0;
 
 }
