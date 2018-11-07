@@ -55,8 +55,8 @@ void DebugDrawer::DrawLine3D(const floral::vec3f& i_x0, const floral::vec3f& i_x
 {
 	u32 currentIdx = m_DebugVertices[m_CurrentBufferIdx].get_size();
 
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { i_x0, i_color } );
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { i_x1, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { i_x0, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { i_x1, i_color } );
 	m_DebugIndices[m_CurrentBufferIdx].push_back(currentIdx);
 	m_DebugIndices[m_CurrentBufferIdx].push_back(currentIdx + 1);
 }
@@ -74,14 +74,14 @@ void DebugDrawer::DrawAABB3D(const floral::aabb3f& i_aabb, const floral::vec4f& 
 
 	u32 currentIdx = m_DebugVertices[m_CurrentBufferIdx].get_size();
 
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { v0, i_color } );
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { v1, i_color } );
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { v2, i_color } );
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { v3, i_color } );
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { v4, i_color } );
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { v5, i_color } );
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { v6, i_color } );
-	m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { v7, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { v0, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { v1, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { v2, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { v3, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { v4, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { v5, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { v6, i_color } );
+	m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { v7, i_color } );
 
 	// bottom
 	m_DebugIndices[m_CurrentBufferIdx].push_back(currentIdx);
@@ -141,7 +141,7 @@ void DebugDrawer::DrawIcosahedron3D(const floral::vec3f& i_origin, const f32 i_r
 
 	u32 idx = m_DebugVertices[m_CurrentBufferIdx].get_size();
 	for (u32 i = 0; i < 12; i++)
-		m_DebugVertices[m_CurrentBufferIdx].push_back(DebugVertex { s_icosahedronVertices[i] * i_radius + i_origin, i_color });
+		m_DebugVertices[m_CurrentBufferIdx].push_back(VertexPC { s_icosahedronVertices[i] * i_radius + i_origin, i_color });
 	for (u32 i = 0; i < 120; i++)
 		m_DebugIndices[m_CurrentBufferIdx].push_back(idx + s_icosahedronIndices[i]);
 }
@@ -165,7 +165,7 @@ void DebugDrawer::Initialize()
 	{
 		insigne::vbdesc_t desc;
 		desc.region_size = SIZE_KB(64);
-		desc.stride = sizeof(DebugVertex);
+		desc.stride = sizeof(VertexPC);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;

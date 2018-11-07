@@ -123,7 +123,7 @@ void PlainQuadTest::OnInitialize()
 	{
 		insigne::vbdesc_t desc;
 		desc.region_size = SIZE_KB(64);
-		desc.stride = sizeof(DemoVertex);
+		desc.stride = sizeof(VertexPC);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -201,7 +201,7 @@ void PlainQuadTest::OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	// render here
-	insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
+	insigne::draw_surface<SurfacePC>(m_VB, m_IB, m_Material);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();

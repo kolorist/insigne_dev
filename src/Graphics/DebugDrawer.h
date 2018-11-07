@@ -10,7 +10,7 @@
 namespace stone {
 
 class DebugDrawer {
-	typedef floral::fixed_array<DebugVertex, LinearArena> VerticesArray;
+	typedef floral::fixed_array<VertexPC, LinearArena> VerticesArray;
 	typedef floral::fixed_array<u32, LinearArena> IndicesArray;
 
 	public:

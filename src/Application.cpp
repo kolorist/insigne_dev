@@ -17,6 +17,7 @@
 
 #include "Graphics/Tests/ITestSuite.h"
 #include "Graphics/Tests/PlainQuad.h"
+#if 0
 #include "Graphics/Tests/PlainTextureQuad.h"
 #include "Graphics/Tests/CubeMapTexture.h"
 #include "Graphics/Tests/VectorMath.h"
@@ -25,6 +26,7 @@
 #include "Graphics/Tests/OmniShadow.h"
 #include "Graphics/Tests/SHMath.h"
 #include "Graphics/Tests/GlobalIllumination.h"
+#endif
 
 namespace stone {
 
@@ -98,7 +100,7 @@ void Application::OnInitialize(int i_param)
 	insigne::initialize_driver();
 	insigne::allocate_draw_command_buffers(2);
 
-	insigne::register_surface_type<DemoSurface>();
+	insigne::register_surface_type<SurfacePC>();
 	insigne::register_surface_type<DebugLine>();
 
 	insigne::initialize_render_thread();

@@ -25,7 +25,7 @@ class PlainQuadTest : public ITestSuite {
 		ICameraMotion*							GetCameraMotion() override { return nullptr; }
 
 	private:
-		floral::fixed_array<DemoVertex, LinearAllocator>	m_Vertices;
+		floral::fixed_array<VertexPC, LinearAllocator>	m_Vertices;
 		floral::fixed_array<u32, LinearAllocator>			m_Indices;
 		struct MyData {
 			floral::vec4f						Color;
