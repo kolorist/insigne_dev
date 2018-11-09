@@ -17,6 +17,7 @@
 
 #include "Graphics/Tests/ITestSuite.h"
 #include "Graphics/Tests/PlainQuad.h"
+#include "Graphics/Tests/SHBaking.h"
 #if 0
 #include "Graphics/Tests/PlainTextureQuad.h"
 #include "Graphics/Tests/CubeMapTexture.h"
@@ -44,7 +45,8 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
 
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHBaking>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
@@ -98,9 +100,10 @@ void Application::OnInitialize(int i_param)
 	
 	// graphics init
 	insigne::initialize_driver();
-	insigne::allocate_draw_command_buffers(2);
+	insigne::allocate_draw_command_buffers(4);
 
 	insigne::register_surface_type<SurfacePC>();
+	insigne::register_surface_type<SurfacePNC>();
 	insigne::register_surface_type<DebugLine>();
 
 	insigne::initialize_render_thread();

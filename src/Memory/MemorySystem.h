@@ -15,6 +15,8 @@ namespace stone {
 	extern LinearAllocator						g_PersistanceResourceAllocator;
 	extern LinearAllocator						g_SceneResourceAllocator;
 	extern LinearAllocator						g_StreammingAllocator;
+	extern LinearArena							g_TemporalLinearArena;
+	extern FreelistArena						g_TemporalFreeArena;
 
 	void										SnapshotAllocatorInfos();
 }

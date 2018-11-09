@@ -1,6 +1,33 @@
 namespace stone {
 
 template <typename TAllocator>
+void GenTessellated3DPlane_Tris_PNC(const floral::mat4x4f& i_xform, const f32 i_baseSize,
+		const u32 i_gridsCount, const floral::vec4f& i_color,
+		floral::fixed_array<VertexPNC, TAllocator>& o_vertices,
+		floral::fixed_array<u32, TAllocator>& o_indices)
+{
+	g_TemporalFreeArena.free_all();
+
+	TemporalVertices vertices(16u, &g_TemporalFreeArena);
+	TemporalIndices	indices(16u, &g_TemporalFreeArena);
+
+	GenTessellated3DPlane_Tris(i_xform, i_baseSize, i_gridsCount, &vertices, &indices);
+
+	for (u32 i = 0; i < vertices.get_size(); i++) {
+		VertexPNC v;
+		v.Position = vertices[i].Position;
+		v.Normal = vertices[i].Normal;
+		v.Color = i_color;
+		o_vertices.push_back(v);
+	}
+
+	for (u32 i = 0; i < indices.get_size(); i++) {
+		o_indices.push_back(indices[i]);
+	}
+}
+
+#if 0
+template <typename TAllocator>
 void Gen3DPlane_Tris_PosColor(const floral::vec4f& i_color, const floral::mat4x4f& i_xform,
 	floral::fixed_array<DemoVertex, TAllocator>& o_vertices, floral::fixed_array<u32, TAllocator>& o_indices)
 {
@@ -269,5 +296,5 @@ void GenIcosphere_Tris_PosColor(const floral::vec4f& i_color, const floral::mat4
 		o_indices.push_back(lastIdx + siBuff1[i]);
 	}
 }
-
+#endif
 }
