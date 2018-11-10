@@ -25,18 +25,36 @@ class SHBaking : public ITestSuite {
 		ICameraMotion*							GetCameraMotion() override { return nullptr; }
 
 	private:
-		floral::fixed_array<VertexPNC, LinearAllocator>	m_GeoVertices;
-		floral::fixed_array<u32, LinearAllocator>		m_GeoIndices;
-
 		struct SceneData {
 			floral::mat4x4f						WVP;
 		};
+
+		struct SHProbeData {
+			floral::mat4x4f						XForm;
+		};
+
+	private:
+		floral::fixed_array<VertexPNC, LinearAllocator>	m_GeoVertices;
+		floral::fixed_array<u32, LinearAllocator>		m_GeoIndices;
+
+		floral::fixed_array<VertexP, LinearAllocator>	m_ProbeVertices;
+		floral::fixed_array<u32, LinearAllocator>		m_ProbeIndices;
+
+		floral::fixed_array<floral::vec3f, LinearAllocator>		m_SHPositions;
+		floral::fixed_array<floral::mat4x4f, LinearAllocator>	m_SHWVPs;
+		floral::fixed_array<SHProbeData, LinearAllocator>		m_SHData;
 
 		insigne::vb_handle_t					m_VB;
 		insigne::ib_handle_t					m_IB;
 		insigne::ub_handle_t					m_UB;
 		insigne::shader_handle_t				m_Shader;
 		insigne::material_desc_t				m_Material;
+
+		insigne::vb_handle_t					m_ProbeVB;
+		insigne::ib_handle_t					m_ProbeIB;
+		insigne::ub_handle_t					m_ProbeUB;
+		insigne::shader_handle_t				m_ProbeShader;
+		insigne::material_desc_t				m_ProbeMaterial;
 
 		floral::camera_view_t					m_CamView;
 		floral::camera_persp_t					m_CamProj;

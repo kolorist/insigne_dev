@@ -104,6 +104,7 @@ void Application::OnInitialize(int i_param)
 
 	insigne::register_surface_type<SurfacePC>();
 	insigne::register_surface_type<SurfacePNC>();
+	insigne::register_surface_type<SurfaceP>();
 	insigne::register_surface_type<DebugLine>();
 
 	insigne::initialize_render_thread();
