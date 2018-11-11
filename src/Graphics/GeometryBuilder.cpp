@@ -217,8 +217,10 @@ void GenIcosphere_Tris(TemporalVertices* o_vertices, TemporalIndices* o_indices)
 		o_vertices->push_back(v);
 	}
 
-	for (u32 i = 0; i < siBuff1.get_size(); i++) {
-		o_indices->push_back(siBuff1[i]);
+	for (u32 i = 0; i < siBuff1.get_size() / 3; i++) {
+		o_indices->push_back(siBuff1[i * 3 + 2]);
+		o_indices->push_back(siBuff1[i * 3 + 1]);
+		o_indices->push_back(siBuff1[i * 3]);
 	}
 }
 
