@@ -39,30 +39,53 @@ void FormFactorsBaking::OnUpdate(const f32 i_deltaMs)
 {
 	static f32 elapsedTime = 0.0f;
 	elapsedTime += i_deltaMs;
-	m_DebugDrawer.BeginFrame();
-	floral::vec3f p0(-2.0f);
-	floral::vec3f p1(-2.0f, -2.0f, 2.0f);
-	floral::vec3f p2(0.0f, 2.0f, 0.0f);
 
 	floral::ray3df r;
 	r.o = floral::vec3f(0.0f, 0.0f, 0.0f);
 	r.d = floral::vec3f(cosf(floral::to_radians(elapsedTime / 20.0f)),
 			0.0f, sinf(floral::to_radians(elapsedTime / 20.0f)));
 
-	f32 t = 0.0f;
-	const bool hit = floral::ray_triangle_intersect(r, p0, p1, p2, &t);
-	floral::vec4f color;
-	if (hit && t >= 0.0f)
-		color = floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f);
-	else color = floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f);
-
-	m_DebugDrawer.DrawLine3D(p0, p1, color);
-	m_DebugDrawer.DrawLine3D(p1, p2, color);
-	m_DebugDrawer.DrawLine3D(p2, p0, color);
+	m_DebugDrawer.BeginFrame();
 
 	floral::vec3f rp = r.o + 3.0f * r.d;
 	m_DebugDrawer.DrawLine3D(r.o, rp, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 
+	{
+		floral::vec3f p0(-2.0f);
+		floral::vec3f p1(-2.0f, -2.0f, 2.0f);
+		floral::vec3f p2(0.0f, 2.0f, 0.0f);
+
+
+		f32 t = 0.0f;
+		const bool hit = floral::ray_triangle_intersect(r, p0, p1, p2, &t);
+		floral::vec4f color;
+		if (hit && t >= 0.0f)
+			color = floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f);
+		else color = floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f);
+
+		m_DebugDrawer.DrawLine3D(p0, p1, color);
+		m_DebugDrawer.DrawLine3D(p1, p2, color);
+		m_DebugDrawer.DrawLine3D(p2, p0, color);
+	}
+
+	{
+		floral::vec3f p0(0.3f, -0.5f, -0.4f);
+		floral::vec3f p1(0.5f, -0.4f, 0.5f);
+		floral::vec3f p2(0.6f, 0.5f, 0.5f);
+		floral::vec3f p3(0.4f, 0.4f, -0.3f);
+
+		f32 t = 0.0f;
+		const bool hit = floral::ray_quad_intersect(r, p0, p1, p2, p3, &t);
+		floral::vec4f color;
+		if (hit && t >= 0.0f)
+			color = floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f);
+		else color = floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f);
+
+		m_DebugDrawer.DrawLine3D(p0, p1, color);
+		m_DebugDrawer.DrawLine3D(p1, p2, color);
+		m_DebugDrawer.DrawLine3D(p2, p3, color);
+		m_DebugDrawer.DrawLine3D(p3, p0, color);
+	}
 
 	m_DebugDrawer.EndFrame();
 }

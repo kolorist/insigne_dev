@@ -29,7 +29,6 @@ class FormFactorsBaking : public ITestSuite {
 		floral::mat4x4f							m_WVP;
 
 		LinearArena*							m_MemoryArena;
-
 };
 
 }
