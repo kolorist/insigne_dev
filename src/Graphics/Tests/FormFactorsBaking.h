@@ -23,6 +23,10 @@ class FormFactorsBaking : public ITestSuite {
 		ICameraMotion*							GetCameraMotion() override { return nullptr; }
 
 	private:
+		void									CalculateFormfactors();
+		void									CalculateRadiosity();
+
+	private:
 		struct SceneData {
 			floral::mat4x4f						WVP;
 		};
@@ -30,11 +34,9 @@ class FormFactorsBaking : public ITestSuite {
 	private:
 		DebugDrawer								m_DebugDrawer;
 
-		floral::fixed_array<VertexPNC, LinearAllocator>	m_GeoVertices;
+		floral::fixed_array<VertexPNCC, LinearAllocator>	m_GeoVertices;
 		floral::fixed_array<u32, LinearAllocator>		m_GeoIndices;
-		floral::fixed_array<floral::vec3f, LinearAllocator>		m_GeoPatchesBottom;
-		floral::fixed_array<floral::vec3f, LinearAllocator>		m_GeoPatchesLeft;
-		floral::fixed_array<floral::vec3f, LinearAllocator>		m_GeoPatchesRight;
+		floral::fixed_array<GeoQuad, LinearAllocator>	m_GeoPatches;
 
 		insigne::vb_handle_t					m_VB;
 		insigne::ib_handle_t					m_IB;

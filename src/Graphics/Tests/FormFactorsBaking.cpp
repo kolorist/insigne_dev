@@ -5,6 +5,7 @@
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
+#include <clover.h>
 
 #include "Graphics/GeometryBuilder.h"
 
@@ -13,7 +14,8 @@ namespace stone {
 static const_cstr s_GeometryVS = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
 layout (location = 1) in highp vec3 l_Normal_L;
-layout (location = 2) in mediump vec4 l_Color;
+layout (location = 2) in mediump vec4 l_Color0;
+layout (location = 3) in mediump vec4 l_Color1;
 
 layout(std140) uniform ub_Scene
 {
@@ -25,7 +27,7 @@ out mediump vec3 v_Normal;
 
 void main() {
 	highp vec4 pos_W = vec4(l_Position_L, 1.0f);
-	v_Color = l_Color;
+	v_Color = l_Color0 + l_Color1;
 	v_Normal = l_Normal_L;
 	gl_Position = iu_WVP * pos_W;
 }
@@ -57,9 +59,7 @@ void FormFactorsBaking::OnInitialize()
 {
 	m_GeoVertices.init(2048u, &g_StreammingAllocator);
 	m_GeoIndices.init(8192u, &g_StreammingAllocator);
-	m_GeoPatchesBottom.init(1024u, &g_StreammingAllocator);
-	m_GeoPatchesLeft.init(1024u, &g_StreammingAllocator);
-	m_GeoPatchesRight.init(1024u, &g_StreammingAllocator);
+	m_GeoPatches.init(1024u, &g_StreammingAllocator);
 
 	{
 		floral::mat4x4f mBottom = floral::construct_translation3d(0.0f, -1.0f, 0.0f);
@@ -67,26 +67,81 @@ void FormFactorsBaking::OnInitialize()
 			* floral::construct_quaternion_euler(-90.0f, 0.0f, 0.0f).to_transform();
 		floral::mat4x4f mRight = floral::construct_translation3d(0.0f, 0.0f, -1.5f)
 			* floral::construct_quaternion_euler(90.0f, 0.0f, 0.0f).to_transform();
+		floral::mat4x4f mBack = floral::construct_translation3d(-1.0f, 0.0f, 0.0f)
+			* floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
 
-		GenQuadTesselated3DPlane_Tris_PNC(
+		GenQuadTesselated3DPlane_Tris_PNCC(
 				mBottom,
 				2.0f, 3.0f, 0.3f, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
-				m_GeoVertices, m_GeoIndices, m_GeoPatchesBottom);
-		GenQuadTesselated3DPlane_Tris_PNC(
+				m_GeoVertices, m_GeoIndices, m_GeoPatches);
+		GenQuadTesselated3DPlane_Tris_PNCC(
 				mLeft,
 				2.0f, 2.0f, 0.3f, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f),
-				m_GeoVertices, m_GeoIndices, m_GeoPatchesLeft);
-		GenQuadTesselated3DPlane_Tris_PNC(
+				m_GeoVertices, m_GeoIndices, m_GeoPatches);
+		GenQuadTesselated3DPlane_Tris_PNCC(
 				mRight,
 				2.0f, 2.0f, 0.3f, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f),
-				m_GeoVertices, m_GeoIndices, m_GeoPatchesRight);
+				m_GeoVertices, m_GeoIndices, m_GeoPatches);
+		GenQuadTesselated3DPlane_Tris_PNCC(
+				mBack,
+				2.0f, 3.0f, 0.3f, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+				m_GeoVertices, m_GeoIndices, m_GeoPatches);
+
+		floral::mat4x4f mB1Top = floral::construct_translation3d(0.0f, 0.4f, 0.0f)
+			* floral::construct_quaternion_euler(0.0f, 43.0f, 0.0f).to_transform();
+		floral::mat4x4f mB1Front = floral::construct_quaternion_euler(0.0f, 43.0f, 0.0f).to_transform()
+			* floral::construct_translation3d(0.35f, -0.3f, 0.0f)
+			* floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
+		floral::mat4x4f mB1Back = floral::construct_quaternion_euler(0.0f, 43.0f, 0.0f).to_transform()
+			* floral::construct_translation3d(-0.35f, -0.3f, 0.0f)
+			* floral::construct_quaternion_euler(0.0f, 0.0f, 90.0f).to_transform();
+		floral::mat4x4f mB1Left = floral::construct_quaternion_euler(0.0f, -47.0f, 0.0f).to_transform()
+			* floral::construct_translation3d(0.35f, -0.3f, 0.0f)
+			* floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
+		floral::mat4x4f mB1Right = floral::construct_quaternion_euler(0.0f, -47.0f, 0.0f).to_transform()
+			* floral::construct_translation3d(-0.35f, -0.3f, 0.0f)
+			* floral::construct_quaternion_euler(0.0f, 0.0f, 90.0f).to_transform();
+		GenQuadTesselated3DPlane_Tris_PNCC(
+				mB1Top,
+				0.7f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+				m_GeoVertices, m_GeoIndices, m_GeoPatches);
+		GenQuadTesselated3DPlane_Tris_PNCC(
+				mB1Front,
+				1.4f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+				m_GeoVertices, m_GeoIndices, m_GeoPatches);
+		GenQuadTesselated3DPlane_Tris_PNCC(
+				mB1Back,
+				1.4f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+				m_GeoVertices, m_GeoIndices, m_GeoPatches);
+		GenQuadTesselated3DPlane_Tris_PNCC(
+				mB1Left,
+				1.4f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+				m_GeoVertices, m_GeoIndices, m_GeoPatches);
+		GenQuadTesselated3DPlane_Tris_PNCC(
+				mB1Right,
+				1.4f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+				m_GeoVertices, m_GeoIndices, m_GeoPatches);
+	}
+
+	CalculateFormfactors();
+	CalculateRadiosity();
+
+	{
+		for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
+			floral::vec4f rColor = m_GeoPatches[i].RadiosityColor;
+			rColor.w = 1.0f;
+			m_GeoVertices[i * 4].Color1 = rColor;
+			m_GeoVertices[i * 4 + 1].Color1 = rColor;
+			m_GeoVertices[i * 4 + 2].Color1 = rColor;
+			m_GeoVertices[i * 4 + 3].Color1 = rColor;
+		}
 	}
 
 	// upload scene geometry
 	{
 		insigne::vbdesc_t desc;
-		desc.region_size = SIZE_KB(64);
-		desc.stride = sizeof(VertexPNC);
+		desc.region_size = SIZE_KB(256);
+		desc.stride = sizeof(VertexPNCC);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -99,7 +154,7 @@ void FormFactorsBaking::OnInitialize()
 
 	{
 		insigne::ibdesc_t desc;
-		desc.region_size = SIZE_KB(16);
+		desc.region_size = SIZE_KB(128);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -159,92 +214,13 @@ void FormFactorsBaking::OnInitialize()
 
 void FormFactorsBaking::OnUpdate(const f32 i_deltaMs)
 {
-#if 0
-	static f32 elapsedTime = 0.0f;
-	elapsedTime += i_deltaMs;
-
-	floral::ray3df r;
-	r.o = floral::vec3f(0.0f, 0.0f, 0.0f);
-	r.d = floral::vec3f(cosf(floral::to_radians(elapsedTime / 20.0f)),
-			0.0f, sinf(floral::to_radians(elapsedTime / 20.0f)));
-
-	m_DebugDrawer.BeginFrame();
-
-	floral::vec3f rp = r.o + 3.0f * r.d;
-	m_DebugDrawer.DrawLine3D(r.o, rp, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
-
-	{
-		floral::vec3f p0(-2.0f);
-		floral::vec3f p1(-2.0f, -2.0f, 2.0f);
-		floral::vec3f p2(0.0f, 2.0f, 0.0f);
-
-		f32 t = 0.0f;
-		const bool hit = floral::ray_triangle_intersect(r, p0, p1, p2, &t);
-		floral::vec4f color;
-		if (hit && t >= 0.0f)
-			color = floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f);
-		else color = floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f);
-
-		m_DebugDrawer.DrawLine3D(p0, p1, color);
-		m_DebugDrawer.DrawLine3D(p1, p2, color);
-		m_DebugDrawer.DrawLine3D(p2, p0, color);
-	}
-
-	{
-		floral::vec3f p0(0.3f, -0.5f, -0.4f);
-		floral::vec3f p1(0.5f, -0.4f, 0.5f);
-		floral::vec3f p2(0.6f, 0.5f, 0.5f);
-		floral::vec3f p3(0.4f, 0.4f, -0.3f);
-
-		f32 t = 0.0f;
-		const bool hit = floral::ray_quad_intersect(r, p0, p1, p2, p3, &t);
-		floral::vec4f color;
-		if (hit && t >= 0.0f)
-			color = floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f);
-		else color = floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f);
-
-		m_DebugDrawer.DrawLine3D(p0, p1, color);
-		m_DebugDrawer.DrawLine3D(p1, p2, color);
-		m_DebugDrawer.DrawLine3D(p2, p3, color);
-		m_DebugDrawer.DrawLine3D(p3, p0, color);
-	}
-
-	m_DebugDrawer.EndFrame();
-#endif
-	m_DebugDrawer.BeginFrame();
-	static u32 pid = 20;
-	floral::vec3f patchCenter = (m_GeoPatchesBottom[0] + m_GeoPatchesBottom[1]
-		+ m_GeoPatchesBottom[2] + m_GeoPatchesBottom[3]) / 4.0f;
-	floral::vec3f v0 = m_GeoPatchesLeft[pid + 1] - m_GeoPatchesLeft[pid + 0];
-	floral::vec3f v1 = m_GeoPatchesLeft[pid + 3] - m_GeoPatchesLeft[pid + 0];
-	f32 stepI = floral::length(v0) / 4.0f;
-	f32 stepJ = floral::length(v1) / 4.0f;
-	v0 = floral::normalize(v0);
-	v1 = floral::normalize(v1);
-	f32 ff = 0.0f;
-	for (u32 i = 0; i < 4; i++) {
-		for (u32 j = 0; j < 4; j++) {
-			floral::vec3f v = m_GeoPatchesLeft[pid] + v0 * (stepI * i * 0.5f) + v1 * (stepJ * j * 0.5f);
-			m_DebugDrawer.DrawLine3D(patchCenter, v, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-			floral::vec3f d1 = floral::normalize(v - patchCenter);
-			floral::vec3f d2 = -d1;
-			f32 r = floral::length(v - patchCenter);
-			f32 cosTheta1 = floral::dot(floral::vec3f(0.0f, 1.0f, 0.0f), d1);
-			f32 cosTheta2 = floral::dot(d2, floral::vec3f(0.0f, 0.0f, -1.0f));
-			ff += cosTheta1 * cosTheta2 / (3.14f * r * r + stepI * stepJ / 16.0f);
-		}
-	}
-	ff /= 16.0f;
-	//pid = pid + 4;
-	if (pid >= m_GeoPatchesLeft.get_size()) pid = 0;
-	m_DebugDrawer.EndFrame();
 }
 
 void FormFactorsBaking::OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	m_DebugDrawer.Render(m_WVP);
-	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
+	insigne::draw_surface<SurfacePNCC>(m_VB, m_IB, m_Material);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
@@ -252,6 +228,88 @@ void FormFactorsBaking::OnRender(const f32 i_deltaMs)
 
 void FormFactorsBaking::OnCleanUp()
 {
+}
+
+// ---------------------------------------------
+void FormFactorsBaking::CalculateFormfactors()
+{
+	// pre-allocate links
+	for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
+		GeoQuad& qi = m_GeoPatches[i];
+		qi.PatchLinks.init(m_GeoPatches.get_size(), &g_StreammingAllocator);
+		qi.FormFactors.init(m_GeoPatches.get_size(), &g_StreammingAllocator);
+	}
+
+	// ray-cast form factors
+	for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
+		GeoQuad& qi = m_GeoPatches[i];
+		for (u32 j = 0; j < m_GeoPatches.get_size(); j++) {
+			if (i == j) continue;
+
+			GeoQuad& qj = m_GeoPatches[j];
+			floral::vec3f patchCenter = (qi.Vertices[0] + qi.Vertices[1] + qi.Vertices[2] + qi.Vertices[3]) / 4.0f;
+			floral::vec3f v0 = qj.Vertices[1] - qj.Vertices[0];
+			floral::vec3f v1 = qj.Vertices[3] - qj.Vertices[0];
+			f32 stepI = floral::length(v0) / 4.0f;
+			f32 stepJ = floral::length(v1) / 4.0f;
+			v0 = floral::normalize(v0);
+			v1 = floral::normalize(v1);
+			f32 ff = 0.0f;
+			bool hasUpperHemiRay = false;
+			for (u32 ri = 0; ri < 4; ri++) {
+				for (u32 rj = 0; rj < 4; rj++) {
+					floral::vec3f v = qj.Vertices[0] + v0 * (stepI * ri * 0.5f) + v1 * (stepJ * rj * 0.5f);
+					floral::vec3f d1 = floral::normalize(v - patchCenter);
+					floral::vec3f d2 = -d1;
+					f32 dist = floral::length(v - patchCenter);
+
+					if (floral::dot(d1, qi.Normal) > 0.0f) {
+						hasUpperHemiRay = true;
+						floral::ray3df r;
+						r.o = patchCenter;
+						r.d = d1;
+						bool hit = false;
+						for (u32 k = 0; k < m_GeoPatches.get_size(); k++) {
+							if (k == i || k == j) continue;
+							GeoQuad& qk = m_GeoPatches[k];
+							f32 t = 0.0f;
+							const bool rh = floral::ray_quad_intersect(r,
+									qk.Vertices[0], qk.Vertices[1], qk.Vertices[2], qk.Vertices[3], &t);
+							if (rh && t >= 0.0f && t <= dist) {
+								hit = true;
+								break;
+							}
+						}
+
+						f32 cosTheta1 = floral::dot(qi.Normal, d1);
+						f32 cosTheta2 = floral::dot(d2, qj.Normal);
+						if (!hit && cosTheta1 * cosTheta2 >= 0.0f) {
+							ff += cosTheta1 * cosTheta2 / (3.14f * dist * dist + stepI * stepJ);
+						}
+					}
+				}
+			}
+			if (hasUpperHemiRay) {
+				ff = ff * stepI * stepJ;
+				qi.PatchLinks.push_back(j);
+				qi.FormFactors.push_back(ff);
+			}
+		}
+		CLOVER_DEBUG("Ray-cast form factor progress: %4.2f %%", (f32)i / (f32)m_GeoPatches.get_size() * 100.0f);
+	}
+}
+
+void FormFactorsBaking::CalculateRadiosity()
+{
+	for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
+		GeoQuad& qi = m_GeoPatches[i];
+		qi.RadiosityColor = floral::vec4f(0.0f);
+
+		for (u32 j = 0; j < qi.PatchLinks.get_size(); j++) {
+			GeoQuad& qj = m_GeoPatches[qi.PatchLinks[j]];
+			qi.RadiosityColor += qj.Color * qi.FormFactors[j];
+		}
+	}
 }
 
 }

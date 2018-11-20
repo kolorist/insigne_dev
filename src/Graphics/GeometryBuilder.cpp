@@ -60,7 +60,7 @@ void GenTessellated3DPlane_Tris(const floral::mat4x4f& i_xform, const f32 i_base
 void GenQuadTesselated3DPlane_Tris(const f32 i_width, const f32 i_height,
 		const f32 i_gridSize,
 		TemporalVertices* o_vertices, TemporalIndices* o_indices,
-		TemporalQuads* o_quadsList)
+		TemporalQuads* o_quadsList, const bool i_vtxDup /* = false */)
 {
 	const f32 minX = -i_width / 2.0f;
 	const f32 maxX = i_width / 2.0f;
@@ -95,13 +95,24 @@ void GenQuadTesselated3DPlane_Tris(const f32 i_width, const f32 i_height,
 			o_quadsList->push_back(v[2].Position);
 			o_quadsList->push_back(v[3].Position);
 
-			for (u32 k = 0; k < 6; k++) {
-				u32 index = o_vertices->find(v[indices[k]], &CompareVertex);
-				if (index == o_vertices->get_terminated_index()) {
-					o_vertices->push_back(v[indices[k]]);
-					o_indices->push_back(o_vertices->get_size() - 1);
-				} else {
-					o_indices->push_back(index);
+			if (!i_vtxDup) {
+				for (u32 k = 0; k < 6; k++) {
+					u32 index = o_vertices->find(v[indices[k]], &CompareVertex);
+					if (index == o_vertices->get_terminated_index()) {
+						o_vertices->push_back(v[indices[k]]);
+						o_indices->push_back(o_vertices->get_size() - 1);
+					} else {
+						o_indices->push_back(index);
+					}
+				}
+			} else {
+				u32 lastIdx = o_vertices->get_size();
+				o_vertices->push_back(v[0]);
+				o_vertices->push_back(v[1]);
+				o_vertices->push_back(v[2]);
+				o_vertices->push_back(v[3]);
+				for (u32 k = 0; k < 6; k++) {
+					o_indices->push_back(lastIdx + indices[k]);
 				}
 			}
 		}

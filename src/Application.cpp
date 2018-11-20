@@ -102,10 +102,11 @@ void Application::OnInitialize(int i_param)
 	
 	// graphics init
 	insigne::initialize_driver();
-	insigne::allocate_draw_command_buffers(4);
+	insigne::allocate_draw_command_buffers(6);
 
 	insigne::register_surface_type<SurfacePC>();
 	insigne::register_surface_type<SurfacePNC>();
+	insigne::register_surface_type<SurfacePNCC>();
 	insigne::register_surface_type<SurfaceP>();
 	insigne::register_surface_type<DebugLine>();
 

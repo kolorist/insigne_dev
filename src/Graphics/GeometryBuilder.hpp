@@ -39,7 +39,7 @@ void GenQuadTesselated3DPlane_Tris_PNC(
 		const f32 i_gridSize, const floral::vec4f& i_color,
 		floral::fixed_array<VertexPNC, TAllocator>& o_vertices,
 		floral::fixed_array<u32, TAllocator>& o_indices,
-		floral::fixed_array<floral::vec3f, TAllocator>& o_quadsList)
+		floral::fixed_array<GeoQuad, TAllocator>& o_quadsList)
 {
 	g_TemporalFreeArena.free_all();
 
@@ -47,7 +47,7 @@ void GenQuadTesselated3DPlane_Tris_PNC(
 	TemporalIndices	indices(16u, &g_TemporalFreeArena);
 	TemporalQuads quads(16u, &g_TemporalFreeArena);
 
-	GenQuadTesselated3DPlane_Tris(i_width, i_height, i_gridSize, &vertices, &indices, &quads);
+	GenQuadTesselated3DPlane_Tris(i_width, i_height, i_gridSize, &vertices, &indices, &quads, true);
 
 	u32 startIdx = o_vertices.get_size();
 
@@ -67,10 +67,69 @@ void GenQuadTesselated3DPlane_Tris_PNC(
 		o_indices.push_back(indices[i] + startIdx);
 	}
 
-	for (u32 i = 0; i < quads.get_size(); i++) {
-		floral::vec4f pos(quads[i].x, quads[i].y, quads[i].z, 1.0f);
+	for (u32 i = 0; i < quads.get_size() / 4; i++) {
+		GeoQuad quad;
+		for (u32 j = 0; j < 4; j++) {
+			floral::vec4f p = floral::vec4f(quads[i * 4 + j], 1.0f);
+			p = i_xform * p;
+			quad.Vertices[j] = floral::vec3f(p.x, p.y, p.z);
+		}
+		floral::vec4f norm(0.0f, 1.0f, 0.0f, 0.0f);
+		norm = i_xform * norm;
+		quad.Normal = floral::vec3f(norm.x, norm.y, norm.z);
+		quad.Color = i_color;
+		o_quadsList.push_back(quad);
+	}
+}
+
+template <typename TAllocator>
+void GenQuadTesselated3DPlane_Tris_PNCC(
+		const floral::mat4x4f& i_xform,
+		const f32 i_width, const f32 i_height,
+		const f32 i_gridSize, const floral::vec4f& i_color,
+		floral::fixed_array<VertexPNCC, TAllocator>& o_vertices,
+		floral::fixed_array<u32, TAllocator>& o_indices,
+		floral::fixed_array<GeoQuad, TAllocator>& o_quadsList)
+{
+	g_TemporalFreeArena.free_all();
+
+	TemporalVertices vertices(16u, &g_TemporalFreeArena);
+	TemporalIndices	indices(16u, &g_TemporalFreeArena);
+	TemporalQuads quads(16u, &g_TemporalFreeArena);
+
+	GenQuadTesselated3DPlane_Tris(i_width, i_height, i_gridSize, &vertices, &indices, &quads, true);
+
+	u32 startIdx = o_vertices.get_size();
+
+	for (u32 i = 0; i < vertices.get_size(); i++) {
+		VertexPNCC v;
+		floral::vec4f pos(vertices[i].Position.x, vertices[i].Position.y, vertices[i].Position.z, 1.0f);
+		floral::vec4f norm(vertices[i].Normal.x, vertices[i].Normal.y, vertices[i].Normal.z, 0.0f);
 		pos = i_xform * pos;
-		o_quadsList.push_back(floral::vec3f(pos.x, pos.y, pos.z));
+		norm = i_xform * norm;
+		v.Position = floral::vec3f(pos.x, pos.y, pos.z);
+		v.Normal = floral::vec3f(norm.x, norm.y, norm.z);
+		v.Color0 = i_color;
+		v.Color1 = floral::vec4f(0.0f);
+		o_vertices.push_back(v);
+	}
+
+	for (u32 i = 0; i < indices.get_size(); i++) {
+		o_indices.push_back(indices[i] + startIdx);
+	}
+
+	for (u32 i = 0; i < quads.get_size() / 4; i++) {
+		GeoQuad quad;
+		for (u32 j = 0; j < 4; j++) {
+			floral::vec4f p = floral::vec4f(quads[i * 4 + j], 1.0f);
+			p = i_xform * p;
+			quad.Vertices[j] = floral::vec3f(p.x, p.y, p.z);
+		}
+		floral::vec4f norm(0.0f, 1.0f, 0.0f, 0.0f);
+		norm = i_xform * norm;
+		quad.Normal = floral::vec3f(norm.x, norm.y, norm.z);
+		quad.Color = i_color;
+		o_quadsList.push_back(quad);
 	}
 }
 
