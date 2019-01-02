@@ -81,6 +81,8 @@ void GenQuadTesselated3DPlane_Tris(const f32 i_width, const f32 i_height,
 			f32 minGridZ = minZ + j * gridStep;
 			f32 maxGridZ = (minGridZ + gridStep) > maxZ ? maxZ : (minGridZ + gridStep);
 
+			if (minGridX >= maxX || minGridZ >= maxZ) continue;
+
 			v[0].Position = floral::vec3f(minGridX, 0.0f, minGridZ);
 			v[0].Normal = floral::vec3f(0.0f, 1.0f, 0.0f);
 			v[1].Position = floral::vec3f(minGridX, 0.0f, maxGridZ);

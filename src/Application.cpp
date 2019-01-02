@@ -18,8 +18,9 @@
 #include "Graphics/Tests/ITestSuite.h"
 #include "Graphics/Tests/PlainQuad.h"
 #include "Graphics/Tests/SHBaking.h"
-#include "Graphics/Tests/FormFactorsBaking.h"
+#include "Graphics/Tests/FormFactorsValidating.h"
 #if 0
+#include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
 #include "Graphics/Tests/CubeMapTexture.h"
 #include "Graphics/Tests/VectorMath.h"
@@ -48,7 +49,8 @@ Application::Application(Controller* i_controller)
 
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHBaking>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<FormFactorsBaking>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<FormFactorsBaking>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<FormFactorsValidating>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
