@@ -6,6 +6,8 @@
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
 #include <clover.h>
+#include <stdlib.h>
+#include <time.h>
 
 #include "Graphics/GeometryBuilder.h"
 
@@ -47,6 +49,7 @@ void main()
 
 FormFactorsValidating::FormFactorsValidating()
 {
+	srand(time(0));
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 }
 
@@ -59,6 +62,7 @@ void FormFactorsValidating::OnInitialize()
 	m_GeoVertices.init(2048u, &g_StreammingAllocator);
 	m_GeoIndices.init(8192u, &g_StreammingAllocator);
 	m_GeoPatches.init(1024u, &g_StreammingAllocator);
+	m_SampleLines.init(1024u, &g_StreammingAllocator);
 
 	floral::mat4x4f mBottom = floral::construct_translation3d(0.0f, -0.5f, 0.0f);
 	GenQuadTesselated3DPlane_Tris_PNCC(
@@ -66,7 +70,7 @@ void FormFactorsValidating::OnInitialize()
 			1.0f, 1.0f, 1.0f, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f),
 			m_GeoVertices, m_GeoIndices, m_GeoPatches);
 
-#if 0
+#if 1
 	// parallel test
 	floral::mat4x4f mTop = floral::construct_translation3d(0.0f, 0.5f, 0.0f)
 		* floral::construct_quaternion_euler(180.0f, 0.0f, 0.0f).to_transform();
@@ -180,6 +184,12 @@ void FormFactorsValidating::OnInitialize()
 
 void FormFactorsValidating::OnUpdate(const f32 i_deltaMs)
 {
+	m_DebugDrawer.BeginFrame();
+	for (u32 i = 0; i < 16; i++)
+	{
+		m_DebugDrawer.DrawLine3D(m_SampleLines[2 * i], m_SampleLines[2 * i + 1], floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+	}
+	m_DebugDrawer.EndFrame();
 }
 
 void FormFactorsValidating::OnRender(const f32 i_deltaMs)
@@ -268,6 +278,37 @@ void FormFactorsValidating::CalculateFormFactors_Regular()
 	}
 }
 
+void GenerateStratifiedSamples(floral::inplace_array<floral::vec2f, 16u>& o_samples)
+{
+	// range: [0.0f .. 1.0f]
+	f32 gridSize = 1.0f / 4.0f;
+	for (u32 i = 0; i < 4; i++)
+	{
+		f32 minX = gridSize * i;
+		f32 maxX = minX + gridSize;
+		for (u32 j = 0; j < 4; j++)
+		{
+			f32 minY = gridSize * j;
+			f32 maxY = minY + gridSize;
+			f32 rfx = (f32)rand() / (f32)RAND_MAX;
+			f32 rfy = (f32)rand() / (f32)RAND_MAX;
+			floral::vec2f p(minX + gridSize * rfx, minY + gridSize * rfy);
+			o_samples.push_back(p);
+		}
+	}
+
+	// shuffle
+	for (u32 i = 0; i < o_samples.get_size(); i++)
+	{
+		for (u32 j = 0; j < o_samples.get_size(); j++)
+		{
+			floral::vec2f tmp = o_samples[i];
+			o_samples[i] = o_samples[j];
+			o_samples[j] = tmp;
+		}
+	}
+}
+
 void FormFactorsValidating::CalculateFormFactors_Stratified()
 {
 	// pre-allocate links
@@ -280,57 +321,74 @@ void FormFactorsValidating::CalculateFormFactors_Stratified()
 	// ray-cast form factors
 	for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
 		GeoQuad& qi = m_GeoPatches[i];
+		floral::vec3f vi0 = qi.Vertices[1] - qi.Vertices[0];
+		floral::vec3f vi1 = qi.Vertices[3] - qi.Vertices[0];
+
 		for (u32 j = 0; j < m_GeoPatches.get_size(); j++) {
 			if (i == j) continue;
 
 			GeoQuad& qj = m_GeoPatches[j];
-			floral::vec3f patchCenter = (qi.Vertices[0] + qi.Vertices[1] + qi.Vertices[2] + qi.Vertices[3]) / 4.0f;
-			floral::vec3f v0 = qj.Vertices[1] - qj.Vertices[0];
-			floral::vec3f v1 = qj.Vertices[3] - qj.Vertices[0];
-			f32 stepI = floral::length(v0) / 4.0f;
-			f32 stepJ = floral::length(v1) / 4.0f;
-			v0 = floral::normalize(v0);
-			v1 = floral::normalize(v1);
+			floral::inplace_array<floral::vec2f, 16u> pISamples;
+			floral::inplace_array<floral::vec2f, 16u> pJSamples;
+
+			GenerateStratifiedSamples(pISamples);
+			GenerateStratifiedSamples(pJSamples);
+
+			floral::vec3f vj0 = qj.Vertices[1] - qj.Vertices[0];
+			floral::vec3f vj1 = qj.Vertices[3] - qj.Vertices[0];
+
+			f32 area = floral::length(vj0) * floral::length(vj1);
+
 			f32 ff = 0.0f;
 			bool hasUpperHemiRay = false;
-			for (u32 ri = 0; ri < 4; ri++) {
-				for (u32 rj = 0; rj < 4; rj++) {
-					floral::vec3f v = qj.Vertices[0] + v0 * (stepI * ri * 0.5f) + v1 * (stepJ * rj * 0.5f);
-					floral::vec3f d1 = floral::normalize(v - patchCenter);
-					floral::vec3f d2 = -d1;
-					f32 dist = floral::length(v - patchCenter);
+			for (u32 r = 0; r < 16; r++)
+			{
+				floral::vec3f vi = qi.Vertices[0] + vi0 * pISamples[r].x + vi1 * pISamples[r].y;
+				floral::vec3f vj = qj.Vertices[0] + vj0 * pJSamples[r].x + vj1 * pJSamples[r].y;
 
-					if (floral::dot(d1, qi.Normal) > 0.0f)
+				m_SampleLines.push_back(vi);
+				m_SampleLines.push_back(vj);
+
+				floral::vec3f d1 = floral::normalize(vj - vi);
+				floral::vec3f d2 = -d1;
+				f32 dist = floral::length(vi - vj);
+
+				if (floral::dot(d1, qi.Normal) > 0.0f)
+				{
+					hasUpperHemiRay = true;
+					floral::ray3df r;
+					r.o = vj;
+					r.d = d1;
+					bool hit = false;
+					for (u32 k = 0; k < m_GeoPatches.get_size(); k++)
 					{
-						hasUpperHemiRay = true;
-						floral::ray3df r;
-						r.o = patchCenter;
-						r.d = d1;
-						bool hit = false;
-						for (u32 k = 0; k < m_GeoPatches.get_size(); k++)
+						if (k == i || k == j) continue;
+						GeoQuad& qk = m_GeoPatches[k];
+						f32 t = 0.0f;
+						const bool rh = floral::ray_quad_intersect(r,
+								qk.Vertices[0], qk.Vertices[1], qk.Vertices[2], qk.Vertices[3], &t);
+						if (rh && t >= 0.0f && t <= dist)
 						{
-							if (k == i || k == j) continue;
-							GeoQuad& qk = m_GeoPatches[k];
-							f32 t = 0.0f;
-							const bool rh = floral::ray_quad_intersect(r,
-									qk.Vertices[0], qk.Vertices[1], qk.Vertices[2], qk.Vertices[3], &t);
-							if (rh && t >= 0.0f && t <= dist)
-							{
-								hit = true;
-								break;
-							}
+							hit = true;
+							break;
 						}
+					}
 
+					if (!hit)
+					{
 						f32 cosTheta1 = floral::dot(qi.Normal, d1);
 						f32 cosTheta2 = floral::dot(d2, qj.Normal);
-						if (!hit && cosTheta1 * cosTheta2 >= 0.0f) {
-							ff += cosTheta1 * cosTheta2 / (3.14f * dist * dist + stepI * stepJ);
+						//f32 deltaF = cosTheta1 * cosTheta2 / (3.14f * dist * dist + area / 16.0f);
+						f32 deltaF = cosTheta1 * cosTheta2 / (3.14f * dist * dist);
+						if (deltaF > 0)
+						{
+							ff += deltaF;
 						}
 					}
 				}
 			}
 			if (hasUpperHemiRay) {
-				ff = ff * stepI * stepJ;
+				ff = ff * area / 16.0f;
 				qi.PatchLinks.push_back(j);
 				qi.FormFactors.push_back(ff);
 			}

@@ -37,6 +37,7 @@ class FormFactorsValidating : public ITestSuite {
 		floral::fixed_array<VertexPNCC, LinearAllocator>	m_GeoVertices;
 		floral::fixed_array<u32, LinearAllocator>		m_GeoIndices;
 		floral::fixed_array<GeoQuad, LinearAllocator>	m_GeoPatches;
+		floral::fixed_array<floral::vec3f, LinearAllocator>	m_SampleLines;
 
 		insigne::vb_handle_t					m_VB;
 		insigne::ib_handle_t					m_IB;
