@@ -9,11 +9,7 @@ include_directories("${PROJECT_SOURCE_DIR}/../../src/Graphics")
 
 add_subdirectory("${PROJECT_SOURCE_DIR}/../../externals/floral" "floral")
 add_subdirectory("${PROJECT_SOURCE_DIR}/../../externals/helich" "helich")
-add_subdirectory("${PROJECT_SOURCE_DIR}/../../externals/insigne" "insigne")
 add_subdirectory("${PROJECT_SOURCE_DIR}/../../externals/clover" "clover")
-add_subdirectory("${PROJECT_SOURCE_DIR}/../../externals/lotus" "lotus")
-add_subdirectory("${PROJECT_SOURCE_DIR}/../../externals/calyx" "calyx")
-add_subdirectory("${PROJECT_SOURCE_DIR}/../../externals/refrain2" "refrain")
 
 file(GLOB_RECURSE file_list
     "${PROJECT_SOURCE_DIR}/src/*.cpp")
@@ -48,7 +44,6 @@ add_executable(${PROJECT_NAME} ${file_list})
 target_link_libraries(${PROJECT_NAME}
 	floral
 	helich
-	insigne
 	clover)
 
 set_target_properties (${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${EXECUTABLE_FILE_NAME})

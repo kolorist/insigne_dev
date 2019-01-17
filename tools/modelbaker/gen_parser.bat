@@ -4,9 +4,9 @@ pushd %~dp0
 cd src
 
 echo flexing CBOBJ...
-..\..\win_flex_bison\win_flex -o cbobj_lex.yy.cpp cbobj.l
+..\..\win_flex_bison\win_flex -o pbrtv3.yy.cpp pbrtv3.l
 
 echo bisoning CBOBJ...
-echo ..\tools\win_flex_bison\win_bison cbobj.y --defines=cbobj.tab.h -o cbobj.tab.cpp
+..\..\win_flex_bison\win_bison pbrtv3.y --defines=pbrtv3.tab.h -o pbrtv3.tab.cpp
 
 popd %~dp0
