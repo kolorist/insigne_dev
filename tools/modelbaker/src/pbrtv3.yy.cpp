@@ -885,42 +885,42 @@ YY_RULE_SETUP
 case 11:
 YY_RULE_SETUP
 #line 52 "pbrtv3.l"
-{ CLOVER_INFO("_worldbegin"); }
+{ return TK_BEGIN_WORLD; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
 #line 53 "pbrtv3.l"
-{ CLOVER_INFO("_worldend"); }
+{ return TK_END_WORLD; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
 #line 55 "pbrtv3.l"
-{ CLOVER_INFO("_makenamedmaterial"); }
+{ return TK_MAKE_NAMED_MATERIAL; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
 #line 56 "pbrtv3.l"
-{ CLOVER_INFO("_namedmaterial"); }
+{ return TK_NAMED_MATERIAL; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
 #line 57 "pbrtv3.l"
-{ CLOVER_INFO("_shape"); }
+{ return TK_SHAPE; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
 #line 59 "pbrtv3.l"
-{ CLOVER_INFO("_attributebegin"); }
+{ return TK_BEGIN_ATTRIB; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
 #line 60 "pbrtv3.l"
-{ CLOVER_INFO("_attributeend"); }
+{ return TK_END_ATTRIB; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
 #line 62 "pbrtv3.l"
-{ CLOVER_INFO("_arealightsource"); }
+{ return TK_AREA_LIGHT_SOURCE; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP

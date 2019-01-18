@@ -31,9 +31,16 @@ void yyerror(const char* i_errorStr);
 %token TK_END_WORLD
 
 %token TK_MAKE_NAMED_MATERIAL
+%token TK_NAMED_MATERIAL
+%token TK_SHAPE
 
 %token TK_BEGIN_DATA
 %token TK_END_DATA
+
+%token TK_BEGIN_ATTRIB
+%token TK_END_ATTRIB
+
+%token TK_AREA_LIGHT_SOURCE
 
 %token <floatValue>								FLOAT_VALUE
 %token <intValue>								INT_VALUE
@@ -41,7 +48,7 @@ void yyerror(const char* i_errorStr);
 
 %%
 pbrtv3:
-	  integrator transform sampler pixel_filter film camera
+	  integrator transform sampler pixel_filter film camera world
 
 /* integrator ---------------------------------*/
 integrator:
@@ -86,7 +93,7 @@ sampler_begin:
 pixel_filter:
 	pixel_filter_begin pixel_filter_data
 	{
-
+		CLOVER_INFO("end pixel filter");
 	}
 pixel_filter_begin:
 	TK_PIXEL_FILTER STRING_VALUE
@@ -103,6 +110,7 @@ pixel_filter_data:
 film:
 	film_begin film_data
 	{
+		CLOVER_INFO("end film");
 	}
 film_begin:
 	TK_FILM STRING_VALUE
@@ -116,13 +124,80 @@ film_data:
 /* camera--------------------------------------*/
 camera:
 	camera_begin camera_data
+	{
+		CLOVER_INFO("end camera");
+	}
 camera_begin:
 	TK_CAMERA
 camera_data:
 	STRING_VALUE STRING_VALUE float_data_region
 /*---------------------------------------------*/
+/* world---------------------------------------*/
+world:
+	TK_BEGIN_WORLD world_body TK_END_WORLD
+	{
+		CLOVER_INFO("end world");
+	}
+
+world_body:
+	world_body world_body_elem
+	| world_body_elem
+
+world_body_elem:
+	make_named_material
+	| named_material_shape
+	| attrib
+
+attrib:
+	TK_BEGIN_ATTRIB attrib_body TK_END_ATTRIB
+	{
+		CLOVER_INFO("end attribute");
+	}
+
+attrib_body:
+	attrib_body attrib_elem
+	| attrib_elem
+
+attrib_elem:
+	area_light_source
+	| named_material_shape
+
+make_named_material:
+	TK_MAKE_NAMED_MATERIAL STRING_VALUE key_string_data_region_pair key_float_data_region_pair
+	{
+		CLOVER_INFO("> make named material");
+	}
+
+named_material_shape:
+	TK_NAMED_MATERIAL STRING_VALUE shape
+	{
+		CLOVER_INFO("> named material %s", $2);
+	}
+
+shape:
+	TK_SHAPE STRING_VALUE key_int_data_region_pair key_float_data_region_pair key_float_data_region_pair key_float_data_region_pair
+	{
+		CLOVER_INFO("> shape %s", $2);
+	}
+
+area_light_source:
+	TK_AREA_LIGHT_SOURCE STRING_VALUE key_float_data_region_pair
+	{
+		CLOVER_INFO("> area light source");
+	}
+
+/*---------------------------------------------*/
 key_float_data_region_pair:
 	STRING_VALUE float_data_region
+	{
+		CLOVER_INFO("key float data pair: %s", $1);
+	}
+
+key_int_data_region_pair:
+	STRING_VALUE int_data_region
+
+key_string_data_region_pair:
+	STRING_VALUE string_data_region
 
 float_data_region:
 	TK_BEGIN_DATA float_data_array TK_END_DATA

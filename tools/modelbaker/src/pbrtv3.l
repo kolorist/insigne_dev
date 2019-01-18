@@ -49,17 +49,17 @@ PixelFilter										{ return TK_PIXEL_FILTER; }
 Film											{ return TK_FILM; }
 Camera											{ return TK_CAMERA; }
 
-WorldBegin										{ CLOVER_INFO("_worldbegin"); }
-WorldEnd										{ CLOVER_INFO("_worldend"); }
+WorldBegin										{ return TK_BEGIN_WORLD; }
+WorldEnd										{ return TK_END_WORLD; }
 
-MakeNamedMaterial								{ CLOVER_INFO("_makenamedmaterial"); }
-NamedMaterial									{ CLOVER_INFO("_namedmaterial"); }
-Shape											{ CLOVER_INFO("_shape"); }
+MakeNamedMaterial								{ return TK_MAKE_NAMED_MATERIAL; }
+NamedMaterial									{ return TK_NAMED_MATERIAL; }
+Shape											{ return TK_SHAPE; }
 
-AttributeBegin									{ CLOVER_INFO("_attributebegin"); }
-AttributeEnd									{ CLOVER_INFO("_attributeend"); }
+AttributeBegin									{ return TK_BEGIN_ATTRIB; }
+AttributeEnd									{ return TK_END_ATTRIB; }
 
-AreaLightSource									{ CLOVER_INFO("_arealightsource"); }
+AreaLightSource									{ return TK_AREA_LIGHT_SOURCE; }
 
 {float_number}									{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
 {float_number}"e"{int_number}					{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }

@@ -117,11 +117,19 @@ extern int yydebug;
     TK_PIXEL_FILTER = 261,
     TK_FILM = 262,
     TK_CAMERA = 263,
-    TK_BEGIN_DATA = 264,
-    TK_END_DATA = 265,
-    FLOAT_VALUE = 266,
-    INT_VALUE = 267,
-    STRING_VALUE = 268
+    TK_BEGIN_WORLD = 264,
+    TK_END_WORLD = 265,
+    TK_MAKE_NAMED_MATERIAL = 266,
+    TK_NAMED_MATERIAL = 267,
+    TK_SHAPE = 268,
+    TK_BEGIN_DATA = 269,
+    TK_END_DATA = 270,
+    TK_BEGIN_ATTRIB = 271,
+    TK_END_ATTRIB = 272,
+    TK_AREA_LIGHT_SOURCE = 273,
+    FLOAT_VALUE = 274,
+    INT_VALUE = 275,
+    STRING_VALUE = 276
   };
 #endif
 
@@ -136,7 +144,7 @@ union YYSTYPE
 	int											intValue;
 	char*										bracketStringValue;
 
-#line 140 "pbrtv3.tab.cpp" /* yacc.c:355  */
+#line 148 "pbrtv3.tab.cpp" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -153,13 +161,13 @@ int yyparse (void);
 
 void yyparse_pbrtv3();
 
-#line 157 "pbrtv3.tab.cpp" /* yacc.c:355  */
+#line 165 "pbrtv3.tab.cpp" /* yacc.c:355  */
 
 #endif /* !YY_YY_PBRTV3_TAB_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
-#line 163 "pbrtv3.tab.cpp" /* yacc.c:358  */
+#line 171 "pbrtv3.tab.cpp" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -401,21 +409,21 @@ union yyalloc
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  6
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   44
+#define YYLAST   78
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  14
+#define YYNTOKENS  22
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  24
+#define YYNNTS  37
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  28
+#define YYNRULES  46
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  63
+#define YYNSTATES  101
 
 /* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
    by yylex, with out-of-bounds checking.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   268
+#define YYMAXUTOK   276
 
 #define YYTRANSLATE(YYX)                                                \
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -450,16 +458,19 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
-       5,     6,     7,     8,     9,    10,    11,    12,    13
+       5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
+      15,    16,    17,    18,    19,    20,    21
 };
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    39,    39,    43,    49,    56,    62,    69,    75,    82,
-      87,    92,    99,   103,   107,   113,   115,   117,   120,   126,
-     132,   138,   139,   142,   143,   146,   147,   150,   151
+       0,    51,    51,    55,    61,    68,    74,    81,    87,    94,
+      99,   104,   111,   116,   120,   126,   131,   133,   137,   143,
+     144,   147,   148,   149,   152,   158,   159,   162,   163,   166,
+     172,   178,   184,   191,   197,   200,   203,   209,   215,   221,
+     222,   225,   226,   229,   230,   233,   234
 };
 #endif
 
@@ -469,15 +480,21 @@ static const yytype_uint8 yyrline[] =
 static const char *const yytname[] =
 {
   "$end", "error", "$undefined", "TK_INTEGRATOR", "TK_TRANSFORM",
-  "TK_SAMPLER", "TK_PIXEL_FILTER", "TK_FILM", "TK_CAMERA", "TK_BEGIN_DATA",
-  "TK_END_DATA", "FLOAT_VALUE", "INT_VALUE", "STRING_VALUE", "$accept",
-  "pbrtv3", "integrator", "integrator_begin", "transform",
-  "transform_begin", "sampler", "sampler_begin", "pixel_filter",
-  "pixel_filter_begin", "pixel_filter_data", "film", "film_begin",
-  "film_data", "camera", "camera_begin", "camera_data",
-  "float_data_region", "int_data_region", "string_data_region",
-  "float_data_array", "int_data_array", "string_data_array",
-  "number_value", YY_NULLPTR
+  "TK_SAMPLER", "TK_PIXEL_FILTER", "TK_FILM", "TK_CAMERA",
+  "TK_BEGIN_WORLD", "TK_END_WORLD", "TK_MAKE_NAMED_MATERIAL",
+  "TK_NAMED_MATERIAL", "TK_SHAPE", "TK_BEGIN_DATA", "TK_END_DATA",
+  "TK_BEGIN_ATTRIB", "TK_END_ATTRIB", "TK_AREA_LIGHT_SOURCE",
+  "FLOAT_VALUE", "INT_VALUE", "STRING_VALUE", "$accept", "pbrtv3",
+  "integrator", "integrator_begin", "transform", "transform_begin",
+  "sampler", "sampler_begin", "pixel_filter", "pixel_filter_begin",
+  "pixel_filter_data", "film", "film_begin", "film_data", "camera",
+  "camera_begin", "camera_data", "world", "world_body", "world_body_elem",
+  "attrib", "attrib_body", "attrib_elem", "make_named_material",
+  "named_material_shape", "shape", "area_light_source",
+  "key_float_data_region_pair", "key_int_data_region_pair",
+  "key_string_data_region_pair", "float_data_region", "int_data_region",
+  "string_data_region", "float_data_array", "int_data_array",
+  "string_data_array", "number_value", YY_NULLPTR
 };
 #endif
 
@@ -487,14 +504,15 @@ static const char *const yytname[] =
 static const yytype_uint16 yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
-     265,   266,   267,   268
+     265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
+     275,   276
 };
 # endif
 
-#define YYPACT_NINF -37
+#define YYPACT_NINF -77
 
 #define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-37)))
+  (!!((Yystate) == (-77)))
 
 #define YYTABLE_NINF -1
 
@@ -505,13 +523,17 @@ static const yytype_uint16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-       0,   -11,    10,    13,     9,     6,   -37,   -37,    15,    12,
-      11,   -37,   -37,    14,    16,     9,     1,   -37,   -37,    -1,
-      17,    18,    19,    20,   -37,   -37,   -37,    -5,   -37,   -37,
-     -37,   -37,   -37,    21,    24,    22,    12,   -37,   -37,   -37,
-     -37,   -37,   -37,    23,    12,   -37,    25,    26,   -37,    27,
-      12,    12,    12,   -37,   -37,    28,    33,    30,   -37,   -37,
-      -9,   -37,   -37
+       5,    -1,    34,    32,    23,    17,   -77,   -77,    35,    25,
+      21,   -77,   -77,    22,    36,    23,    13,   -77,   -77,    -4,
+      24,    26,    37,    27,   -77,   -77,   -77,     9,   -77,   -77,
+     -77,   -77,   -77,    28,    38,    30,    25,   -77,   -77,   -77,
+     -77,   -77,    43,    33,    25,   -77,    39,    19,   -77,    40,
+     -77,    41,    25,    42,    44,     3,    -6,   -77,   -77,   -77,
+     -77,    25,    25,   -77,    45,    46,    47,    -5,   -77,   -77,
+     -77,   -77,   -77,   -77,    48,    50,    49,    51,   -77,    49,
+     -77,   -77,    50,    52,   -77,    25,   -77,    53,   -77,   -77,
+     -77,     4,   -77,    23,    49,   -77,   -77,   -77,    49,    49,
+     -77
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -520,28 +542,34 @@ static const yytype_int8 yypact[] =
 static const yytype_uint8 yydefact[] =
 {
        0,     0,     0,     0,     0,     0,     1,     6,     0,     0,
-       0,     3,     4,     0,     0,     0,     0,     5,    24,     0,
-       0,     0,     0,     0,     7,    27,    28,     0,    22,    19,
-      23,     8,    10,     0,     0,     0,     0,     9,    18,    21,
-      13,    16,     2,     0,     0,    12,     0,     0,    15,     0,
-       0,     0,     0,    11,    17,     0,     0,     0,    14,    26,
-       0,    20,    25
+       0,     3,     4,     0,     0,     0,     0,     5,    42,     0,
+       0,     0,     0,     0,     7,    45,    46,     0,    40,    37,
+      41,     8,    10,     0,     0,     0,     0,     9,    36,    39,
+      13,    16,     0,     0,     0,    12,     0,     0,     2,     0,
+      15,     0,     0,     0,     0,     0,     0,    20,    23,    21,
+      22,     0,     0,    11,     0,     0,     0,     0,    26,    28,
+      27,    18,    19,    17,     0,     0,     0,     0,    30,     0,
+      24,    25,     0,     0,    35,     0,    29,     0,    32,    14,
+      44,     0,    33,     0,     0,    38,    43,    34,     0,     0,
+      31
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,   -37,
-     -37,   -37,   -37,   -37,   -37,   -37,   -37,   -36,    29,   -37,
-     -37,   -37,   -37,    -3
+     -77,   -77,   -77,   -77,   -77,   -77,   -77,   -77,   -77,   -77,
+     -77,   -77,   -77,   -77,   -77,   -77,   -77,   -77,   -77,    -3,
+     -77,   -77,   -12,   -77,   -53,   -77,   -77,   -76,   -77,   -77,
+     -35,   -15,   -26,   -77,   -77,   -77,    31
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
       -1,     2,     3,     4,     8,     9,    14,    15,    22,    23,
-      37,    34,    35,    45,    42,    43,    48,    17,    11,    58,
-      27,    19,    60,    28
+      37,    34,    35,    45,    42,    43,    50,    48,    56,    57,
+      58,    67,    68,    59,    60,    78,    70,    86,    94,    76,
+      17,    11,    84,    27,    19,    91,    28
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -549,49 +577,63 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_uint8 yytable[] =
 {
-      46,    61,     5,     1,    62,    38,    25,    26,    49,    29,
-       6,    30,    25,    26,    53,    54,    55,     7,    10,    12,
-      13,    16,    21,    18,    39,     0,    33,    20,     0,     0,
-      31,    32,    41,    36,    40,    44,    47,     0,    50,    51,
-      52,    56,    57,    59,    24
+      24,    46,    69,    88,    71,    53,    54,    54,     1,    51,
+      55,    29,    80,    66,    69,    54,    30,    63,    98,    95,
+       5,    66,    99,   100,    38,    96,    73,    74,    25,    26,
+      53,    54,    25,    26,     6,    55,     7,    10,    12,    16,
+      13,    18,    21,    20,    33,    31,    41,    32,    36,    40,
+      92,    44,    47,    72,    49,    81,    89,     0,    39,    77,
+      52,    61,    62,    64,    83,    65,    75,     0,    79,    82,
+      85,     0,    87,    90,    93,     0,     0,     0,    97
 };
 
 static const yytype_int8 yycheck[] =
 {
-      36,    10,    13,     3,    13,    10,    11,    12,    44,    10,
-       0,    12,    11,    12,    50,    51,    52,     4,     9,    13,
-       5,     9,     6,    12,    27,    -1,     7,    13,    -1,    -1,
-      13,    13,     8,    13,    13,    13,    13,    -1,    13,    13,
-      13,    13,     9,    13,    15
+      15,    36,    55,    79,    10,    11,    12,    12,     3,    44,
+      16,    15,    17,    18,    67,    12,    20,    52,    94,    15,
+      21,    18,    98,    99,    15,    21,    61,    62,    19,    20,
+      11,    12,    19,    20,     0,    16,     4,    14,    21,    14,
+       5,    20,     6,    21,     7,    21,     8,    21,    21,    21,
+      85,    21,     9,    56,    21,    67,    82,    -1,    27,    13,
+      21,    21,    21,    21,    14,    21,    21,    -1,    21,    21,
+      21,    -1,    21,    21,    21,    -1,    -1,    -1,    93
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,     3,    15,    16,    17,    13,     0,     4,    18,    19,
-       9,    32,    13,     5,    20,    21,     9,    31,    12,    35,
-      13,     6,    22,    23,    32,    11,    12,    34,    37,    10,
-      12,    13,    13,     7,    25,    26,    13,    24,    10,    37,
-      13,     8,    28,    29,    13,    27,    31,    13,    30,    31,
-      13,    13,    13,    31,    31,    31,    13,     9,    33,    13,
-      36,    10,    13
+       0,     3,    23,    24,    25,    21,     0,     4,    26,    27,
+      14,    53,    21,     5,    28,    29,    14,    52,    20,    56,
+      21,     6,    30,    31,    53,    19,    20,    55,    58,    15,
+      20,    21,    21,     7,    33,    34,    21,    32,    15,    58,
+      21,     8,    36,    37,    21,    35,    52,     9,    39,    21,
+      38,    52,    21,    11,    12,    16,    40,    41,    42,    45,
+      46,    21,    21,    52,    21,    21,    18,    43,    44,    46,
+      48,    10,    41,    52,    52,    21,    51,    13,    47,    21,
+      17,    44,    21,    14,    54,    21,    49,    21,    49,    54,
+      21,    57,    52,    21,    50,    15,    21,    53,    49,    49,
+      49
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    14,    15,    16,    17,    18,    19,    20,    21,    22,
-      23,    24,    25,    26,    27,    28,    29,    30,    31,    32,
-      33,    34,    34,    35,    35,    36,    36,    37,    37
+       0,    22,    23,    24,    25,    26,    27,    28,    29,    30,
+      31,    32,    33,    34,    35,    36,    37,    38,    39,    40,
+      40,    41,    41,    41,    42,    43,    43,    44,    44,    45,
+      46,    47,    48,    49,    50,    51,    52,    53,    54,    55,
+      55,    56,    56,    57,    57,    58,    58
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
-       0,     2,     6,     2,     3,     2,     1,     2,     3,     2,
-       2,     4,     2,     2,     6,     2,     1,     3,     3,     3,
-       3,     2,     1,     2,     1,     2,     1,     1,     1
+       0,     2,     7,     2,     3,     2,     1,     2,     3,     2,
+       2,     4,     2,     2,     6,     2,     1,     3,     3,     2,
+       1,     1,     1,     1,     3,     2,     1,     1,     1,     4,
+       3,     6,     3,     2,     2,     2,     3,     3,     3,     2,
+       1,     2,     1,     2,     1,     1,     1
 };
 
 
@@ -1269,124 +1311,189 @@ yyreduce:
   switch (yyn)
     {
         case 3:
-#line 44 "pbrtv3.y" /* yacc.c:1648  */
+#line 56 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end integrator");
 	}
-#line 1277 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1319 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 4:
-#line 50 "pbrtv3.y" /* yacc.c:1648  */
+#line 62 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("begin integrator - %s - %s", (yyvsp[-1].bracketStringValue), (yyvsp[0].bracketStringValue));
 	}
-#line 1285 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1327 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 5:
-#line 57 "pbrtv3.y" /* yacc.c:1648  */
+#line 69 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end transform");
 	}
-#line 1293 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1335 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 6:
-#line 63 "pbrtv3.y" /* yacc.c:1648  */
+#line 75 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("begin transform");
 	}
-#line 1301 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1343 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 7:
-#line 70 "pbrtv3.y" /* yacc.c:1648  */
+#line 82 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end sampler");
 	}
-#line 1309 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1351 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 8:
-#line 76 "pbrtv3.y" /* yacc.c:1648  */
+#line 88 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("begin sampler - %s - %s", (yyvsp[-1].bracketStringValue), (yyvsp[0].bracketStringValue));
 	}
-#line 1317 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1359 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 9:
-#line 83 "pbrtv3.y" /* yacc.c:1648  */
+#line 95 "pbrtv3.y" /* yacc.c:1648  */
     {
-
+		CLOVER_INFO("end pixel filter");
 	}
-#line 1325 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1367 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 10:
-#line 88 "pbrtv3.y" /* yacc.c:1648  */
+#line 100 "pbrtv3.y" /* yacc.c:1648  */
     {
 		
 	}
-#line 1333 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1375 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 11:
-#line 93 "pbrtv3.y" /* yacc.c:1648  */
+#line 105 "pbrtv3.y" /* yacc.c:1648  */
     {
 
 	}
-#line 1341 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1383 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 12:
-#line 100 "pbrtv3.y" /* yacc.c:1648  */
+#line 112 "pbrtv3.y" /* yacc.c:1648  */
     {
+		CLOVER_INFO("end film");
 	}
-#line 1348 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1391 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 13:
-#line 104 "pbrtv3.y" /* yacc.c:1648  */
+#line 117 "pbrtv3.y" /* yacc.c:1648  */
     {
 	}
-#line 1355 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1398 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 14:
-#line 108 "pbrtv3.y" /* yacc.c:1648  */
+#line 121 "pbrtv3.y" /* yacc.c:1648  */
     {
 	}
-#line 1362 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1405 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 15:
+#line 127 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("end camera");
+	}
+#line 1413 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 18:
-#line 121 "pbrtv3.y" /* yacc.c:1648  */
+#line 138 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("end world");
+	}
+#line 1421 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 24:
+#line 153 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("end attribute");
+	}
+#line 1429 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 29:
+#line 167 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("> make named material");
+	}
+#line 1437 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 30:
+#line 173 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("> named material %s", (yyvsp[-1].bracketStringValue));
+	}
+#line 1445 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 31:
+#line 179 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("> shape %s", (yyvsp[-4].bracketStringValue));
+	}
+#line 1453 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 32:
+#line 185 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("> area light source");
+	}
+#line 1461 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 33:
+#line 192 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("key float data pair: %s", (yyvsp[-1].bracketStringValue));
+	}
+#line 1469 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 36:
+#line 204 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("> float data region");
 	}
-#line 1370 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1477 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 19:
-#line 127 "pbrtv3.y" /* yacc.c:1648  */
+  case 37:
+#line 210 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("> int data region");
 	}
-#line 1378 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1485 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 20:
-#line 133 "pbrtv3.y" /* yacc.c:1648  */
+  case 38:
+#line 216 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("> string data region");
 	}
-#line 1386 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1493 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
 
-#line 1390 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1497 "pbrtv3.tab.cpp" /* yacc.c:1648  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1614,7 +1721,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 153 "pbrtv3.y" /* yacc.c:1907  */
+#line 236 "pbrtv3.y" /* yacc.c:1907  */
 
 
 void yyerror(const char* i_errorStr)

@@ -56,11 +56,19 @@ extern int yydebug;
     TK_PIXEL_FILTER = 261,
     TK_FILM = 262,
     TK_CAMERA = 263,
-    TK_BEGIN_DATA = 264,
-    TK_END_DATA = 265,
-    FLOAT_VALUE = 266,
-    INT_VALUE = 267,
-    STRING_VALUE = 268
+    TK_BEGIN_WORLD = 264,
+    TK_END_WORLD = 265,
+    TK_MAKE_NAMED_MATERIAL = 266,
+    TK_NAMED_MATERIAL = 267,
+    TK_SHAPE = 268,
+    TK_BEGIN_DATA = 269,
+    TK_END_DATA = 270,
+    TK_BEGIN_ATTRIB = 271,
+    TK_END_ATTRIB = 272,
+    TK_AREA_LIGHT_SOURCE = 273,
+    FLOAT_VALUE = 274,
+    INT_VALUE = 275,
+    STRING_VALUE = 276
   };
 #endif
 
@@ -75,7 +83,7 @@ union YYSTYPE
 	int											intValue;
 	char*										bracketStringValue;
 
-#line 79 "pbrtv3.tab.h" /* yacc.c:1910  */
+#line 87 "pbrtv3.tab.h" /* yacc.c:1910  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -92,6 +100,6 @@ int yyparse (void);
 
 void yyparse_pbrtv3();
 
-#line 96 "pbrtv3.tab.h" /* yacc.c:1910  */
+#line 104 "pbrtv3.tab.h" /* yacc.c:1910  */
 
 #endif /* !YY_YY_PBRTV3_TAB_H_INCLUDED  */
