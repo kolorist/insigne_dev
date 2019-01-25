@@ -1,0 +1,30 @@
+#pragma once
+
+#include <floral.h>
+
+#include "Memory/MemorySystem.h"
+
+namespace baker
+{
+
+typedef floral::dynamic_array<floral::vec3f, FreelistArena>	Vec3Array;
+typedef floral::dynamic_array<floral::vec2f, FreelistArena> Vec2Array;
+typedef floral::dynamic_array<f32, FreelistArena> F32Array;
+typedef floral::dynamic_array<s32, FreelistArena> S32Array;
+
+namespace pbrt
+{
+
+struct SceneCreationCallbacks
+{
+	floral::simple_callback<
+		void,
+		const Vec3Array& /* pos */,
+		const Vec3Array& /* normal */,
+		const Vec2Array& /* uv &*/>				OnNewMesh;
+};
+
+}
+
+}
+

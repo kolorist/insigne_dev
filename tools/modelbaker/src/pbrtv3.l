@@ -1,6 +1,7 @@
 %{
 #include <clover.h>
 #include "Memory/MemorySystem.h"
+#include "PBRTSceneDefs.h"
 
 #include "pbrtv3.tab.h"
 
@@ -68,7 +69,7 @@ AreaLightSource									{ return TK_AREA_LIGHT_SOURCE; }
 
 %%
 
-int yylex_pbrtv3(const char* i_input)
+int yylex_pbrtv3(const char* i_input, baker::pbrt::SceneCreationCallbacks i_callbacks)
 {
 	YY_BUFFER_STATE buffer = yy_scan_string(i_input);
 	yyparse_pbrtv3();

@@ -539,6 +539,7 @@ char *yytext;
 #line 2 "pbrtv3.l"
 #include <clover.h>
 #include "Memory/MemorySystem.h"
+#include "PBRTSceneDefs.h"
 
 #include "pbrtv3.tab.h"
 
@@ -557,9 +558,9 @@ void yyfree(void* i_ptr)
 {
 	return baker::g_ParserAllocator.free(i_ptr);
 }
-#line 560 "pbrtv3.yy.cpp"
+#line 561 "pbrtv3.yy.cpp"
 #define YY_NO_UNISTD_H 1
-#line 562 "pbrtv3.yy.cpp"
+#line 563 "pbrtv3.yy.cpp"
 
 #define INITIAL 0
 
@@ -776,9 +777,9 @@ YY_DECL
 		}
 
 	{
-#line 38 "pbrtv3.l"
+#line 39 "pbrtv3.l"
 
-#line 781 "pbrtv3.yy.cpp"
+#line 782 "pbrtv3.yy.cpp"
 
 	while ( /*CONSTCOND*/1 )		/* loops until end-of-file is reached */
 		{
@@ -833,122 +834,122 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-#line 39 "pbrtv3.l"
+#line 40 "pbrtv3.l"
 ;
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 40 "pbrtv3.l"
+#line 41 "pbrtv3.l"
 { BEGIN(INITIAL); }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 42 "pbrtv3.l"
+#line 43 "pbrtv3.l"
 { return TK_BEGIN_DATA; }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 43 "pbrtv3.l"
+#line 44 "pbrtv3.l"
 { return TK_END_DATA; }
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 45 "pbrtv3.l"
+#line 46 "pbrtv3.l"
 { return TK_INTEGRATOR; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 46 "pbrtv3.l"
+#line 47 "pbrtv3.l"
 { return TK_TRANSFORM; }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 47 "pbrtv3.l"
+#line 48 "pbrtv3.l"
 { return TK_SAMPLER; }
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 48 "pbrtv3.l"
+#line 49 "pbrtv3.l"
 { return TK_PIXEL_FILTER; }
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 49 "pbrtv3.l"
+#line 50 "pbrtv3.l"
 { return TK_FILM; }
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 50 "pbrtv3.l"
+#line 51 "pbrtv3.l"
 { return TK_CAMERA; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 52 "pbrtv3.l"
+#line 53 "pbrtv3.l"
 { return TK_BEGIN_WORLD; }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 53 "pbrtv3.l"
+#line 54 "pbrtv3.l"
 { return TK_END_WORLD; }
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 55 "pbrtv3.l"
+#line 56 "pbrtv3.l"
 { return TK_MAKE_NAMED_MATERIAL; }
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 56 "pbrtv3.l"
+#line 57 "pbrtv3.l"
 { return TK_NAMED_MATERIAL; }
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 57 "pbrtv3.l"
+#line 58 "pbrtv3.l"
 { return TK_SHAPE; }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 59 "pbrtv3.l"
+#line 60 "pbrtv3.l"
 { return TK_BEGIN_ATTRIB; }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 60 "pbrtv3.l"
+#line 61 "pbrtv3.l"
 { return TK_END_ATTRIB; }
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 62 "pbrtv3.l"
+#line 63 "pbrtv3.l"
 { return TK_AREA_LIGHT_SOURCE; }
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 64 "pbrtv3.l"
+#line 65 "pbrtv3.l"
 { yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 65 "pbrtv3.l"
+#line 66 "pbrtv3.l"
 { yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 66 "pbrtv3.l"
+#line 67 "pbrtv3.l"
 { yylval.intValue = atoi(yytext); return INT_VALUE; }
 	YY_BREAK
 case 22:
 /* rule 22 can match eol */
 YY_RULE_SETUP
-#line 67 "pbrtv3.l"
+#line 68 "pbrtv3.l"
 { yylval.bracketStringValue = strdup(yytext); return STRING_VALUE; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 69 "pbrtv3.l"
+#line 70 "pbrtv3.l"
 ECHO;
 	YY_BREAK
-#line 951 "pbrtv3.yy.cpp"
+#line 952 "pbrtv3.yy.cpp"
 case YY_STATE_EOF(INITIAL):
 	yyterminate();
 
@@ -1931,10 +1932,10 @@ static int yy_flex_strlen (const char * s )
 
 #define YYTABLES_NAME "yytables"
 
-#line 69 "pbrtv3.l"
+#line 70 "pbrtv3.l"
 
 
-int yylex_pbrtv3(const char* i_input)
+int yylex_pbrtv3(const char* i_input, baker::pbrt::SceneCreationCallbacks i_callbacks)
 {
 	YY_BUFFER_STATE buffer = yy_scan_string(i_input);
 	yyparse_pbrtv3();

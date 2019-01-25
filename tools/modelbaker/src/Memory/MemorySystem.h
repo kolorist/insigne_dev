@@ -14,5 +14,6 @@ typedef helich::allocator<helich::freelist_scheme, helich::no_tracking_policy>	F
 
 extern LinearAllocator							g_PersistanceAllocator;
 extern FreelistAllocator						g_ParserAllocator;
+extern FreelistArena							g_TemporalArena;
 
 }
