@@ -77,7 +77,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 17 "pbrtv3.y" /* yacc.c:1910  */
+#line 37 "pbrtv3.y" /* yacc.c:1910  */
 
 	float										floatValue;
 	int											intValue;
@@ -98,7 +98,7 @@ int yyparse (void);
 /* "%code provides" blocks.  */
 #line 4 "pbrtv3.y" /* yacc.c:1910  */
 
-void yyparse_pbrtv3();
+void yyparse_pbrtv3(const baker::pbrt::SceneCreationCallbacks& i_callbacks);
 
 #line 104 "pbrtv3.tab.h" /* yacc.c:1910  */
 

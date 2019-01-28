@@ -5,10 +5,11 @@
 #include "Memory/MemorySystem.h"
 #include "PBRTSceneDefs.h"
 
-extern int yylex_pbrtv3(const char* i_input, baker::pbrt::SceneCreationCallbacks i_callbacks);
+extern int yylex_pbrtv3(const char* i_input, const baker::pbrt::SceneCreationCallbacks& i_callbacks);
 
 void OnNewMesh(const baker::Vec3Array& i_positions, const baker::Vec3Array& i_normals, const baker::Vec2Array& i_uvs)
 {
+	CLOVER_INFO("new mesh!!!");
 }
 
 int main(int argc, char** argv)

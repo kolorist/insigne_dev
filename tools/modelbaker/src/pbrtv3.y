@@ -2,16 +2,36 @@
 }
 
 %code provides {
-void yyparse_pbrtv3();
+void yyparse_pbrtv3(const baker::pbrt::SceneCreationCallbacks& i_callbacks);
 }
 
 %{
 #include <floral.h>
 #include <clover.h>
 
+#include "Memory/MemorySystem.h"
+#include "PBRTSceneDefs.h"
+
 extern int yylex();
 
 void yyerror(const char* i_errorStr);
+void reset_array_stacks();
+
+static baker::pbrt::SceneCreationCallbacks		s_Callbacks;
+
+struct TemporalMesh
+{
+	baker::Vec3Array*							Positions;
+	baker::Vec3Array*							Normals;
+	baker::Vec2Array*							UVs;
+};
+static TemporalMesh								s_TemporalMesh;
+static floral::inplace_array<baker::F32Array*, 4u>	s_F32ArrayStack;
+static floral::inplace_array<baker::S32Array*, 4u>	s_S32ArrayStack;
+static baker::F32Array*							s_CurrentF32Array;
+static baker::S32Array*							s_CurrentS32Array;
+static f32										s_TmpFloat;
+
 %}
 
 %union {
@@ -60,6 +80,7 @@ integrator:
 integrator_begin:
 	TK_INTEGRATOR STRING_VALUE STRING_VALUE
 	{
+		reset_array_stacks();
 		CLOVER_INFO("begin integrator - %s - %s", $2, $3);
 	}
 /*---------------------------------------------*/
@@ -73,6 +94,7 @@ transform:
 transform_begin:
 	TK_TRANSFORM
 	{
+		reset_array_stacks();
 		CLOVER_INFO("begin transform");
 	}
 /*---------------------------------------------*/
@@ -86,6 +108,7 @@ sampler:
 sampler_begin:
 	TK_SAMPLER STRING_VALUE STRING_VALUE
 	{
+		reset_array_stacks();
 		CLOVER_INFO("begin sampler - %s - %s", $2, $3);
 	}
 /*---------------------------------------------*/
@@ -98,7 +121,7 @@ pixel_filter:
 pixel_filter_begin:
 	TK_PIXEL_FILTER STRING_VALUE
 	{
-		
+		reset_array_stacks();
 	}
 pixel_filter_data:
 	STRING_VALUE float_data_region STRING_VALUE float_data_region
@@ -115,6 +138,7 @@ film:
 film_begin:
 	TK_FILM STRING_VALUE
 	{
+		reset_array_stacks();
 	}
 film_data:
 	STRING_VALUE float_data_region STRING_VALUE float_data_region STRING_VALUE string_data_region
@@ -129,6 +153,9 @@ camera:
 	}
 camera_begin:
 	TK_CAMERA
+	{
+		reset_array_stacks();
+	}
 camera_data:
 	STRING_VALUE STRING_VALUE float_data_region
 /*---------------------------------------------*/
@@ -163,9 +190,15 @@ attrib_elem:
 	| named_material_shape
 
 make_named_material:
-	TK_MAKE_NAMED_MATERIAL STRING_VALUE key_string_data_region_pair key_float_data_region_pair
+	make_named_material_begin key_string_data_region_pair key_float_data_region_pair
 	{
 		CLOVER_INFO("> make named material");
+	}
+
+make_named_material_begin:
+	TK_MAKE_NAMED_MATERIAL STRING_VALUE
+	{
+		reset_array_stacks();
 	}
 
 named_material_shape:
@@ -175,9 +208,35 @@ named_material_shape:
 	}
 
 shape:
-	TK_SHAPE STRING_VALUE key_int_data_region_pair key_float_data_region_pair key_float_data_region_pair key_float_data_region_pair
+	shape_begin key_int_data_region_pair key_float_data_region_pair key_float_data_region_pair key_float_data_region_pair
 	{
-		CLOVER_INFO("> shape %s", $2);
+		// shape
+		s32 f32ArraysCount = s_F32ArrayStack.get_size();
+		baker::F32Array* uvs = s_F32ArrayStack[f32ArraysCount - 1];
+		baker::F32Array* normals = s_F32ArrayStack[f32ArraysCount - 2];
+		baker::F32Array* positions = s_F32ArrayStack[f32ArraysCount - 3];
+		s_TemporalMesh.Positions = baker::g_TemporalArena.allocate<baker::Vec3Array>(positions->get_size() / 3, &baker::g_TemporalArena);
+		s_TemporalMesh.Normals = baker::g_TemporalArena.allocate<baker::Vec3Array>(normals->get_size() / 3, &baker::g_TemporalArena);
+		s_TemporalMesh.UVs = baker::g_TemporalArena.allocate<baker::Vec2Array>(uvs->get_size() / 2, &baker::g_TemporalArena);
+		for (u32 i = 0; i < uvs->get_size() / 2; i++)
+		{
+			s_TemporalMesh.UVs->push_back(floral::vec2f(uvs->at(i * 2), uvs->at(i * 2 + 1)));
+		}
+		for (u32 i = 0; i < normals->get_size() / 3; i++)
+		{
+			s_TemporalMesh.Normals->push_back(floral::vec3f(normals->at(i * 3), normals->at(i * 3 + 1), normals->at(i * 3 + 2)));
+		}
+		for (u32 i = 0; i < positions->get_size() / 3; i++)
+		{
+			s_TemporalMesh.Positions->push_back(floral::vec3f(positions->at(i * 3), positions->at(i * 3 + 1), positions->at(i * 3 + 2)));
+		}
+		s_Callbacks.OnNewMesh(*s_TemporalMesh.Positions, *s_TemporalMesh.Normals, *s_TemporalMesh.UVs);
+	}
+
+shape_begin:
+	TK_SHAPE STRING_VALUE
+	{
+		reset_array_stacks();
 	}
 
 area_light_source:
@@ -189,9 +248,6 @@ area_light_source:
 /*---------------------------------------------*/
 key_float_data_region_pair:
 	STRING_VALUE float_data_region
-	{
-		CLOVER_INFO("key float data pair: %s", $1);
-	}
 
 key_int_data_region_pair:
 	STRING_VALUE int_data_region
@@ -201,25 +257,24 @@ key_string_data_region_pair:
 
 float_data_region:
 	TK_BEGIN_DATA float_data_array TK_END_DATA
-	{
-		CLOVER_INFO("> float data region");
-	}
 
 int_data_region:
 	TK_BEGIN_DATA int_data_array TK_END_DATA
-	{
-		CLOVER_INFO("> int data region");
-	}
 
 string_data_region:
 	TK_BEGIN_DATA string_data_array TK_END_DATA
-	{
-		CLOVER_INFO("> string data region");
-	}
 
 float_data_array:
 	float_data_array number_value
+	{
+		s_CurrentF32Array->push_back(s_TmpFloat);
+	}
 	| number_value
+	{
+		s_CurrentF32Array = baker::g_TemporalArena.allocate<baker::F32Array>(256u, &baker::g_TemporalArena);
+		s_F32ArrayStack.push_back(s_CurrentF32Array);
+		s_CurrentF32Array->push_back(s_TmpFloat);
+	}
 
 int_data_array:
 	int_data_array INT_VALUE
@@ -231,7 +286,13 @@ string_data_array:
 
 number_value:
 	FLOAT_VALUE
+	{
+		s_TmpFloat = $1;
+	}
 	| INT_VALUE
+	{
+		s_TmpFloat = (f32)$1;
+	}
 
 %%
 
@@ -240,7 +301,15 @@ void yyerror(const char* i_errorStr)
 	CLOVER_ERROR("Bison error: %s", i_errorStr);
 }
 
-void yyparse_pbrtv3()
+void reset_array_stacks()
 {
+	s_F32ArrayStack.empty();
+	s_S32ArrayStack.empty();
+	baker::g_TemporalArena.free_all();
+}
+
+void yyparse_pbrtv3(const baker::pbrt::SceneCreationCallbacks& i_callbacks)
+{
+	s_Callbacks = i_callbacks;
 	yyparse();
 }

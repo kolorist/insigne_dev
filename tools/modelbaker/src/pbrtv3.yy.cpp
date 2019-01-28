@@ -1935,10 +1935,10 @@ static int yy_flex_strlen (const char * s )
 #line 70 "pbrtv3.l"
 
 
-int yylex_pbrtv3(const char* i_input, baker::pbrt::SceneCreationCallbacks i_callbacks)
+int yylex_pbrtv3(const char* i_input, const baker::pbrt::SceneCreationCallbacks& i_callbacks)
 {
 	YY_BUFFER_STATE buffer = yy_scan_string(i_input);
-	yyparse_pbrtv3();
+	yyparse_pbrtv3(i_callbacks);
 	yy_delete_buffer(buffer);
 	return 0;
 }
