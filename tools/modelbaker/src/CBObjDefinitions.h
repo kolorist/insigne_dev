@@ -35,13 +35,13 @@ struct ModelDataHeader
 	u32											LODsCount;
 
 	// offset to data segments (in bytes)
-	usize										PositionOffset;								// floral::vec3f
-	usize										IndexOffset;								// u32
-	usize										NormalOffsets[NORMAL_CHANNELS_COUNT];		// floral::vec3f
-	usize										BinormalOffsets[BINORMAL_CHANNELS_COUNT];	// floral::vec3f
-	usize										TangentOffsets[TANGENT_CHANNELS_COUNT];		// floral::vec3f
-	usize										TexCoordOffsets[TEXCOORD_CHANNELS_COUNT];	// floral::vec2f
-	usize										VtxColorOffsets[VTXCOLOR_CHANNELS_COUNT];	// floral::vec4f
+	u64											PositionOffset;								// floral::vec3f
+	u64											IndexOffset;								// u32
+	u64											NormalOffsets[NORMAL_CHANNELS_COUNT];		// floral::vec3f
+	u64											BinormalOffsets[BINORMAL_CHANNELS_COUNT];	// floral::vec3f
+	u64											TangentOffsets[TANGENT_CHANNELS_COUNT];		// floral::vec3f
+	u64											TexCoordOffsets[TEXCOORD_CHANNELS_COUNT];	// floral::vec2f
+	u64											VtxColorOffsets[VTXCOLOR_CHANNELS_COUNT];	// floral::vec4f
 };
 
 struct ModelLODInfo

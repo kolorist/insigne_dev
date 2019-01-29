@@ -19,6 +19,7 @@ struct SceneCreationCallbacks
 {
 	floral::simple_callback<
 		void,
+		const S32Array& /* indices */,
 		const Vec3Array& /* pos */,
 		const Vec3Array& /* normal */,
 		const Vec2Array& /* uv &*/>				OnNewMesh;

@@ -77,13 +77,6 @@ void reset_array_stacks();
 
 static baker::pbrt::SceneCreationCallbacks		s_Callbacks;
 
-struct TemporalMesh
-{
-	baker::Vec3Array*							Positions;
-	baker::Vec3Array*							Normals;
-	baker::Vec2Array*							UVs;
-};
-static TemporalMesh								s_TemporalMesh;
 static floral::inplace_array<baker::F32Array*, 4u>	s_F32ArrayStack;
 static floral::inplace_array<baker::S32Array*, 4u>	s_S32ArrayStack;
 static baker::F32Array*							s_CurrentF32Array;
@@ -91,7 +84,7 @@ static baker::S32Array*							s_CurrentS32Array;
 static f32										s_TmpFloat;
 
 
-#line 95 "pbrtv3.tab.cpp" /* yacc.c:339  */
+#line 88 "pbrtv3.tab.cpp" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -124,7 +117,7 @@ extern int yydebug;
 #line 1 "pbrtv3.y" /* yacc.c:355  */
 
 
-#line 128 "pbrtv3.tab.cpp" /* yacc.c:355  */
+#line 121 "pbrtv3.tab.cpp" /* yacc.c:355  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
@@ -158,13 +151,13 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 37 "pbrtv3.y" /* yacc.c:355  */
+#line 30 "pbrtv3.y" /* yacc.c:355  */
 
 	float										floatValue;
 	int											intValue;
 	char*										bracketStringValue;
 
-#line 168 "pbrtv3.tab.cpp" /* yacc.c:355  */
+#line 161 "pbrtv3.tab.cpp" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -181,13 +174,13 @@ int yyparse (void);
 
 void yyparse_pbrtv3(const baker::pbrt::SceneCreationCallbacks& i_callbacks);
 
-#line 185 "pbrtv3.tab.cpp" /* yacc.c:355  */
+#line 178 "pbrtv3.tab.cpp" /* yacc.c:355  */
 
 #endif /* !YY_YY_PBRTV3_TAB_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
-#line 191 "pbrtv3.tab.cpp" /* yacc.c:358  */
+#line 184 "pbrtv3.tab.cpp" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -486,11 +479,11 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,    71,    71,    75,    81,    89,    95,   103,   109,   117,
-     122,   127,   134,   139,   144,   150,   155,   160,   164,   170,
-     171,   174,   175,   176,   179,   185,   186,   189,   190,   193,
-     199,   205,   211,   237,   243,   250,   253,   256,   259,   262,
-     265,   268,   272,   280,   281,   284,   285,   288,   292
+       0,    64,    64,    68,    74,    82,    88,    96,   102,   110,
+     115,   120,   127,   132,   137,   143,   148,   153,   157,   163,
+     164,   167,   168,   169,   172,   178,   179,   182,   183,   186,
+     192,   198,   204,   237,   243,   250,   253,   256,   259,   262,
+     265,   268,   272,   280,   284,   292,   293,   296,   300
 };
 #endif
 
@@ -1334,183 +1327,190 @@ yyreduce:
   switch (yyn)
     {
         case 3:
-#line 76 "pbrtv3.y" /* yacc.c:1648  */
+#line 69 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end integrator");
 	}
-#line 1342 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1335 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 4:
-#line 82 "pbrtv3.y" /* yacc.c:1648  */
+#line 75 "pbrtv3.y" /* yacc.c:1648  */
     {
 		reset_array_stacks();
 		CLOVER_INFO("begin integrator - %s - %s", (yyvsp[-1].bracketStringValue), (yyvsp[0].bracketStringValue));
 	}
-#line 1351 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1344 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 5:
-#line 90 "pbrtv3.y" /* yacc.c:1648  */
+#line 83 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end transform");
 	}
-#line 1359 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1352 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 6:
-#line 96 "pbrtv3.y" /* yacc.c:1648  */
+#line 89 "pbrtv3.y" /* yacc.c:1648  */
     {
 		reset_array_stacks();
 		CLOVER_INFO("begin transform");
 	}
-#line 1368 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1361 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 7:
-#line 104 "pbrtv3.y" /* yacc.c:1648  */
+#line 97 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end sampler");
 	}
-#line 1376 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1369 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 8:
-#line 110 "pbrtv3.y" /* yacc.c:1648  */
+#line 103 "pbrtv3.y" /* yacc.c:1648  */
     {
 		reset_array_stacks();
 		CLOVER_INFO("begin sampler - %s - %s", (yyvsp[-1].bracketStringValue), (yyvsp[0].bracketStringValue));
 	}
-#line 1385 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1378 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 9:
-#line 118 "pbrtv3.y" /* yacc.c:1648  */
+#line 111 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end pixel filter");
 	}
-#line 1393 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1386 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 10:
-#line 123 "pbrtv3.y" /* yacc.c:1648  */
+#line 116 "pbrtv3.y" /* yacc.c:1648  */
     {
 		reset_array_stacks();
 	}
-#line 1401 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1394 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 11:
-#line 128 "pbrtv3.y" /* yacc.c:1648  */
+#line 121 "pbrtv3.y" /* yacc.c:1648  */
     {
 
 	}
-#line 1409 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1402 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 12:
-#line 135 "pbrtv3.y" /* yacc.c:1648  */
+#line 128 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end film");
 	}
-#line 1417 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1410 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 13:
-#line 140 "pbrtv3.y" /* yacc.c:1648  */
+#line 133 "pbrtv3.y" /* yacc.c:1648  */
     {
 		reset_array_stacks();
+	}
+#line 1418 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 14:
+#line 138 "pbrtv3.y" /* yacc.c:1648  */
+    {
 	}
 #line 1425 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 14:
-#line 145 "pbrtv3.y" /* yacc.c:1648  */
-    {
-	}
-#line 1432 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
   case 15:
-#line 151 "pbrtv3.y" /* yacc.c:1648  */
+#line 144 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end camera");
 	}
-#line 1440 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1433 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 16:
-#line 156 "pbrtv3.y" /* yacc.c:1648  */
+#line 149 "pbrtv3.y" /* yacc.c:1648  */
     {
 		reset_array_stacks();
 	}
-#line 1448 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1441 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 18:
-#line 165 "pbrtv3.y" /* yacc.c:1648  */
+#line 158 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end world");
 	}
-#line 1456 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1449 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 24:
-#line 180 "pbrtv3.y" /* yacc.c:1648  */
+#line 173 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("end attribute");
 	}
-#line 1464 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1457 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 29:
-#line 194 "pbrtv3.y" /* yacc.c:1648  */
+#line 187 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("> make named material");
 	}
-#line 1472 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1465 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 30:
-#line 200 "pbrtv3.y" /* yacc.c:1648  */
+#line 193 "pbrtv3.y" /* yacc.c:1648  */
     {
 		reset_array_stacks();
 	}
-#line 1480 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1473 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 31:
-#line 206 "pbrtv3.y" /* yacc.c:1648  */
+#line 199 "pbrtv3.y" /* yacc.c:1648  */
     {
 		CLOVER_INFO("> named material %s", (yyvsp[-1].bracketStringValue));
 	}
-#line 1488 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1481 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 32:
-#line 212 "pbrtv3.y" /* yacc.c:1648  */
+#line 205 "pbrtv3.y" /* yacc.c:1648  */
     {
 		// shape
 		s32 f32ArraysCount = s_F32ArrayStack.get_size();
+		s32 s32ArraysCount = s_S32ArrayStack.get_size();
 		baker::F32Array* uvs = s_F32ArrayStack[f32ArraysCount - 1];
 		baker::F32Array* normals = s_F32ArrayStack[f32ArraysCount - 2];
 		baker::F32Array* positions = s_F32ArrayStack[f32ArraysCount - 3];
-		s_TemporalMesh.Positions = baker::g_TemporalArena.allocate<baker::Vec3Array>(positions->get_size() / 3, &baker::g_TemporalArena);
-		s_TemporalMesh.Normals = baker::g_TemporalArena.allocate<baker::Vec3Array>(normals->get_size() / 3, &baker::g_TemporalArena);
-		s_TemporalMesh.UVs = baker::g_TemporalArena.allocate<baker::Vec2Array>(uvs->get_size() / 2, &baker::g_TemporalArena);
+		baker::S32Array* indices = s_S32ArrayStack[s32ArraysCount - 1];
+		baker::Vec3Array* meshPos = baker::g_TemporalArena.allocate<baker::Vec3Array>(positions->get_size() / 3, &baker::g_TemporalArena);
+		baker::Vec3Array* meshNormal = baker::g_TemporalArena.allocate<baker::Vec3Array>(normals->get_size() / 3, &baker::g_TemporalArena);
+		baker::Vec2Array* meshUV = baker::g_TemporalArena.allocate<baker::Vec2Array>(uvs->get_size() / 2, &baker::g_TemporalArena);
+		baker::S32Array* meshIndex = baker::g_TemporalArena.allocate<baker::S32Array>(indices->get_size(), &baker::g_TemporalArena);
 		for (u32 i = 0; i < uvs->get_size() / 2; i++)
 		{
-			s_TemporalMesh.UVs->push_back(floral::vec2f(uvs->at(i * 2), uvs->at(i * 2 + 1)));
+			meshUV->push_back(floral::vec2f(uvs->at(i * 2), uvs->at(i * 2 + 1)));
 		}
 		for (u32 i = 0; i < normals->get_size() / 3; i++)
 		{
-			s_TemporalMesh.Normals->push_back(floral::vec3f(normals->at(i * 3), normals->at(i * 3 + 1), normals->at(i * 3 + 2)));
+			meshNormal->push_back(floral::vec3f(normals->at(i * 3), normals->at(i * 3 + 1), normals->at(i * 3 + 2)));
 		}
 		for (u32 i = 0; i < positions->get_size() / 3; i++)
 		{
-			s_TemporalMesh.Positions->push_back(floral::vec3f(positions->at(i * 3), positions->at(i * 3 + 1), positions->at(i * 3 + 2)));
+			meshPos->push_back(floral::vec3f(positions->at(i * 3), positions->at(i * 3 + 1), positions->at(i * 3 + 2)));
 		}
-		s_Callbacks.OnNewMesh(*s_TemporalMesh.Positions, *s_TemporalMesh.Normals, *s_TemporalMesh.UVs);
+		for (u32 i = 0; i < indices->get_size(); i++)
+		{
+			meshIndex->push_back(indices->at(i));
+		}
+		s_Callbacks.OnNewMesh(*meshIndex, *meshPos, *meshNormal, *meshUV);
 	}
 #line 1516 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
@@ -1549,24 +1549,42 @@ yyreduce:
 #line 1550 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 47:
-#line 289 "pbrtv3.y" /* yacc.c:1648  */
+  case 43:
+#line 281 "pbrtv3.y" /* yacc.c:1648  */
     {
-		s_TmpFloat = (yyvsp[0].floatValue);
+		s_CurrentS32Array->push_back((yyvsp[0].intValue));
 	}
 #line 1558 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
+  case 44:
+#line 285 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		s_CurrentS32Array = baker::g_TemporalArena.allocate<baker::S32Array>(256u, &baker::g_TemporalArena);
+		s_S32ArrayStack.push_back(s_CurrentS32Array);
+		s_CurrentS32Array->push_back((yyvsp[0].intValue));
+	}
+#line 1568 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 47:
+#line 297 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		s_TmpFloat = (yyvsp[0].floatValue);
+	}
+#line 1576 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
   case 48:
-#line 293 "pbrtv3.y" /* yacc.c:1648  */
+#line 301 "pbrtv3.y" /* yacc.c:1648  */
     {
 		s_TmpFloat = (f32)(yyvsp[0].intValue);
 	}
-#line 1566 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1584 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
 
-#line 1570 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1588 "pbrtv3.tab.cpp" /* yacc.c:1648  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1794,7 +1812,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 297 "pbrtv3.y" /* yacc.c:1907  */
+#line 305 "pbrtv3.y" /* yacc.c:1907  */
 
 
 void yyerror(const char* i_errorStr)

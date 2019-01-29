@@ -77,7 +77,7 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 37 "pbrtv3.y" /* yacc.c:1910  */
+#line 30 "pbrtv3.y" /* yacc.c:1910  */
 
 	float										floatValue;
 	int											intValue;

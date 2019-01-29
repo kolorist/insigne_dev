@@ -19,13 +19,6 @@ void reset_array_stacks();
 
 static baker::pbrt::SceneCreationCallbacks		s_Callbacks;
 
-struct TemporalMesh
-{
-	baker::Vec3Array*							Positions;
-	baker::Vec3Array*							Normals;
-	baker::Vec2Array*							UVs;
-};
-static TemporalMesh								s_TemporalMesh;
 static floral::inplace_array<baker::F32Array*, 4u>	s_F32ArrayStack;
 static floral::inplace_array<baker::S32Array*, 4u>	s_S32ArrayStack;
 static baker::F32Array*							s_CurrentF32Array;
@@ -212,25 +205,32 @@ shape:
 	{
 		// shape
 		s32 f32ArraysCount = s_F32ArrayStack.get_size();
+		s32 s32ArraysCount = s_S32ArrayStack.get_size();
 		baker::F32Array* uvs = s_F32ArrayStack[f32ArraysCount - 1];
 		baker::F32Array* normals = s_F32ArrayStack[f32ArraysCount - 2];
 		baker::F32Array* positions = s_F32ArrayStack[f32ArraysCount - 3];
-		s_TemporalMesh.Positions = baker::g_TemporalArena.allocate<baker::Vec3Array>(positions->get_size() / 3, &baker::g_TemporalArena);
-		s_TemporalMesh.Normals = baker::g_TemporalArena.allocate<baker::Vec3Array>(normals->get_size() / 3, &baker::g_TemporalArena);
-		s_TemporalMesh.UVs = baker::g_TemporalArena.allocate<baker::Vec2Array>(uvs->get_size() / 2, &baker::g_TemporalArena);
+		baker::S32Array* indices = s_S32ArrayStack[s32ArraysCount - 1];
+		baker::Vec3Array* meshPos = baker::g_TemporalArena.allocate<baker::Vec3Array>(positions->get_size() / 3, &baker::g_TemporalArena);
+		baker::Vec3Array* meshNormal = baker::g_TemporalArena.allocate<baker::Vec3Array>(normals->get_size() / 3, &baker::g_TemporalArena);
+		baker::Vec2Array* meshUV = baker::g_TemporalArena.allocate<baker::Vec2Array>(uvs->get_size() / 2, &baker::g_TemporalArena);
+		baker::S32Array* meshIndex = baker::g_TemporalArena.allocate<baker::S32Array>(indices->get_size(), &baker::g_TemporalArena);
 		for (u32 i = 0; i < uvs->get_size() / 2; i++)
 		{
-			s_TemporalMesh.UVs->push_back(floral::vec2f(uvs->at(i * 2), uvs->at(i * 2 + 1)));
+			meshUV->push_back(floral::vec2f(uvs->at(i * 2), uvs->at(i * 2 + 1)));
 		}
 		for (u32 i = 0; i < normals->get_size() / 3; i++)
 		{
-			s_TemporalMesh.Normals->push_back(floral::vec3f(normals->at(i * 3), normals->at(i * 3 + 1), normals->at(i * 3 + 2)));
+			meshNormal->push_back(floral::vec3f(normals->at(i * 3), normals->at(i * 3 + 1), normals->at(i * 3 + 2)));
 		}
 		for (u32 i = 0; i < positions->get_size() / 3; i++)
 		{
-			s_TemporalMesh.Positions->push_back(floral::vec3f(positions->at(i * 3), positions->at(i * 3 + 1), positions->at(i * 3 + 2)));
+			meshPos->push_back(floral::vec3f(positions->at(i * 3), positions->at(i * 3 + 1), positions->at(i * 3 + 2)));
 		}
-		s_Callbacks.OnNewMesh(*s_TemporalMesh.Positions, *s_TemporalMesh.Normals, *s_TemporalMesh.UVs);
+		for (u32 i = 0; i < indices->get_size(); i++)
+		{
+			meshIndex->push_back(indices->at(i));
+		}
+		s_Callbacks.OnNewMesh(*meshIndex, *meshPos, *meshNormal, *meshUV);
 	}
 
 shape_begin:
@@ -278,7 +278,15 @@ float_data_array:
 
 int_data_array:
 	int_data_array INT_VALUE
+	{
+		s_CurrentS32Array->push_back($2);
+	}
 	| INT_VALUE
+	{
+		s_CurrentS32Array = baker::g_TemporalArena.allocate<baker::S32Array>(256u, &baker::g_TemporalArena);
+		s_S32ArrayStack.push_back(s_CurrentS32Array);
+		s_CurrentS32Array->push_back($1);
+	}
 
 string_data_array:
 	string_data_array STRING_VALUE
