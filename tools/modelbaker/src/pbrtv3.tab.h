@@ -77,11 +77,11 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 30 "pbrtv3.y" /* yacc.c:1910  */
+#line 32 "pbrtv3.y" /* yacc.c:1910  */
 
-	float										floatValue;
-	int											intValue;
-	char*										bracketStringValue;
+	f32											floatValue;
+	s32											intValue;
+	cstr										bracketStringValue;
 
 #line 87 "pbrtv3.tab.h" /* yacc.c:1910  */
 };

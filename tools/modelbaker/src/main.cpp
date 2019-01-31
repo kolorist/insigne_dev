@@ -8,6 +8,7 @@
 #include "CBObjDefinitions.h"
 
 #include "CBObjLoader.h"
+#include "PlyLoader.h"
 
 using namespace baker;
 
@@ -77,6 +78,11 @@ void OnNewMesh(const baker::S32Array& i_indices, const baker::Vec3Array& i_posit
 	s_MeshesCount++;
 }
 
+void OnNewPlyMesh(const_cstr i_plyFileName)
+{
+	CLOVER_INFO("ply file: %s", i_plyFileName);
+}
+
 int main(int argc, char** argv)
 {
 	// we have to call it ourself as we do not have calyx here
@@ -99,6 +105,7 @@ int main(int argc, char** argv)
 
 	baker::pbrt::SceneCreationCallbacks callbacks;
 	callbacks.OnNewMesh.bind<&OnNewMesh>();
+	callbacks.OnNewPlyMesh.bind<&OnNewPlyMesh>();
 	s_MeshesCount = 0;
 
 	yylex_pbrtv3(buffer, callbacks);
@@ -110,6 +117,12 @@ int main(int argc, char** argv)
 		floral::fixed_array<floral::vec3f, LinearAllocator> arr(128, &g_PersistanceAllocator);
 		loader.ExtractPositionData(0, arr);
 		CLOVER_INFO("test done");
+	}
+
+	{
+		g_TemporalArena.free_all();
+		cb::PlyLoader<FreelistArena> loader(&g_TemporalArena);
+		loader.LoadFromFile(floral::path("mesh1.ply"));
 	}
 
 	return 0;

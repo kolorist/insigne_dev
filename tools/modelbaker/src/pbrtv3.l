@@ -62,8 +62,8 @@ AttributeEnd									{ return TK_END_ATTRIB; }
 
 AreaLightSource									{ return TK_AREA_LIGHT_SOURCE; }
 
-{float_number}									{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
-{float_number}"e"{int_number}					{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
+{float_number}									{ yylval.floatValue = (f32)atof(yytext); return FLOAT_VALUE; }
+{float_number}"e"{int_number}					{ yylval.floatValue = (f32)atof(yytext); return FLOAT_VALUE; }
 {int_number}									{ yylval.intValue = atoi(yytext); return INT_VALUE; }
 {any_bracket_string}							{ yylval.bracketStringValue = strdup(yytext); return STRING_VALUE; }
 

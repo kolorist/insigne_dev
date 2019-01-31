@@ -21,16 +21,18 @@ static baker::pbrt::SceneCreationCallbacks		s_Callbacks;
 
 static floral::inplace_array<baker::F32Array*, 4u>	s_F32ArrayStack;
 static floral::inplace_array<baker::S32Array*, 4u>	s_S32ArrayStack;
+static floral::inplace_array<baker::StringArray*, 4u>	s_StringArrayStack;
 static baker::F32Array*							s_CurrentF32Array;
 static baker::S32Array*							s_CurrentS32Array;
+static baker::StringArray*						s_CurrentStringArray;
 static f32										s_TmpFloat;
 
 %}
 
 %union {
-	float										floatValue;
-	int											intValue;
-	char*										bracketStringValue;
+	f32											floatValue;
+	s32											intValue;
+	cstr										bracketStringValue;
 }
 
 %token TK_INTEGRATOR
@@ -58,6 +60,8 @@ static f32										s_TmpFloat;
 %token <floatValue>								FLOAT_VALUE
 %token <intValue>								INT_VALUE
 %token <bracketStringValue>						STRING_VALUE
+
+%right "key_float" "key_int" "key_string"
 
 %%
 pbrtv3:
@@ -183,7 +187,7 @@ attrib_elem:
 	| named_material_shape
 
 make_named_material:
-	make_named_material_begin key_string_data_region_pair key_float_data_region_pair
+	make_named_material_begin key_data_pairs
 	{
 		CLOVER_INFO("> make named material");
 	}
@@ -195,12 +199,20 @@ make_named_material_begin:
 	}
 
 named_material_shape:
-	TK_NAMED_MATERIAL STRING_VALUE shape
+	TK_NAMED_MATERIAL STRING_VALUE shape_list
 	{
 		CLOVER_INFO("> named material %s", $2);
 	}
 
+shape_list:
+	shape_list shape
+	| shape
+
 shape:
+	shape_inplace
+	| shape_ply
+
+shape_inplace:
 	shape_begin key_int_data_region_pair key_float_data_region_pair key_float_data_region_pair key_float_data_region_pair
 	{
 		// shape
@@ -233,6 +245,15 @@ shape:
 		s_Callbacks.OnNewMesh(*meshIndex, *meshPos, *meshNormal, *meshUV);
 	}
 
+shape_ply:
+	shape_begin key_string_data_region_pair
+	{
+		s32 stringArrayCount = s_StringArrayStack.get_size();
+		baker::StringArray* strings = s_StringArrayStack[stringArrayCount - 1];
+
+		s_Callbacks.OnNewPlyMesh(strings->at(strings->get_size() - 1));
+	}
+
 shape_begin:
 	TK_SHAPE STRING_VALUE
 	{
@@ -246,6 +267,11 @@ area_light_source:
 	}
 
 /*---------------------------------------------*/
+key_data_pairs:
+	key_data_pairs key_float_data_region_pair	%prec "key_float"
+	| key_data_pairs key_int_data_region_pair	%prec "key_int"
+	| key_data_pairs key_string_data_region_pair	%prec "key_string"
+
 key_float_data_region_pair:
 	STRING_VALUE float_data_region
 
@@ -290,7 +316,19 @@ int_data_array:
 
 string_data_array:
 	string_data_array STRING_VALUE
+	{
+		cstr tmpStr = (cstr)baker::g_TemporalArena.allocate(256);
+		strcpy(tmpStr, $2);
+		s_CurrentStringArray->push_back(tmpStr);
+	}
 	| STRING_VALUE
+	{
+		s_CurrentStringArray = baker::g_TemporalArena.allocate<baker::StringArray>(32u, &baker::g_TemporalArena);
+		s_StringArrayStack.push_back(s_CurrentStringArray);
+		cstr tmpStr = (cstr)baker::g_TemporalArena.allocate(256);
+		strcpy(tmpStr, $1);
+		s_CurrentStringArray->push_back(tmpStr);
+	}
 
 number_value:
 	FLOAT_VALUE

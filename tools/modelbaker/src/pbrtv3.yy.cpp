@@ -926,12 +926,12 @@ YY_RULE_SETUP
 case 19:
 YY_RULE_SETUP
 #line 65 "pbrtv3.l"
-{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
+{ yylval.floatValue = (f32)atof(yytext); return FLOAT_VALUE; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
 #line 66 "pbrtv3.l"
-{ yylval.floatValue = atof(yytext); return FLOAT_VALUE; }
+{ yylval.floatValue = (f32)atof(yytext); return FLOAT_VALUE; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
