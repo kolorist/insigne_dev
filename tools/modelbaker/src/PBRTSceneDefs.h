@@ -27,6 +27,11 @@ struct SceneCreationCallbacks
 	floral::simple_callback<
 		void,
 		const_cstr /* ply file name */>			OnNewPlyMesh;
+	floral::simple_callback<
+		void,
+		const floral::mat4x4f&>					OnPushTransform;
+	floral::simple_callback<
+		void>									OnPopTransform;
 };
 
 }

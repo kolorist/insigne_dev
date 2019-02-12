@@ -1,4 +1,5 @@
 #include <clover.h>
+#include "CBObjDefinitions.h"
 
 namespace cb
 {
@@ -99,6 +100,43 @@ void PlyLoader<TAllocator>::LoadFromFile(const floral::path& i_path)
 		}
 	}
 	FLORAL_ASSERT(m_DataStream.is_eos());
+}
+
+template <class TAllocator>
+void PlyLoader<TAllocator>::ConvertToCBOBJ(const_cstr i_filePath)
+{
+	FILE* outFile;
+	outFile = fopen(i_filePath, "wb");
+	cb::ModelDataHeader header;
+	memset(&header, 0, sizeof(cb::ModelDataHeader));
+
+	header.Version = 1u;
+	header.LODsCount = 1;
+
+	fwrite(&header, sizeof(cb::ModelDataHeader), 1, outFile);
+
+	cb::ModelLODInfo lodInfo;
+	lodInfo.LODIndex = 0;
+	lodInfo.VertexCount = m_Positions->get_size();
+	lodInfo.IndexCount = m_Indices->get_size();
+	lodInfo.OffsetToIndexData = 0;
+	lodInfo.OffsetToVertexData = 0;
+	fwrite(&lodInfo, sizeof(cb::ModelLODInfo), 1, outFile);
+
+	// write meshdata
+	header.IndexOffset = ftell(outFile);
+	fwrite(&(*m_Indices)[0], sizeof(s32), m_Indices->get_size(), outFile);
+	header.PositionOffset = ftell(outFile);
+	fwrite(&(*m_Positions)[0], sizeof(floral::vec3f), m_Positions->get_size(), outFile);
+	header.NormalOffsets[0] = ftell(outFile);
+	fwrite(&(*m_Normals)[0], sizeof(floral::vec3f), m_Normals->get_size(), outFile);
+	header.TexCoordOffsets[0] = ftell(outFile);
+	fwrite(&(*m_UVs)[0], sizeof(floral::vec2f), m_UVs->get_size(), outFile);
+
+	fseek(outFile, 0, SEEK_SET);
+	fwrite(&header, sizeof(cb::ModelDataHeader), 1, outFile);
+
+	fclose(outFile);
 }
 
 }

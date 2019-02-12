@@ -76,17 +76,10 @@ void yyerror(const char* i_errorStr);
 void reset_array_stacks();
 
 static baker::pbrt::SceneCreationCallbacks		s_Callbacks;
-
-static floral::inplace_array<baker::F32Array*, 4u>	s_F32ArrayStack;
-static floral::inplace_array<baker::S32Array*, 4u>	s_S32ArrayStack;
-static floral::inplace_array<baker::StringArray*, 4u>	s_StringArrayStack;
-static baker::F32Array*							s_CurrentF32Array;
-static baker::S32Array*							s_CurrentS32Array;
-static baker::StringArray*						s_CurrentStringArray;
-static f32										s_TmpFloat;
+static baker::F32Array*							s_F32Array;
 
 
-#line 90 "pbrtv3.tab.cpp" /* yacc.c:339  */
+#line 83 "pbrtv3.tab.cpp" /* yacc.c:339  */
 
 # ifndef YY_NULLPTR
 #  if defined __cplusplus && 201103L <= __cplusplus
@@ -119,32 +112,27 @@ extern int yydebug;
 #line 1 "pbrtv3.y" /* yacc.c:355  */
 
 
-#line 123 "pbrtv3.tab.cpp" /* yacc.c:355  */
+#line 116 "pbrtv3.tab.cpp" /* yacc.c:355  */
 
 /* Token type.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    TK_INTEGRATOR = 258,
-    TK_TRANSFORM = 259,
-    TK_SAMPLER = 260,
-    TK_PIXEL_FILTER = 261,
-    TK_FILM = 262,
-    TK_CAMERA = 263,
-    TK_BEGIN_WORLD = 264,
-    TK_END_WORLD = 265,
-    TK_MAKE_NAMED_MATERIAL = 266,
-    TK_NAMED_MATERIAL = 267,
-    TK_SHAPE = 268,
-    TK_BEGIN_DATA = 269,
-    TK_END_DATA = 270,
-    TK_BEGIN_ATTRIB = 271,
-    TK_END_ATTRIB = 272,
-    TK_AREA_LIGHT_SOURCE = 273,
-    FLOAT_VALUE = 274,
-    INT_VALUE = 275,
-    STRING_VALUE = 276
+    TK_TRANSFORM = 258,
+    TK_CAMERA = 259,
+    TK_CAMERA_PERSPECTIVE = 260,
+    TK_CAMERA_FOV = 261,
+    TK_BEGIN_WORLD = 262,
+    TK_END_WORLD = 263,
+    TK_BEGIN_TRANSFORM = 264,
+    TK_END_TRANSFORM = 265,
+    TK_SHAPE = 266,
+    TK_PLYMESH = 267,
+    TK_BEGIN_DATA = 268,
+    TK_END_DATA = 269,
+    FLOAT_VALUE = 270,
+    STRING_VALUE = 271
   };
 #endif
 
@@ -153,13 +141,12 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 32 "pbrtv3.y" /* yacc.c:355  */
+#line 25 "pbrtv3.y" /* yacc.c:355  */
 
 	f32											floatValue;
-	s32											intValue;
 	cstr										bracketStringValue;
 
-#line 163 "pbrtv3.tab.cpp" /* yacc.c:355  */
+#line 150 "pbrtv3.tab.cpp" /* yacc.c:355  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -176,13 +163,13 @@ int yyparse (void);
 
 void yyparse_pbrtv3(const baker::pbrt::SceneCreationCallbacks& i_callbacks);
 
-#line 180 "pbrtv3.tab.cpp" /* yacc.c:355  */
+#line 167 "pbrtv3.tab.cpp" /* yacc.c:355  */
 
 #endif /* !YY_YY_PBRTV3_TAB_H_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
-#line 186 "pbrtv3.tab.cpp" /* yacc.c:358  */
+#line 173 "pbrtv3.tab.cpp" /* yacc.c:358  */
 
 #ifdef short
 # undef short
@@ -422,23 +409,23 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  6
+#define YYFINAL  5
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   78
+#define YYLAST   27
 
 /* YYNTOKENS -- Number of terminals.  */
-#define YYNTOKENS  25
+#define YYNTOKENS  17
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  40
+#define YYNNTS  18
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  50
+#define YYNRULES  22
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  102
+#define YYNSTATES  39
 
 /* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
    by yylex, with out-of-bounds checking.  */
 #define YYUNDEFTOK  2
-#define YYMAXUTOK   279
+#define YYMAXUTOK   271
 
 #define YYTRANSLATE(YYX)                                                \
   ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
@@ -474,19 +461,16 @@ static const yytype_uint8 yytranslate[] =
        2,     2,     2,     2,     2,     2,     2,     2,     2,     2,
        2,     2,     2,     2,     2,     2,     1,     2,     3,     4,
        5,     6,     7,     8,     9,    10,    11,    12,    13,    14,
-      15,    16,    17,    18,    19,    20,    21,    22,    23,    24
+      15,    16
 };
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint16 yyrline[] =
+static const yytype_uint8 yyrline[] =
 {
-       0,    68,    68,    72,    78,    86,    92,   100,   106,   114,
-     119,   124,   131,   136,   141,   147,   152,   157,   161,   167,
-     168,   172,   173,   176,   182,   183,   186,   187,   202,   208,
-     209,   212,   213,   216,   249,   258,   264,   276,   279,   282,
-     285,   288,   291,   294,   298,   306,   310,   318,   324,   334,
-     338
+       0,    53,    53,    57,    68,    76,    81,    86,    94,   100,
+     101,   104,   105,   108,   115,   121,   122,   125,   128,   134,
+     140,   143,   147
 };
 #endif
 
@@ -495,24 +479,14 @@ static const yytype_uint16 yyrline[] =
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "$end", "error", "$undefined", "TK_INTEGRATOR", "TK_TRANSFORM",
-  "TK_SAMPLER", "TK_PIXEL_FILTER", "TK_FILM", "TK_CAMERA",
-  "TK_BEGIN_WORLD", "TK_END_WORLD", "TK_MAKE_NAMED_MATERIAL",
-  "TK_NAMED_MATERIAL", "TK_SHAPE", "TK_BEGIN_DATA", "TK_END_DATA",
-  "TK_BEGIN_ATTRIB", "TK_END_ATTRIB", "TK_AREA_LIGHT_SOURCE",
-  "FLOAT_VALUE", "INT_VALUE", "STRING_VALUE", "\"key_float\"",
-  "\"key_int\"", "\"key_string\"", "$accept", "pbrtv3", "integrator",
-  "integrator_begin", "transform", "transform_begin", "sampler",
-  "sampler_begin", "pixel_filter", "pixel_filter_begin",
-  "pixel_filter_data", "film", "film_begin", "film_data", "camera",
-  "camera_begin", "camera_data", "world", "world_body", "world_body_elem",
-  "attrib", "attrib_body", "attrib_elem", "named_material_shape",
-  "shape_list", "shape", "shape_inplace", "shape_ply", "shape_begin",
-  "area_light_source", "key_float_data_region_pair",
-  "key_int_data_region_pair", "key_string_data_region_pair",
-  "float_data_region", "int_data_region", "string_data_region",
-  "float_data_array", "int_data_array", "string_data_array",
-  "number_value", YY_NULLPTR
+  "$end", "error", "$undefined", "TK_TRANSFORM", "TK_CAMERA",
+  "TK_CAMERA_PERSPECTIVE", "TK_CAMERA_FOV", "TK_BEGIN_WORLD",
+  "TK_END_WORLD", "TK_BEGIN_TRANSFORM", "TK_END_TRANSFORM", "TK_SHAPE",
+  "TK_PLYMESH", "TK_BEGIN_DATA", "TK_END_DATA", "FLOAT_VALUE",
+  "STRING_VALUE", "$accept", "pbrtv3", "transform", "transform_begin",
+  "camera", "camera_begin", "camera_data", "world", "world_body",
+  "world_body_elem", "transform_region", "transform_reg_begin", "shapes",
+  "shape", "shape_ply", "shape_begin", "floats_region", "floats", YY_NULLPTR
 };
 #endif
 
@@ -522,15 +496,14 @@ static const char *const yytname[] =
 static const yytype_uint16 yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
-     265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
-     275,   276,   277,   278,   279
+     265,   266,   267,   268,   269,   270,   271
 };
 # endif
 
-#define YYPACT_NINF -84
+#define YYPACT_NINF -28
 
 #define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-84)))
+  (!!((Yystate) == (-28)))
 
 #define YYTABLE_NINF -1
 
@@ -541,17 +514,10 @@ static const yytype_uint16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-      29,   -16,    34,    31,    22,    16,   -84,   -84,    33,    25,
-      20,   -84,   -84,    21,    35,    22,   -12,   -84,   -84,     6,
-      23,    24,    36,    26,   -84,   -84,   -84,     8,   -84,   -84,
-     -84,   -84,   -84,    27,    38,    28,    25,   -84,   -84,   -84,
-     -84,   -84,    41,    30,    25,   -84,    32,    17,   -84,    37,
-     -84,    39,    25,    40,     0,    -6,   -84,   -84,   -84,    25,
-      25,   -84,    42,    43,     2,   -84,   -84,   -84,   -84,   -84,
-     -84,    44,    45,    42,   -84,   -84,   -84,    46,    47,   -84,
-     -84,    48,   -84,   -84,    49,    47,   -84,    25,   -84,    50,
-     -84,    10,   -84,   -84,    47,   -84,   -84,     1,    47,   -84,
-     -84,   -84
+       3,   -28,    12,     9,     1,   -28,    10,    11,    13,     2,
+     -28,   -28,    -7,   -28,     5,   -28,   -28,    -6,   -28,   -28,
+      -8,   -28,   -28,     3,   -28,   -28,     4,   -28,   -28,   -28,
+     -28,   -28,    14,     6,     0,   -28,   -28,   -28,   -28
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -559,35 +525,24 @@ static const yytype_int8 yypact[] =
      means the default is an error.  */
 static const yytype_uint8 yydefact[] =
 {
-       0,     0,     0,     0,     0,     0,     1,     6,     0,     0,
-       0,     3,     4,     0,     0,     0,     0,     5,    46,     0,
-       0,     0,     0,     0,     7,    49,    50,     0,    44,    41,
-      45,     8,    10,     0,     0,     0,     0,     9,    40,    43,
-      13,    16,     0,     0,     0,    12,     0,     0,     2,     0,
-      15,     0,     0,     0,     0,     0,    20,    22,    21,     0,
-       0,    11,     0,     0,     0,    25,    27,    26,    18,    19,
-      17,     0,     0,    28,    30,    31,    32,     0,     0,    23,
-      24,     0,    35,    29,     0,     0,    34,     0,    36,     0,
-      14,     0,    38,    39,     0,    37,    48,     0,     0,    42,
-      47,    33
+       0,     4,     0,     0,     0,     1,     0,     0,     0,     0,
+       3,     6,     0,     2,     0,     5,    22,     0,    14,    19,
+       0,    10,    12,     0,    11,    17,     0,     7,    20,    21,
+       8,     9,     0,     0,     0,    16,    18,    13,    15
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-     -84,   -84,   -84,   -84,   -84,   -84,   -84,   -84,   -84,   -84,
-     -84,   -84,   -84,   -84,   -84,   -84,   -84,   -84,   -84,    -1,
-     -84,   -84,    -8,   -51,   -84,   -14,   -84,   -84,   -84,   -84,
-     -83,   -84,   -84,   -35,   -15,   -27,   -84,   -84,   -84,    51
+     -28,   -28,    -2,   -28,   -28,   -28,   -28,   -28,   -28,     7,
+     -28,   -28,   -28,   -27,   -28,   -28,   -28,   -28
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     2,     3,     4,     8,     9,    14,    15,    22,    23,
-      37,    34,    35,    45,    42,    43,    50,    48,    55,    56,
-      57,    64,    65,    58,    73,    74,    75,    76,    77,    67,
-      88,    85,    86,    17,    11,    90,    27,    19,    97,    28
+      -1,     2,     3,     4,     7,     8,    15,    13,    20,    21,
+      22,    23,    34,    24,    25,    26,    10,    17
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -595,65 +550,42 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_uint8 yytable[] =
 {
-      24,    46,    94,    66,    68,     5,    53,    25,    26,    51,
-      54,    98,    53,    66,    53,   101,    99,    61,    63,    79,
-      63,    29,   100,    38,    70,    71,    30,    25,    26,    53,
-      18,    96,     1,    54,     6,     7,    10,    12,    13,    16,
-      18,    21,    20,    33,    31,    32,    41,    36,    40,    44,
-      47,    49,    95,    52,    69,    72,    80,    93,    59,    83,
-      60,    62,    89,    91,    78,    81,    82,    84,    87,    92,
-       0,    96,     0,     0,     0,     0,     0,     0,    39
+      30,    18,    18,    19,    19,    35,     1,    38,    28,    29,
+      37,    19,     5,     6,     9,    11,    33,    16,    12,    14,
+      27,    32,    36,     0,     0,    19,     0,    31
 };
 
 static const yytype_int8 yycheck[] =
 {
-      15,    36,    85,    54,    10,    21,    12,    19,    20,    44,
-      16,    94,    12,    64,    12,    98,    15,    52,    18,    17,
-      18,    15,    21,    15,    59,    60,    20,    19,    20,    12,
-      20,    21,     3,    16,     0,     4,    14,    21,     5,    14,
-      20,     6,    21,     7,    21,    21,     8,    21,    21,    21,
-       9,    21,    87,    21,    55,    13,    64,    84,    21,    73,
-      21,    21,    14,    14,    21,    21,    21,    21,    21,    84,
-      -1,    21,    -1,    -1,    -1,    -1,    -1,    -1,    27
+       8,     9,     9,    11,    11,    32,     3,    34,    14,    15,
+      10,    11,     0,     4,    13,     5,    12,    15,     7,     6,
+      15,    23,    16,    -1,    -1,    11,    -1,    20
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_uint8 yystos[] =
 {
-       0,     3,    26,    27,    28,    21,     0,     4,    29,    30,
-      14,    59,    21,     5,    31,    32,    14,    58,    20,    62,
-      21,     6,    33,    34,    59,    19,    20,    61,    64,    15,
-      20,    21,    21,     7,    36,    37,    21,    35,    15,    64,
-      21,     8,    39,    40,    21,    38,    58,     9,    42,    21,
-      41,    58,    21,    12,    16,    43,    44,    45,    48,    21,
-      21,    58,    21,    18,    46,    47,    48,    54,    10,    44,
-      58,    58,    13,    49,    50,    51,    52,    53,    21,    17,
-      47,    21,    21,    50,    21,    56,    57,    21,    55,    14,
-      60,    14,    59,    60,    55,    58,    21,    63,    55,    15,
-      21,    55
+       0,     3,    18,    19,    20,     0,     4,    21,    22,    13,
+      33,     5,     7,    24,     6,    23,    15,    34,     9,    11,
+      25,    26,    27,    28,    30,    31,    32,    15,    14,    15,
+       8,    26,    19,    12,    29,    30,    16,    10,    30
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
 static const yytype_uint8 yyr1[] =
 {
-       0,    25,    26,    27,    28,    29,    30,    31,    32,    33,
-      34,    35,    36,    37,    38,    39,    40,    41,    42,    43,
-      43,    44,    44,    45,    46,    46,    47,    47,    48,    49,
-      49,    50,    50,    51,    52,    53,    54,    55,    56,    57,
-      58,    59,    60,    61,    61,    62,    62,    63,    63,    64,
-      64
+       0,    17,    18,    19,    20,    21,    22,    23,    24,    25,
+      25,    26,    26,    27,    28,    29,    29,    30,    31,    32,
+      33,    34,    34
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
 static const yytype_uint8 yyr2[] =
 {
-       0,     2,     7,     2,     3,     2,     1,     2,     3,     2,
-       2,     4,     2,     2,     6,     2,     1,     3,     3,     2,
-       1,     1,     1,     3,     2,     1,     1,     1,     3,     2,
-       1,     1,     1,     5,     2,     2,     3,     2,     2,     2,
-       3,     3,     3,     2,     1,     2,     1,     2,     1,     1,
-       1
+       0,     2,     3,     2,     1,     2,     2,     2,     3,     2,
+       1,     1,     1,     4,     1,     2,     1,     1,     3,     1,
+       3,     2,     1
 };
 
 
@@ -1331,281 +1263,109 @@ yyreduce:
   switch (yyn)
     {
         case 3:
-#line 73 "pbrtv3.y" /* yacc.c:1648  */
+#line 58 "pbrtv3.y" /* yacc.c:1648  */
     {
-		CLOVER_INFO("end integrator");
+		floral::vec4f col0 = floral::vec4f(s_F32Array->at(0), s_F32Array->at(4), s_F32Array->at(8), s_F32Array->at(12));
+		floral::vec4f col1 = floral::vec4f(s_F32Array->at(1), s_F32Array->at(5), s_F32Array->at(9), s_F32Array->at(13));
+		floral::vec4f col2 = floral::vec4f(s_F32Array->at(2), s_F32Array->at(6), s_F32Array->at(10), s_F32Array->at(14));
+		floral::vec4f col3 = floral::vec4f(s_F32Array->at(3), s_F32Array->at(7), s_F32Array->at(11), s_F32Array->at(15));
+		floral::mat4x4f m(col0, col1, col2, col3);
+		s_Callbacks.OnPushTransform(m);
 	}
-#line 1339 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1276 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
   case 4:
-#line 79 "pbrtv3.y" /* yacc.c:1648  */
+#line 69 "pbrtv3.y" /* yacc.c:1648  */
     {
 		reset_array_stacks();
-		CLOVER_INFO("begin integrator - %s - %s", (yyvsp[-1].bracketStringValue), (yyvsp[0].bracketStringValue));
+	}
+#line 1284 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 5:
+#line 77 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("end camera");
+	}
+#line 1292 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 6:
+#line 82 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("begin perp camera");
+	}
+#line 1300 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 7:
+#line 87 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("fov: %f", (yyvsp[0].floatValue));
+	}
+#line 1308 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 8:
+#line 95 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("end world");
+	}
+#line 1316 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 13:
+#line 109 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("end transform region");
+		s_Callbacks.OnPopTransform();
+	}
+#line 1325 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 14:
+#line 116 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		CLOVER_INFO("begin transform region");
+	}
+#line 1333 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 18:
+#line 129 "pbrtv3.y" /* yacc.c:1648  */
+    {
+		s_Callbacks.OnNewPlyMesh((yyvsp[0].bracketStringValue));
+	}
+#line 1341 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+    break;
+
+  case 19:
+#line 135 "pbrtv3.y" /* yacc.c:1648  */
+    {
 	}
 #line 1348 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 5:
-#line 87 "pbrtv3.y" /* yacc.c:1648  */
+  case 21:
+#line 144 "pbrtv3.y" /* yacc.c:1648  */
     {
-		CLOVER_INFO("end transform");
+		s_F32Array->push_back((yyvsp[0].floatValue));
 	}
 #line 1356 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 6:
-#line 93 "pbrtv3.y" /* yacc.c:1648  */
+  case 22:
+#line 148 "pbrtv3.y" /* yacc.c:1648  */
     {
-		reset_array_stacks();
-		CLOVER_INFO("begin transform");
+		s_F32Array = baker::g_TemporalArena.allocate<baker::F32Array>(256u, &baker::g_TemporalArena);
+		s_F32Array->push_back((yyvsp[0].floatValue));
 	}
 #line 1365 "pbrtv3.tab.cpp" /* yacc.c:1648  */
     break;
 
-  case 7:
-#line 101 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		CLOVER_INFO("end sampler");
-	}
-#line 1373 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
 
-  case 8:
-#line 107 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		reset_array_stacks();
-		CLOVER_INFO("begin sampler - %s - %s", (yyvsp[-1].bracketStringValue), (yyvsp[0].bracketStringValue));
-	}
-#line 1382 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 9:
-#line 115 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		CLOVER_INFO("end pixel filter");
-	}
-#line 1390 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 10:
-#line 120 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		reset_array_stacks();
-	}
-#line 1398 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 11:
-#line 125 "pbrtv3.y" /* yacc.c:1648  */
-    {
-
-	}
-#line 1406 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 12:
-#line 132 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		CLOVER_INFO("end film");
-	}
-#line 1414 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 13:
-#line 137 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		reset_array_stacks();
-	}
-#line 1422 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 14:
-#line 142 "pbrtv3.y" /* yacc.c:1648  */
-    {
-	}
-#line 1429 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 15:
-#line 148 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		CLOVER_INFO("end camera");
-	}
-#line 1437 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 16:
-#line 153 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		reset_array_stacks();
-	}
-#line 1445 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 18:
-#line 162 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		CLOVER_INFO("end world");
-	}
-#line 1453 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 23:
-#line 177 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		CLOVER_INFO("end attribute");
-	}
-#line 1461 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 28:
-#line 203 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		CLOVER_INFO("> named material %s", (yyvsp[-1].bracketStringValue));
-	}
-#line 1469 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 33:
-#line 217 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		// shape
-		s32 f32ArraysCount = s_F32ArrayStack.get_size();
-		s32 s32ArraysCount = s_S32ArrayStack.get_size();
-		baker::F32Array* uvs = s_F32ArrayStack[f32ArraysCount - 1];
-		baker::F32Array* normals = s_F32ArrayStack[f32ArraysCount - 2];
-		baker::F32Array* positions = s_F32ArrayStack[f32ArraysCount - 3];
-		baker::S32Array* indices = s_S32ArrayStack[s32ArraysCount - 1];
-		baker::Vec3Array* meshPos = baker::g_TemporalArena.allocate<baker::Vec3Array>(positions->get_size() / 3, &baker::g_TemporalArena);
-		baker::Vec3Array* meshNormal = baker::g_TemporalArena.allocate<baker::Vec3Array>(normals->get_size() / 3, &baker::g_TemporalArena);
-		baker::Vec2Array* meshUV = baker::g_TemporalArena.allocate<baker::Vec2Array>(uvs->get_size() / 2, &baker::g_TemporalArena);
-		baker::S32Array* meshIndex = baker::g_TemporalArena.allocate<baker::S32Array>(indices->get_size(), &baker::g_TemporalArena);
-		for (u32 i = 0; i < uvs->get_size() / 2; i++)
-		{
-			meshUV->push_back(floral::vec2f(uvs->at(i * 2), uvs->at(i * 2 + 1)));
-		}
-		for (u32 i = 0; i < normals->get_size() / 3; i++)
-		{
-			meshNormal->push_back(floral::vec3f(normals->at(i * 3), normals->at(i * 3 + 1), normals->at(i * 3 + 2)));
-		}
-		for (u32 i = 0; i < positions->get_size() / 3; i++)
-		{
-			meshPos->push_back(floral::vec3f(positions->at(i * 3), positions->at(i * 3 + 1), positions->at(i * 3 + 2)));
-		}
-		for (u32 i = 0; i < indices->get_size(); i++)
-		{
-			meshIndex->push_back(indices->at(i));
-		}
-		s_Callbacks.OnNewMesh(*meshIndex, *meshPos, *meshNormal, *meshUV);
-	}
-#line 1504 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 34:
-#line 250 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		s32 stringArrayCount = s_StringArrayStack.get_size();
-		baker::StringArray* strings = s_StringArrayStack[stringArrayCount - 1];
-
-		s_Callbacks.OnNewPlyMesh(strings->at(strings->get_size() - 1));
-	}
-#line 1515 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 35:
-#line 259 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		reset_array_stacks();
-	}
-#line 1523 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 36:
-#line 265 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		CLOVER_INFO("> area light source");
-	}
-#line 1531 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 43:
-#line 295 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		s_CurrentF32Array->push_back(s_TmpFloat);
-	}
-#line 1539 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 44:
-#line 299 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		s_CurrentF32Array = baker::g_TemporalArena.allocate<baker::F32Array>(256u, &baker::g_TemporalArena);
-		s_F32ArrayStack.push_back(s_CurrentF32Array);
-		s_CurrentF32Array->push_back(s_TmpFloat);
-	}
-#line 1549 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 45:
-#line 307 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		s_CurrentS32Array->push_back((yyvsp[0].intValue));
-	}
-#line 1557 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 46:
-#line 311 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		s_CurrentS32Array = baker::g_TemporalArena.allocate<baker::S32Array>(256u, &baker::g_TemporalArena);
-		s_S32ArrayStack.push_back(s_CurrentS32Array);
-		s_CurrentS32Array->push_back((yyvsp[0].intValue));
-	}
-#line 1567 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 47:
-#line 319 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		cstr tmpStr = (cstr)baker::g_TemporalArena.allocate(256);
-		strcpy(tmpStr, (yyvsp[0].bracketStringValue));
-		s_CurrentStringArray->push_back(tmpStr);
-	}
-#line 1577 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 48:
-#line 325 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		s_CurrentStringArray = baker::g_TemporalArena.allocate<baker::StringArray>(32u, &baker::g_TemporalArena);
-		s_StringArrayStack.push_back(s_CurrentStringArray);
-		cstr tmpStr = (cstr)baker::g_TemporalArena.allocate(256);
-		strcpy(tmpStr, (yyvsp[0].bracketStringValue));
-		s_CurrentStringArray->push_back(tmpStr);
-	}
-#line 1589 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 49:
-#line 335 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		s_TmpFloat = (yyvsp[0].floatValue);
-	}
-#line 1597 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-  case 50:
-#line 339 "pbrtv3.y" /* yacc.c:1648  */
-    {
-		s_TmpFloat = (f32)(yyvsp[0].intValue);
-	}
-#line 1605 "pbrtv3.tab.cpp" /* yacc.c:1648  */
-    break;
-
-
-#line 1609 "pbrtv3.tab.cpp" /* yacc.c:1648  */
+#line 1369 "pbrtv3.tab.cpp" /* yacc.c:1648  */
       default: break;
     }
   /* User semantic actions sometimes alter yychar, and that requires
@@ -1833,7 +1593,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 343 "pbrtv3.y" /* yacc.c:1907  */
+#line 152 "pbrtv3.y" /* yacc.c:1907  */
 
 
 void yyerror(const char* i_errorStr)
@@ -1843,8 +1603,6 @@ void yyerror(const char* i_errorStr)
 
 void reset_array_stacks()
 {
-	s_F32ArrayStack.empty();
-	s_S32ArrayStack.empty();
 	baker::g_TemporalArena.free_all();
 }
 

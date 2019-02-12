@@ -43,28 +43,24 @@ data_end \]
 {data_start}									{ return TK_BEGIN_DATA; }
 {data_end}										{ return TK_END_DATA; }
 
-Integrator										{ return TK_INTEGRATOR; }
 Transform										{ return TK_TRANSFORM; }
-Sampler											{ return TK_SAMPLER; }
-PixelFilter										{ return TK_PIXEL_FILTER; }
-Film											{ return TK_FILM; }
+
 Camera											{ return TK_CAMERA; }
+perspective										{ return TK_CAMERA_PERSPECTIVE; }
+fov												{ return TK_CAMERA_FOV; }
 
 WorldBegin										{ return TK_BEGIN_WORLD; }
 WorldEnd										{ return TK_END_WORLD; }
 
-MakeNamedMaterial								{ return TK_MAKE_NAMED_MATERIAL; }
-NamedMaterial									{ return TK_NAMED_MATERIAL; }
+TransformBegin									{ return TK_BEGIN_TRANSFORM; }
+TransformEnd									{ return TK_END_TRANSFORM; }
+
 Shape											{ return TK_SHAPE; }
-
-AttributeBegin									{ return TK_BEGIN_ATTRIB; }
-AttributeEnd									{ return TK_END_ATTRIB; }
-
-AreaLightSource									{ return TK_AREA_LIGHT_SOURCE; }
+plymesh											{ return TK_PLYMESH; }
 
 {float_number}									{ yylval.floatValue = (f32)atof(yytext); return FLOAT_VALUE; }
 {float_number}"e"{int_number}					{ yylval.floatValue = (f32)atof(yytext); return FLOAT_VALUE; }
-{int_number}									{ yylval.intValue = atoi(yytext); return INT_VALUE; }
+{int_number}									{ yylval.floatValue = (f32)atof(yytext); return FLOAT_VALUE; }
 {any_bracket_string}							{ yylval.bracketStringValue = strdup(yytext); return STRING_VALUE; }
 
 %%

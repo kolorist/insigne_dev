@@ -18,6 +18,7 @@ class PlyLoader
 		~PlyLoader();
 
 		void									LoadFromFile(const floral::path& i_path);
+		void									ConvertToCBOBJ(const_cstr i_filePath);
 
 	private:
 		floral::file_info						m_PlyFile;

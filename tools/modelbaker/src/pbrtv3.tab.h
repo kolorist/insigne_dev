@@ -50,25 +50,20 @@ extern int yydebug;
 # define YYTOKENTYPE
   enum yytokentype
   {
-    TK_INTEGRATOR = 258,
-    TK_TRANSFORM = 259,
-    TK_SAMPLER = 260,
-    TK_PIXEL_FILTER = 261,
-    TK_FILM = 262,
-    TK_CAMERA = 263,
-    TK_BEGIN_WORLD = 264,
-    TK_END_WORLD = 265,
-    TK_MAKE_NAMED_MATERIAL = 266,
-    TK_NAMED_MATERIAL = 267,
-    TK_SHAPE = 268,
-    TK_BEGIN_DATA = 269,
-    TK_END_DATA = 270,
-    TK_BEGIN_ATTRIB = 271,
-    TK_END_ATTRIB = 272,
-    TK_AREA_LIGHT_SOURCE = 273,
-    FLOAT_VALUE = 274,
-    INT_VALUE = 275,
-    STRING_VALUE = 276
+    TK_TRANSFORM = 258,
+    TK_CAMERA = 259,
+    TK_CAMERA_PERSPECTIVE = 260,
+    TK_CAMERA_FOV = 261,
+    TK_BEGIN_WORLD = 262,
+    TK_END_WORLD = 263,
+    TK_BEGIN_TRANSFORM = 264,
+    TK_END_TRANSFORM = 265,
+    TK_SHAPE = 266,
+    TK_PLYMESH = 267,
+    TK_BEGIN_DATA = 268,
+    TK_END_DATA = 269,
+    FLOAT_VALUE = 270,
+    STRING_VALUE = 271
   };
 #endif
 
@@ -77,13 +72,12 @@ extern int yydebug;
 
 union YYSTYPE
 {
-#line 32 "pbrtv3.y" /* yacc.c:1910  */
+#line 25 "pbrtv3.y" /* yacc.c:1910  */
 
 	f32											floatValue;
-	s32											intValue;
 	cstr										bracketStringValue;
 
-#line 87 "pbrtv3.tab.h" /* yacc.c:1910  */
+#line 81 "pbrtv3.tab.h" /* yacc.c:1910  */
 };
 
 typedef union YYSTYPE YYSTYPE;
@@ -100,6 +94,6 @@ int yyparse (void);
 
 void yyparse_pbrtv3(const baker::pbrt::SceneCreationCallbacks& i_callbacks);
 
-#line 104 "pbrtv3.tab.h" /* yacc.c:1910  */
+#line 98 "pbrtv3.tab.h" /* yacc.c:1910  */
 
 #endif /* !YY_YY_PBRTV3_TAB_H_INCLUDED  */
