@@ -19,13 +19,14 @@
 #include "Graphics/Tests/PlainQuad.h"
 #include "Graphics/Tests/SHBaking.h"
 #include "Graphics/Tests/FormFactorsValidating.h"
+#include "Graphics/Tests/CornelBox.h"
+#include "Graphics/Tests/CbFormats.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
 #include "Graphics/Tests/CubeMapTexture.h"
 #include "Graphics/Tests/VectorMath.h"
 #include "Graphics/Tests/GPUVectorMath.h"
-#include "Graphics/Tests/CornelBox.h"
 #include "Graphics/Tests/OmniShadow.h"
 #include "Graphics/Tests/SHMath.h"
 #include "Graphics/Tests/GlobalIllumination.h"
@@ -50,12 +51,13 @@ Application::Application(Controller* i_controller)
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHBaking>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<FormFactorsBaking>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<FormFactorsValidating>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<FormFactorsValidating>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<CbFormats>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();

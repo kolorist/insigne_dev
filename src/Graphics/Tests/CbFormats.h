@@ -10,10 +10,10 @@
 
 namespace stone {
 
-class CornelBox : public ITestSuite {
+class CbFormats : public ITestSuite {
 	public:
-		CornelBox();
-		~CornelBox();
+		CbFormats();
+		~CbFormats();
 
 		void									OnInitialize() override;
 		void									OnUpdate(const f32 i_deltaMs) override;
@@ -23,9 +23,6 @@ class CornelBox : public ITestSuite {
 		ICameraMotion*							GetCameraMotion() override { return nullptr; }
 
 	private:
-		floral::fixed_array<VertexPC, LinearAllocator>		m_Vertices;
-		floral::fixed_array<s32, LinearAllocator>			m_Indices;
-
 		struct SceneData {
 			floral::mat4x4f						XForm;
 			floral::mat4x4f						WVP;
@@ -33,9 +30,9 @@ class CornelBox : public ITestSuite {
 
 		SceneData								m_SceneData;
 
-		insigne::vb_handle_t					m_VB;
-		insigne::ib_handle_t					m_IB;
-		insigne::ub_handle_t					m_UB;
+		floral::fixed_array<insigne::vb_handle_t, LinearAllocator>	m_VBs;
+		floral::fixed_array<insigne::ib_handle_t, LinearAllocator>	m_IBs;
+
 		insigne::shader_handle_t				m_Shader;
 		insigne::material_desc_t				m_Material;
 
@@ -43,6 +40,7 @@ class CornelBox : public ITestSuite {
 		floral::camera_persp_t					m_CamProj;
 
 		LinearArena*							m_MemoryArena;
+		LinearArena*							m_PlyReaderArena;
 };
 
 }

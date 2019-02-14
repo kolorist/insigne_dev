@@ -6,6 +6,7 @@
 #include <insigne/ut_render.h>
 
 #include "Graphics/GeometryBuilder.h"
+#include "Graphics/CBObjLoader.h"
 
 namespace stone {
 
@@ -42,6 +43,7 @@ void main()
 
 CornelBox::CornelBox()
 {
+	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 }
 
 CornelBox::~CornelBox()
@@ -50,81 +52,29 @@ CornelBox::~CornelBox()
 
 void CornelBox::OnInitialize()
 {
-	m_Vertices.init(256u, &g_StreammingAllocator);
-	m_Indices.init(512u, &g_StreammingAllocator);
+	m_Vertices.init(4096u, &g_StreammingAllocator);
+	m_Indices.init(8192u, &g_StreammingAllocator);
 
 	{
-		// bottom
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, -1.0f, 0.0f);
-			Gen3DPlane_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 1.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
+		m_MemoryArena->free_all();
+		cb::ModelLoader<LinearArena> loader(m_MemoryArena);
+		loader.LoadFromFile(floral::path("gfx/go/models/demo/Mesh023.ply.cbobj"));
 
-		// top
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, 1.0f, 0.0f) *
-				floral::construct_quaternion_euler(180.0f, 0.0f, 0.0f).to_transform();
-			Gen3DPlane_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 1.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
+		m_Vertices.resize_ex(loader.GetVerticesCount(0));
+		m_Indices.resize_ex(loader.GetIndicesCount(0));
 
-		// right
+		loader.ExtractPositionData(0, sizeof(VertexPC), 0, &m_Vertices[0]);
+		loader.ExtractIndexData(0, sizeof(s32), 0, &m_Indices[0]);
+		for (u32 i = 0; i < m_Vertices.get_size(); i++)
 		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, 0.0f, -1.0f) *
-				floral::construct_quaternion_euler(90.0f, 0.0f, 0.0f).to_transform();
-			Gen3DPlane_Tris_PosColor(floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// left
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, 0.0f, 1.0f) *
-				floral::construct_quaternion_euler(-90.0f, 0.0f, 0.0f).to_transform();
-			Gen3DPlane_Tris_PosColor(floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// back
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(-1.0f, 0.0f, 0.0f) *
-				floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
-			Gen3DPlane_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 1.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// small box
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.0f, -0.6f, 0.45f) *
-				floral::construct_quaternion_euler(0.0f, 35.0f, 0.0f).to_transform() *
-				floral::construct_scaling3d(0.2f, 0.4f, 0.2f);
-			GenBox_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		// large box
-		if (0)
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.2f, -0.4f, -0.4f) *
-				floral::construct_quaternion_euler(0.0f, -15.0f, 0.0f).to_transform() *
-				floral::construct_scaling3d(0.3f, 0.6f, 0.3f);
-			GenBox_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
-		}
-
-		{
-			floral::mat4x4f m =
-				floral::construct_translation3d(0.2f, -0.4f, -0.4f) *
-				floral::construct_quaternion_euler(0.0f, -15.0f, 0.0f).to_transform() *
-				floral::construct_scaling3d(0.2f, 0.2f, 0.2f);
-			GenIcosphere_Tris_PosColor(floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f), m, m_Vertices, m_Indices);
+			m_Vertices[i].Color = floral::vec4f(1.0f);
 		}
 	}
 
 	{
 		insigne::vbdesc_t desc;
-		desc.region_size = SIZE_KB(64);
-		desc.stride = sizeof(DemoVertex);
+		desc.region_size = SIZE_KB(256);
+		desc.stride = sizeof(VertexPC);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -136,7 +86,7 @@ void CornelBox::OnInitialize()
 
 	{
 		insigne::ibdesc_t desc;
-		desc.region_size = SIZE_KB(16);
+		desc.region_size = SIZE_KB(128);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -198,7 +148,7 @@ void CornelBox::OnUpdate(const f32 i_deltaMs)
 void CornelBox::OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-	insigne::draw_surface<DemoSurface>(m_VB, m_IB, m_Material);
+	insigne::draw_surface<SurfacePC>(m_VB, m_IB, m_Material);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
