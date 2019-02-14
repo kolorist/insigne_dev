@@ -19,8 +19,11 @@ static baker::Vec3Array*						s_TemporalPositions;
 static baker::Vec3Array*						s_TemporalNormals;
 static baker::Vec2Array*						s_TemporalUVs;
 static FILE*									s_OutputFile;
+static FILE*									s_SceneFile;
 static s32										s_MeshesCount;
 static c8										s_SceneFolder[1024];
+
+static floral::fixed_array<floral::path, LinearAllocator>	s_MeshPaths;
 
 void OnNewMesh(const baker::S32Array& i_indices, const baker::Vec3Array& i_positions, const baker::Vec3Array& i_normals, const baker::Vec2Array& i_uvs)
 {
@@ -84,6 +87,7 @@ void OnNewPlyMesh(const_cstr i_plyFileName)
 	c8 tmpFileName[1024];
 	c8 fullFileName[1024];
 	c8 cbobjFileName[1024];
+	c8 cbobjRelFileName[1024];
 	strcpy(tmpFileName, &i_plyFileName[1]);
 	size len = strlen(tmpFileName);
 	tmpFileName[len - 1] = 0;
@@ -92,7 +96,10 @@ void OnNewPlyMesh(const_cstr i_plyFileName)
 	memset(cbobjFileName, 0, 1024);
 	sprintf(fullFileName, "%s/%s", s_SceneFolder, tmpFileName);
 	sprintf(cbobjFileName, "%s.cbobj", fullFileName);
+	sprintf(cbobjRelFileName, "%s.cbobj", tmpFileName);
 	CLOVER_INFO("ply file: %s -> %s", fullFileName, cbobjFileName);
+
+	s_MeshPaths.push_back(floral::path(cbobjRelFileName));
 
 	g_TemporalArena.free_all();
 	cb::PlyLoader<FreelistArena> loader(&g_TemporalArena);
@@ -103,6 +110,8 @@ void OnNewPlyMesh(const_cstr i_plyFileName)
 void OnPushTransform(const floral::mat4x4f& i_xform)
 {
 	CLOVER_INFO("push transform");
+	// this is the world transform
+	fwrite(&i_xform, sizeof(floral::mat4x4f), 1, s_SceneFile);
 }
 
 void OnPopTransform()
@@ -125,6 +134,10 @@ int main(int argc, char** argv)
 		return -1;
 	
 	strcpy(s_SceneFolder, argv[1]);
+	c8 cbScenePath[1024];
+	sprintf(cbScenePath, "%s/scene.cbscn", s_SceneFolder);
+	s_SceneFile = fopen(cbScenePath, "wb");
+	s_MeshPaths.init(2048u, &g_PersistanceAllocator);
 
 	baker::pbrt::SceneCreationCallbacks callbacks;
 	callbacks.OnNewMesh.bind<&OnNewMesh>();
@@ -146,6 +159,17 @@ int main(int argc, char** argv)
 		s_MeshesCount = 0;
 
 		yylex_pbrtv3(buffer, callbacks);
+
+		u32 meshCount = s_MeshPaths.get_size();
+		fwrite(&meshCount, sizeof(u32), 1, s_SceneFile);
+		for (u32 i = 0; i < meshCount; i++)
+		{
+			u32 strLen = strlen(s_MeshPaths[i].pm_PathStr);
+			fwrite(&strLen, sizeof(u32), 1, s_SceneFile);
+			fwrite(s_MeshPaths[i].pm_PathStr, strLen, 1, s_SceneFile);
+		}
+
+		fclose(s_SceneFile);
 		g_PersistanceAllocator.free(buffer);
 	}
 
