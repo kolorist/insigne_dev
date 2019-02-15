@@ -32,6 +32,7 @@ class CbFormats : public ITestSuite {
 
 		floral::fixed_array<insigne::vb_handle_t, LinearAllocator>	m_VBs;
 		floral::fixed_array<insigne::ib_handle_t, LinearAllocator>	m_IBs;
+		insigne::ub_handle_t					m_UB;
 
 		insigne::shader_handle_t				m_Shader;
 		insigne::material_desc_t				m_Material;

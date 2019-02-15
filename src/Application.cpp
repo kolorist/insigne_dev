@@ -94,12 +94,12 @@ void Application::OnInitialize(int i_param)
 {
 	// insigne settings
 	insigne::g_settings.frame_shader_allocator_size_mb = 4u;
-	insigne::g_settings.frame_buffers_allocator_size_mb = 16u;
+	insigne::g_settings.frame_buffers_allocator_size_mb = 48u;
 	insigne::g_settings.frame_textures_allocator_size_mb = 48u;
 	insigne::g_settings.frame_render_allocator_size_mb = 4u;
 	insigne::g_settings.frame_draw_allocator_size_mb = 4u;
 
-	insigne::g_settings.draw_command_buffer_size = 128u;
+	insigne::g_settings.draw_command_buffer_size = 2048u;
 
 	insigne::g_settings.native_res_x = 1280u;
 	insigne::g_settings.native_res_y = 720u;

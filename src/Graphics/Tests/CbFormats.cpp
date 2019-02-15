@@ -42,6 +42,12 @@ void main()
 }
 )";
 
+/* TODO
+ * 1. Debug UI
+ * 2. Camera movement
+ * 3. Geometry algos: octree partitioning
+ */
+
 CbFormats::CbFormats()
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
@@ -64,6 +70,7 @@ void CbFormats::OnInitialize()
 
 		floral::mat4x4f worldXForm(1.0f);
 		dataStream.read(&worldXForm);
+		m_SceneData.WVP = worldXForm;
 
 		u32 meshCount = 0;
 		dataStream.read(&meshCount);
@@ -99,20 +106,79 @@ void CbFormats::OnInitialize()
 				vertices[i].Color = floral::vec4f(1.0f);
 			}
 
-			insigne::vbdesc_t desc;
-			desc.region_size = SIZE_KB(64);
-			desc.stride = sizeof(VertexPC);
-			desc.data = nullptr;
-			desc.count = 0;
-			desc.usage = insigne::buffer_usage_e::dynamic_draw;
+			{
+				insigne::vbdesc_t desc;
+				desc.region_size = vertices.get_size() * sizeof(VertexPC);
+				desc.stride = sizeof(VertexPC);
+				desc.data = nullptr;
+				desc.count = 0;
+				desc.usage = insigne::buffer_usage_e::dynamic_draw;
 
-			insigne::vb_handle_t newVB = insigne::create_vb(desc);
-			m_VBs.push_back(newVB);
+				insigne::vb_handle_t newVB = insigne::create_vb(desc);
+				insigne::copy_update_vb(newVB, &vertices[0], vertices.get_size(), sizeof(VertexPC), 0);
+				m_VBs.push_back(newVB);
+			}
+
+			{
+				insigne::ibdesc_t desc;
+				desc.region_size = indices.get_size() * sizeof(s32);
+				desc.data = nullptr;
+				desc.count = 0;
+				desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+				insigne::ib_handle_t newIB = insigne::create_ib(desc);
+				insigne::copy_update_ib(newIB, &indices[0], indices.get_size(), 0);
+				m_IBs.push_back(newIB);
+			}
 
 			if (i % 5 == 0)
 			{
 				insigne::dispatch_render_pass();
 			}
+		}
+	}
+
+	{
+		insigne::ubdesc_t desc;
+		desc.region_size = SIZE_KB(4);
+		desc.data = nullptr;
+		desc.data_size = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ub_handle_t newUB = insigne::create_ub(desc);
+
+		// camera
+		m_CamView.position = floral::vec3f(5.0f, 0.5f, 0.0f);
+		m_CamView.look_at = floral::vec3f(0.0f, 0.0f, 0.0f);
+		m_CamView.up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
+
+		m_CamProj.near_plane = 0.01f; m_CamProj.far_plane = 100.0f;
+		m_CamProj.fov = 60.0f;
+		m_CamProj.aspect_ratio = 16.0f / 9.0f;
+
+		//m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
+		m_SceneData.XForm = floral::mat4x4f(1.0f);
+
+		insigne::update_ub(newUB, &m_SceneData, sizeof(SceneData), 0);
+		m_UB = newUB;
+	}
+
+	{
+		insigne::shader_desc_t desc = insigne::create_shader_desc();
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
+
+		strcpy(desc.vs, s_VertexShader);
+		strcpy(desc.fs, s_FragmentShader);
+		desc.vs_path = floral::path("/internal/cornel_box_vs");
+		desc.fs_path = floral::path("/internal/cornel_box_fs");
+
+		m_Shader = insigne::create_shader(desc);
+		insigne::infuse_material(m_Shader, m_Material);
+
+		// static uniform data
+		{
+			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Scene");
+			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
 		}
 	}
 
@@ -126,6 +192,10 @@ void CbFormats::OnUpdate(const f32 i_deltaMs)
 void CbFormats::OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
+	for (u32 i = 0; i < m_VBs.get_size(); i++)
+	{
+		insigne::draw_surface<SurfacePC>(m_VBs[i], m_IBs[i], m_Material);
+	}
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
