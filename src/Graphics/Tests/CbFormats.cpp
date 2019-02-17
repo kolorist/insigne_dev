@@ -49,6 +49,7 @@ void main()
  */
 
 CbFormats::CbFormats()
+	: m_CameraMotion(floral::vec3f(5.0f, 5.0f, 5.0f), floral::vec3f(0.0f, 1.0f, 0.0f), floral::vec3f(-5.0f, -5.0f, -5.0f))
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 	m_PlyReaderArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
@@ -187,6 +188,7 @@ void CbFormats::OnInitialize()
 
 void CbFormats::OnUpdate(const f32 i_deltaMs)
 {
+	m_CameraMotion.OnUpdate(i_deltaMs);
 }
 
 void CbFormats::OnRender(const f32 i_deltaMs)
