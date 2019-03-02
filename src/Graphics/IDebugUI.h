@@ -21,15 +21,29 @@ public:
 	void										OnFrameUpdate(const f32 i_deltaMs);
 	void										OnFrameRender(const f32 i_deltaMs);
 
-private:
-	static void									RenderImGuiDrawLists(ImDrawData* i_drawData);
+	void										OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus);
+	void										OnCursorMove(const u32 i_x, const u32 i_y);
+	void										OnCursorInteract(const bool i_pressed);
 
 private:
-	insigne::vb_handle_t						m_VB;
-	insigne::ib_handle_t						m_IB;
+	void										RenderImGui(ImDrawData* i_drawData);
+
+private:
+	const s32									AllocateNewBuffers();
+
+private:
+	floral::inplace_array<insigne::vb_handle_t, 8>	m_VBs;
+	floral::inplace_array<insigne::ib_handle_t, 8>	m_IBs;
+	insigne::ub_handle_t						m_UB;
 
 	insigne::shader_handle_t					m_Shader;
+	insigne::texture_handle_t					m_Texture;
 	insigne::material_desc_t					m_Material;
+
+private:
+	floral::vec2f								m_CursorPos;
+	bool										m_CursorPressed;
+	bool										m_CursorHeldThisFrame;
 };
 
 }

@@ -9,7 +9,6 @@
 #include <insigne/driver.h>
 #include <insigne/ut_render.h>
 
-#include "Memory/MemorySystem.h"
 #include "System/Controller.h"
 
 #include "Graphics/SurfaceDefinitions.h"
@@ -59,8 +58,8 @@ Application::Application(Controller* i_controller)
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CbFormats>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<DebugUITest>();
+	//_CreateTestSuite<CbFormats>();
+	_CreateTestSuite<DebugUITest>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
@@ -79,8 +78,7 @@ void Application::UpdateFrame(f32 i_deltaMs)
 	{
 		m_CurrentTestSuite->OnUpdate(i_deltaMs);
 
-		IDebugUI* debugUI = (IDebugUI*)m_CurrentTestSuite;
-		debugUI->OnFrameUpdate(i_deltaMs);
+		m_CurrentTestSuiteUI->OnFrameUpdate(i_deltaMs);
 	}
 	/*
 	s_profileEvents[0].empty();
@@ -97,8 +95,7 @@ void Application::RenderFrame(f32 i_deltaMs)
 	{
 		m_CurrentTestSuite->OnRender(i_deltaMs);
 
-		IDebugUI* debugUI = (IDebugUI*)m_CurrentTestSuite;
-		debugUI->OnFrameRender(i_deltaMs);
+		m_CurrentTestSuiteUI->OnFrameRender(i_deltaMs);
 	}
 }
 
@@ -126,6 +123,7 @@ void Application::OnInitialize(int i_param)
 	insigne::register_surface_type<SurfacePNCC>();
 	insigne::register_surface_type<SurfaceP>();
 	insigne::register_surface_type<DebugLine>();
+	insigne::register_surface_type<ImGuiSurface>();
 
 	insigne::initialize_render_thread();
 	insigne::wait_for_initialization();
@@ -133,10 +131,7 @@ void Application::OnInitialize(int i_param)
 	if (m_CurrentTestSuite)
 	{
 		m_CurrentTestSuite->OnInitialize();
-
-		// TODO: fuck this!!! Casting another base class to another base class using C-style cast?? what the fuck?
-		IDebugUI* debugUI = (IDebugUI*)m_CurrentTestSuite;
-		debugUI->Initialize();
+		m_CurrentTestSuiteUI->Initialize();
 	}
 }
 
@@ -164,20 +159,30 @@ void Application::OnKeyInput(u32 i_keyCode, u32 i_keyStatus)
 	if (i_keyStatus == 0) { // pressed
 	} else if (i_keyStatus == 2) { // up
 	}
+
 	if (m_CurrentTestSuite->GetCameraMotion())
+	{
 		m_CurrentTestSuite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
+	}
+	m_CurrentTestSuiteUI->OnKeyInput(i_keyCode, i_keyStatus);
 }
 
 void Application::OnCursorMove(u32 i_x, u32 i_y)
 {
 	if (m_CurrentTestSuite->GetCameraMotion())
+	{
 		m_CurrentTestSuite->GetCameraMotion()->OnCursorMove(i_x, i_y);
+	}
+	m_CurrentTestSuiteUI->OnCursorMove(i_x, i_y);
 }
 
 void Application::OnCursorInteract(bool i_pressed, u32 i_buttonId)
 {
 	if (m_CurrentTestSuite->GetCameraMotion())
+	{
 		m_CurrentTestSuite->GetCameraMotion()->OnCursorInteract(i_pressed);
+	}
+	m_CurrentTestSuiteUI->OnCursorInteract(i_pressed);
 }
 
 }

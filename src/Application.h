@@ -2,10 +2,13 @@
 
 #include <floral.h>
 
+#include "Memory/MemorySystem.h"
+
 namespace stone {
 
 class Controller;
 class ITestSuite;
+class IDebugUI;
 
 class Application {
 	public:
@@ -27,7 +30,17 @@ class Application {
 		void									OnCursorInteract(bool i_pressed, u32 i_buttonId);
 
 	private:
+		template <class TTestSuite>
+		void _CreateTestSuite()
+		{
+			TTestSuite* testSuite = g_PersistanceAllocator.allocate<TTestSuite>();
+			m_CurrentTestSuite = testSuite;
+			m_CurrentTestSuiteUI = testSuite;
+		}
+
+	private:
 		ITestSuite*								m_CurrentTestSuite;
+		IDebugUI*								m_CurrentTestSuiteUI;
 };
 
 }
