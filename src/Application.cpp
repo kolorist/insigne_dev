@@ -14,6 +14,7 @@
 
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/ICameraMotion.h"
+#include "Graphics/IDebugUI.h"
 
 #include "Graphics/Tests/ITestSuite.h"
 #include "Graphics/Tests/PlainQuad.h"
@@ -21,6 +22,7 @@
 #include "Graphics/Tests/FormFactorsValidating.h"
 #include "Graphics/Tests/CornelBox.h"
 #include "Graphics/Tests/CbFormats.h"
+#include "Graphics/Tests/DebugUITest.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -57,7 +59,8 @@ Application::Application(Controller* i_controller)
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
-	m_CurrentTestSuite = g_PersistanceAllocator.allocate<CbFormats>();
+	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CbFormats>();
+	m_CurrentTestSuite = g_PersistanceAllocator.allocate<DebugUITest>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
@@ -73,7 +76,12 @@ void Application::UpdateFrame(f32 i_deltaMs)
 {
 	PROFILE_SCOPE(UpdateFrame);
 	if (m_CurrentTestSuite)
+	{
 		m_CurrentTestSuite->OnUpdate(i_deltaMs);
+
+		IDebugUI* debugUI = (IDebugUI*)m_CurrentTestSuite;
+		debugUI->OnFrameUpdate(i_deltaMs);
+	}
 	/*
 	s_profileEvents[0].empty();
 	lotus::unpack_capture(s_profileEvents[0], 0);
@@ -86,7 +94,12 @@ void Application::RenderFrame(f32 i_deltaMs)
 {
 	PROFILE_SCOPE(RenderFrame);
 	if (m_CurrentTestSuite)
+	{
 		m_CurrentTestSuite->OnRender(i_deltaMs);
+
+		IDebugUI* debugUI = (IDebugUI*)m_CurrentTestSuite;
+		debugUI->OnFrameRender(i_deltaMs);
+	}
 }
 
 // -----------------------------------------
@@ -118,7 +131,13 @@ void Application::OnInitialize(int i_param)
 	insigne::wait_for_initialization();
 
 	if (m_CurrentTestSuite)
+	{
 		m_CurrentTestSuite->OnInitialize();
+
+		// TODO: fuck this!!! Casting another base class to another base class using C-style cast?? what the fuck?
+		IDebugUI* debugUI = (IDebugUI*)m_CurrentTestSuite;
+		debugUI->Initialize();
+	}
 }
 
 void Application::OnFrameStep(f32 i_deltaMs)

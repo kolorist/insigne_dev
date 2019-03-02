@@ -95,6 +95,17 @@ void FreeCamera::OnUpdate(const f32 i_deltaMs)
 
 	moveDir = floral::normalize(moveDir) * speedFactor;
 	m_Position += floral::normalize(moveDir);
+
+	m_Projection = floral::construct_perspective(m_CamProj);
+	m_View = floral::construct_lookat_dir(m_UpDir, m_Position, m_Forward);
+}
+
+void FreeCamera::SetProjection(const f32 i_near, const f32 i_far, const f32 i_fov, const f32 i_ratio)
+{
+	m_CamProj.near_plane = i_near;
+	m_CamProj.far_plane = i_far;
+	m_CamProj.fov = i_fov;
+	m_CamProj.aspect_ratio = i_ratio;
 }
 
 }

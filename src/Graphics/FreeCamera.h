@@ -18,13 +18,23 @@ class FreeCamera : public ICameraMotion
 
 		void									OnUpdate(const f32 i_deltaMs) override;
 
+		void									SetProjection(const f32 i_near, const f32 i_far, const f32 i_fov, const f32 i_ratio);
+
+		floral::mat4x4f							GetWVP() { return m_Projection * m_View; }
+
 	private:
 		floral::vec3f							m_Position;
+
 		floral::vec3f							m_UpDir;
 		floral::vec3f							m_LeftDir;
 		floral::vec3f							m_Forward;
 
+		floral::camera_view_t					m_CamView;
+		floral::camera_persp_t					m_CamProj;
+
 		u32										m_KeyStates;
+		floral::mat4x4f							m_Projection;
+		floral::mat4x4f							m_View;
 };
 
 }

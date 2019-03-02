@@ -41,6 +41,7 @@ file (GLOB_RECURSE file_list
 	"${PROJECT_SOURCE_DIR}/src/Memory/MemorySystem.cpp"
 	"${PROJECT_SOURCE_DIR}/src/System/Controller.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/DebugDrawer.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/IDebugUI.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/TrackballCamera.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/FreeCamera.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/GeometryBuilder.cpp"
@@ -57,6 +58,7 @@ file (GLOB_RECURSE file_list
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GPUVectorMath.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CornelBox.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CbFormats.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/DebugUITest.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/OmniShadow.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHMath.cpp"
 

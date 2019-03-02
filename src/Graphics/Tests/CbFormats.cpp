@@ -53,6 +53,8 @@ CbFormats::CbFormats()
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 	m_PlyReaderArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
+
+	m_CameraMotion.SetProjection(0.01f, 100.0f, 60.0f, 16.0f / 9.0f);
 }
 
 CbFormats::~CbFormats()
@@ -71,7 +73,6 @@ void CbFormats::OnInitialize()
 
 		floral::mat4x4f worldXForm(1.0f);
 		dataStream.read(&worldXForm);
-		m_SceneData.WVP = worldXForm;
 
 		u32 meshCount = 0;
 		dataStream.read(&meshCount);
@@ -149,15 +150,7 @@ void CbFormats::OnInitialize()
 		insigne::ub_handle_t newUB = insigne::create_ub(desc);
 
 		// camera
-		m_CamView.position = floral::vec3f(5.0f, 0.5f, 0.0f);
-		m_CamView.look_at = floral::vec3f(0.0f, 0.0f, 0.0f);
-		m_CamView.up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
-
-		m_CamProj.near_plane = 0.01f; m_CamProj.far_plane = 100.0f;
-		m_CamProj.fov = 60.0f;
-		m_CamProj.aspect_ratio = 16.0f / 9.0f;
-
-		//m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
+		m_SceneData.WVP = m_CameraMotion.GetWVP();
 		m_SceneData.XForm = floral::mat4x4f(1.0f);
 
 		insigne::update_ub(newUB, &m_SceneData, sizeof(SceneData), 0);
@@ -189,6 +182,10 @@ void CbFormats::OnInitialize()
 void CbFormats::OnUpdate(const f32 i_deltaMs)
 {
 	m_CameraMotion.OnUpdate(i_deltaMs);
+}
+
+void CbFormats::OnDebugUIUpdate(const f32 i_deltaMs)
+{
 }
 
 void CbFormats::OnRender(const f32 i_deltaMs)
