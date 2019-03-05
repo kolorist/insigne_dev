@@ -12,7 +12,7 @@ namespace stone
 class IDebugUI
 {
 public:
-	IDebugUI() {}
+	IDebugUI();
 
 	void										Initialize();
 
@@ -44,6 +44,10 @@ private:
 	floral::vec2f								m_CursorPos;
 	bool										m_CursorPressed;
 	bool										m_CursorHeldThisFrame;
+
+	bool										m_ShowDebugMenu;
+	bool										m_ShowDebugInfo;
+	bool										m_ShowInsigneInfo;
 };
 
 }

@@ -1,6 +1,7 @@
 #include "IDebugUI.h"
 
 #include <context.h>
+#include <clover.h>
 
 #include <insigne/ut_textures.h>
 #include <insigne/ut_buffers.h>
@@ -43,6 +44,15 @@ void main()
 	o_Color = o_VertColor * texture(u_Tex, o_TexCoord.st);
 }
 )";
+
+IDebugUI::IDebugUI()
+	: m_CursorPressed(false)
+	, m_CursorHeldThisFrame(false)
+	, m_ShowDebugMenu(false)
+	, m_ShowDebugInfo(false)
+	, m_ShowInsigneInfo(false)
+{
+}
 
 void IDebugUI::Initialize()
 {
@@ -127,7 +137,36 @@ void IDebugUI::OnFrameUpdate(const f32 i_deltaMs)
 	io.DeltaTime = i_deltaMs / 1000.0f;
 	ImGui::NewFrame();
 
-	ImGui::ShowTestWindow();
+	//ImGui::ShowTestWindow();
+	if (m_ShowDebugMenu)
+	{
+		if (ImGui::BeginMainMenuBar())
+		{
+			if (ImGui::BeginMenu("TestSuite"))
+			{
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Insigne"))
+			{
+				ImGui::MenuItem("Debug UI Info", NULL, &m_ShowDebugInfo);
+				ImGui::MenuItem("Insigne Info", NULL, &m_ShowInsigneInfo);
+				ImGui::EndMenu();
+			}
+			ImGui::EndMainMenuBar();
+		}
+	}
+
+	if (m_ShowDebugInfo)
+	{
+		if (ImGui::Begin("Debug UI Information"))
+		{
+			ImGui::End();
+		}
+	}
+
+	if (m_ShowInsigneInfo)
+	{
+	}
 
 	OnDebugUIUpdate(i_deltaMs);
 }
@@ -166,18 +205,12 @@ void IDebugUI::RenderImGui(ImDrawData* i_drawData)
 		for (s32 cmdIdx = 0; cmdIdx < cmdList->CmdBuffer.Size; cmdIdx++)
 		{
 			const ImDrawCmd* drawCmd = &cmdList->CmdBuffer[cmdIdx];
-			// TODO: draw surface with state settings
-			/*
 			s32 x0 = (s32)drawCmd->ClipRect.x;	// topleft
-			s32 y0 = (s32)drawCmd->ClipRect.y;
+			s32 y0 = fbHeight - (s32)drawCmd->ClipRect.w;
 			s32 w = (s32)(drawCmd->ClipRect.z - drawCmd->ClipRect.x);
 			s32 h = (s32)(drawCmd->ClipRect.w - drawCmd->ClipRect.y);
 
-			// lower left
-			y0 = fbHeight - (y0 + h);
-			insigne::set_scissor_test<ImGuiSurface>(
-					true, x0, y0, w, h);
-					*/
+			insigne::setup_scissor<ImGuiSurface>(true, x0, y0, w, h);
 			insigne::draw_surface<ImGuiSurface>(m_VBs[bufferSlot], m_IBs[bufferSlot], m_Material,
 					idxBufferOffset, (s32)drawCmd->ElemCount);
 			idxBufferOffset += drawCmd->ElemCount;
@@ -217,6 +250,10 @@ const s32 IDebugUI::AllocateNewBuffers()
 // ---------------------------------------------
 void IDebugUI::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
 {
+	if (i_keyCode == 0x70 && i_keyStatus == 0) // F1
+	{
+		m_ShowDebugMenu = !m_ShowDebugMenu;
+	}
 }
 
 void IDebugUI::OnCursorMove(const u32 i_x, const u32 i_y)

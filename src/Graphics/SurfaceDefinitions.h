@@ -213,7 +213,6 @@ struct ImGuiSurface {
 		detail::set_cull_face<false_type>(face_side_e::back_side, front_face_e::face_ccw);
 		detail::set_depth_test<true_type>(compare_func_e::func_less_or_equal);
 		detail::set_depth_write<true_type>();
-		detail::set_scissor_test<false_type>(0, 0, 0, 0);
 	}
 
 	static void describe_vertex_data()
