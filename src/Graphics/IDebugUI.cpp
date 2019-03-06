@@ -45,18 +45,47 @@ void main()
 }
 )";
 
+static const size k_CPUMemoryBudget = SIZE_MB(4);
+static const size k_VertexBufferBudget = SIZE_KB(512);
+static const size k_IndexBufferBudget = SIZE_KB(256);
+
+static FreelistArena* s_MemoryArena = nullptr;
+
+void* ImGuiCustomAlloc(const size_t sz)
+{
+	return s_MemoryArena->allocate(sz);
+}
+
+void ImGuiCustomFree(void* ptr)
+{
+	if (ptr)
+	{
+		s_MemoryArena->free(ptr);
+	}
+}
+
 IDebugUI::IDebugUI()
 	: m_CursorPressed(false)
 	, m_CursorHeldThisFrame(false)
+
 	, m_ShowDebugMenu(false)
 	, m_ShowDebugInfo(false)
 	, m_ShowInsigneInfo(false)
+	, m_ShowTestSuiteUI(false)
+	, m_ShowTestSuiteUIProfiler(false)
+
+	, m_UsedVertexMemory(0)
+	, m_UsedIndexMemory(0)
 {
+	FLORAL_ASSERT(s_MemoryArena == nullptr);
+	s_MemoryArena = g_PersistanceAllocator.allocate_arena<FreelistArena>(k_CPUMemoryBudget);
 }
 
 void IDebugUI::Initialize()
 {
 	ImGuiIO& io = ImGui::GetIO();
+	io.MemAllocFn = &ImGuiCustomAlloc;
+	io.MemFreeFn = &ImGuiCustomFree;
 
 	// display size
 	io.DisplaySize = ImVec2(
@@ -84,7 +113,6 @@ void IDebugUI::Initialize()
 	memcpy(uiTexDesc.data, pixels, dataSize);
 	m_Texture = insigne::create_texture(uiTexDesc);
 
-	io.Fonts->TexID = (voidptr)m_Texture;
 	io.RenderDrawListsFn = nullptr;
 
 	{
@@ -128,6 +156,11 @@ void IDebugUI::Initialize()
 
 void IDebugUI::OnFrameUpdate(const f32 i_deltaMs)
 {
+	if (!m_ShowDebugMenu)
+	{
+		return;
+	}
+
 	ImGuiIO& io = ImGui::GetIO();
 
 	io.MousePos = ImVec2(m_CursorPos.x, m_CursorPos.y);
@@ -138,41 +171,52 @@ void IDebugUI::OnFrameUpdate(const f32 i_deltaMs)
 	ImGui::NewFrame();
 
 	//ImGui::ShowTestWindow();
-	if (m_ShowDebugMenu)
+	if (ImGui::BeginMainMenuBar())
 	{
-		if (ImGui::BeginMainMenuBar())
+		if (ImGui::BeginMenu("TestSuite"))
 		{
-			if (ImGui::BeginMenu("TestSuite"))
-			{
-				ImGui::EndMenu();
-			}
-			if (ImGui::BeginMenu("Insigne"))
-			{
-				ImGui::MenuItem("Debug UI Info", NULL, &m_ShowDebugInfo);
-				ImGui::MenuItem("Insigne Info", NULL, &m_ShowInsigneInfo);
-				ImGui::EndMenu();
-			}
-			ImGui::EndMainMenuBar();
+			ImGui::MenuItem("Controller", NULL, &m_ShowTestSuiteUI);
+			ImGui::MenuItem("Profiler", NULL, &m_ShowTestSuiteUIProfiler);
+			ImGui::EndMenu();
 		}
+		if (ImGui::BeginMenu("Insigne"))
+		{
+			ImGui::MenuItem("Debug UI Info", NULL, &m_ShowDebugInfo);
+			ImGui::MenuItem("Insigne Info", NULL, &m_ShowInsigneInfo);
+			ImGui::EndMenu();
+		}
+		ImGui::EndMainMenuBar();
 	}
 
 	if (m_ShowDebugInfo)
 	{
-		if (ImGui::Begin("Debug UI Information"))
-		{
-			ImGui::End();
-		}
+		ImGui::Begin("Debug UI Information");
+		f32 vbPercent = (f32)m_UsedVertexMemory / k_VertexBufferBudget * 100.0f;
+		f32 ibPercent = (f32)m_UsedIndexMemory / k_IndexBufferBudget * 100.0f;
+		f32 ramPercent = (f32)s_MemoryArena->get_used_bytes() / s_MemoryArena->get_size_in_bytes() * 100.0f;
+		ImGui::Text("CPU memory usage: %lld of %lld (%4.2f)%%", s_MemoryArena->get_used_bytes(), s_MemoryArena->get_size_in_bytes(), ramPercent);
+		ImGui::Text("VertexBuffer usage: %lld of %lld (%4.2f)%%", m_UsedVertexMemory, k_VertexBufferBudget, vbPercent);
+		ImGui::Text("IndexBuffer usage: %lld of %lld (%4.2f)%%", m_UsedIndexMemory, k_IndexBufferBudget, ibPercent);
+		ImGui::End();
 	}
 
 	if (m_ShowInsigneInfo)
 	{
 	}
 
-	OnDebugUIUpdate(i_deltaMs);
+	if (m_ShowTestSuiteUI)
+	{
+		OnDebugUIUpdate(i_deltaMs);
+	}
 }
 
 void IDebugUI::OnFrameRender(const f32 i_deltaMs)
 {
+	if (!m_ShowDebugMenu)
+	{
+		return;
+	}
+
 	ImGui::Render();
 	RenderImGui(ImGui::GetDrawData());
 }
@@ -186,6 +230,8 @@ void IDebugUI::RenderImGui(ImDrawData* i_drawData)
 
 	i_drawData->ScaleClipRects(ImVec2(1.0f, 1.0f));
 
+	m_UsedVertexMemory = 0;
+	m_UsedIndexMemory = 0;
 	for (s32 i = 0; i < i_drawData->CmdListsCount; i++)
 	{
 		s32 bufferSlot = -1;
@@ -201,6 +247,10 @@ void IDebugUI::RenderImGui(ImDrawData* i_drawData)
 		insigne::copy_update_vb(m_VBs[bufferSlot], (voidptr)cmdList->VtxBuffer.Data, cmdList->VtxBuffer.Size,
 				sizeof(ImDrawVert), 0);
 		insigne::copy_update_ib(m_IBs[bufferSlot], (voidptr)cmdList->IdxBuffer.Data, cmdList->IdxBuffer.Size, 0);
+
+		m_UsedVertexMemory += (cmdList->VtxBuffer.Size * sizeof(ImDrawVert));
+		m_UsedIndexMemory += (cmdList->IdxBuffer.Size * sizeof(s32));
+
 		s32 idxBufferOffset = 0;
 		for (s32 cmdIdx = 0; cmdIdx < cmdList->CmdBuffer.Size; cmdIdx++)
 		{
@@ -224,7 +274,7 @@ const s32 IDebugUI::AllocateNewBuffers()
 {
 	{
 		insigne::vbdesc_t desc;
-		desc.region_size = SIZE_KB(128);
+		desc.region_size = k_VertexBufferBudget;
 		desc.stride = sizeof(ImGuiVertex);
 		desc.data = nullptr;
 		desc.count = 0;
@@ -236,7 +286,7 @@ const s32 IDebugUI::AllocateNewBuffers()
 
 	{
 		insigne::ibdesc_t desc;
-		desc.region_size = SIZE_KB(64);
+		desc.region_size = k_IndexBufferBudget;
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -258,7 +308,7 @@ void IDebugUI::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
 
 void IDebugUI::OnCursorMove(const u32 i_x, const u32 i_y)
 {
-	m_CursorPos = floral::vec2f(i_x, i_y);
+	m_CursorPos = floral::vec2f((f32)i_x, (f32)i_y);
 }
 
 void IDebugUI::OnCursorInteract(const bool i_pressed)

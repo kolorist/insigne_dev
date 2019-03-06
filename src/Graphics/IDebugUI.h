@@ -48,6 +48,11 @@ private:
 	bool										m_ShowDebugMenu;
 	bool										m_ShowDebugInfo;
 	bool										m_ShowInsigneInfo;
+	bool										m_ShowTestSuiteUI;
+	bool										m_ShowTestSuiteUIProfiler;
+
+	size										m_UsedVertexMemory;
+	size										m_UsedIndexMemory;
 };
 
 }

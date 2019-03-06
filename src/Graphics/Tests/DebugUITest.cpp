@@ -27,6 +27,12 @@ void DebugUITest::OnUpdate(const f32 i_deltaMs)
 
 void DebugUITest::OnDebugUIUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("DebugUITest Controller");
+	if (ImGui::Button("Test Clover Log"))
+	{
+		CLOVER_DEBUG("test test test");
+	}
+	ImGui::End();
 }
 
 void DebugUITest::OnRender(const f32 i_deltaMs)
