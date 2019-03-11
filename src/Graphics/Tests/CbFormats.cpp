@@ -49,12 +49,14 @@ void main()
  */
 
 CbFormats::CbFormats()
-	: m_CameraMotion(floral::vec3f(5.0f, 5.0f, 5.0f), floral::vec3f(0.0f, 1.0f, 0.0f), floral::vec3f(-5.0f, -5.0f, -5.0f))
+	: m_CameraMotion(
+			floral::camera_view_t { floral::vec3f(5.0f, 5.0f, 5.0f),
+				floral::vec3f(-5.0f, -5.0f, -5.0f),
+				floral::vec3f(0.0f, 1.0f, 0.0f) },
+			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 	m_PlyReaderArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
-
-	m_CameraMotion.SetProjection(0.01f, 100.0f, 60.0f, 16.0f / 9.0f);
 }
 
 CbFormats::~CbFormats()
@@ -87,7 +89,7 @@ void CbFormats::OnInitialize()
 			c8 meshPath[1024];
 			memset(meshPath, 0, 1024);
 			dataStream.read_bytes(meshPath, meshPathLen);
-			CLOVER_DEBUG("meshPath: %s", meshPath);
+			//CLOVER_DEBUG("meshPath: %s", meshPath);
 
 			m_PlyReaderArena->free_all();
 			cb::ModelLoader<LinearArena> loader(m_PlyReaderArena);
@@ -135,6 +137,8 @@ void CbFormats::OnInitialize()
 
 			if (i % 5 == 0)
 			{
+				f32 sceneLoaded = (f32)i / meshCount * 100.0f;
+				CLOVER_DEBUG("Scene load: %4.2f%%", sceneLoaded);
 				insigne::dispatch_render_pass();
 			}
 		}

@@ -9,13 +9,13 @@ namespace stone
 static const f32 k_CameraSpeed = 5.0f;
 static const f32 k_SpeedMultiplier = 0.01f;
 
-FreeCamera::FreeCamera(const floral::vec3f& i_position, const floral::vec3f i_upDir, const floral::vec3f i_fwDir)
-	: m_Position(i_position)
-	, m_UpDir(floral::normalize(i_upDir))
-	, m_Forward(floral::normalize(i_fwDir))
+FreeCamera::FreeCamera(const floral::camera_view_t& i_view, const floral::camera_persp_t& i_proj)
+	: m_CamView(i_view)
+	, m_CamProj(i_proj)
 	, m_KeyStates(0)
 {
-	m_LeftDir = floral::normalize(floral::cross(m_UpDir, m_Forward));
+	m_LeftDir = floral::normalize(floral::cross(m_CamView.up_direction, m_CamView.look_at));
+	_UpdateMatrices();
 }
 
 void FreeCamera::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
@@ -94,10 +94,9 @@ void FreeCamera::OnUpdate(const f32 i_deltaMs)
 	if (floral::length(moveDir) < 0.01f) return; // to prevent normalize() from NaN, lol!!!
 
 	moveDir = floral::normalize(moveDir) * speedFactor;
-	m_Position += floral::normalize(moveDir);
+	m_CamView.position += floral::normalize(moveDir);
 
-	m_Projection = floral::construct_perspective(m_CamProj);
-	m_View = floral::construct_lookat_dir(m_UpDir, m_Position, m_Forward);
+	_UpdateMatrices();
 }
 
 void FreeCamera::SetProjection(const f32 i_near, const f32 i_far, const f32 i_fov, const f32 i_ratio)
@@ -106,6 +105,12 @@ void FreeCamera::SetProjection(const f32 i_near, const f32 i_far, const f32 i_fo
 	m_CamProj.far_plane = i_far;
 	m_CamProj.fov = i_fov;
 	m_CamProj.aspect_ratio = i_ratio;
+}
+
+void FreeCamera::_UpdateMatrices()
+{
+	m_Projection = floral::construct_perspective(m_CamProj);
+	m_View = floral::construct_lookat_dir(m_CamView);
 }
 
 }

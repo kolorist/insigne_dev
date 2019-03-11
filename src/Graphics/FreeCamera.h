@@ -10,7 +10,7 @@ namespace stone
 class FreeCamera : public ICameraMotion
 {
 	public:
-		FreeCamera(const floral::vec3f& i_position, const floral::vec3f i_upDir, const floral::vec3f i_fwDir);
+		FreeCamera(const floral::camera_view_t& i_view, const floral::camera_persp_t& i_proj);
 
 		void									OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus) override;
 		void									OnCursorMove(const u32 i_x, const u32 i_y) override;
@@ -21,6 +21,9 @@ class FreeCamera : public ICameraMotion
 		void									SetProjection(const f32 i_near, const f32 i_far, const f32 i_fov, const f32 i_ratio);
 
 		floral::mat4x4f							GetWVP() { return m_Projection * m_View; }
+
+	private:
+		void									_UpdateMatrices();
 
 	private:
 		floral::vec3f							m_Position;

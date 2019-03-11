@@ -7,6 +7,7 @@
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
+#include <insigne/memory.h>
 
 namespace stone
 {
@@ -202,6 +203,23 @@ void IDebugUI::OnFrameUpdate(const f32 i_deltaMs)
 
 	if (m_ShowInsigneInfo)
 	{
+		ImGui::Begin("Insigne Information");
+		// allocators
+		{
+			f32 persistPercent = (f32)insigne::g_persistance_allocator.get_used_bytes() / insigne::g_persistance_allocator.get_size_in_bytes() * 100.0f;
+			f32 arenaPercent = (f32)insigne::g_arena_allocator.get_used_bytes() / insigne::g_arena_allocator.get_size_in_bytes() * 100.0f;
+			f32 streamPercent = (f32)insigne::g_stream_allocator.get_used_bytes() / insigne::g_stream_allocator.get_size_in_bytes() * 100.0f;
+			ImGui::Text("g_persistance_allocator: %lld of %lld (%4.2f)%%",
+					insigne::g_persistance_allocator.get_used_bytes(), insigne::g_persistance_allocator.get_size_in_bytes(),
+					persistPercent);
+			ImGui::Text("g_arena_allocator: %lld of %lld (%4.2f)%%",
+					insigne::g_arena_allocator.get_used_bytes(), insigne::g_arena_allocator.get_size_in_bytes(),
+					arenaPercent);
+			ImGui::Text("g_stream_allocator: %lld of %lld (%4.2f)%%",
+					insigne::g_stream_allocator.get_used_bytes(), insigne::g_stream_allocator.get_size_in_bytes(),
+					streamPercent);
+		}
+		ImGui::End();
 	}
 
 	if (m_ShowTestSuiteUI)
@@ -222,6 +240,7 @@ void IDebugUI::OnFrameRender(const f32 i_deltaMs)
 }
 
 //----------------------------------------------
+
 void IDebugUI::RenderImGui(ImDrawData* i_drawData)
 {
 	ImGuiIO& io = ImGui::GetIO();
