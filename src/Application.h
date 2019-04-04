@@ -19,6 +19,11 @@ class Application {
 		void									UpdateFrame(f32 i_deltaMs);
 		void									RenderFrame(f32 i_deltaMs);
 
+		void									OnPause();
+		void									OnResume();
+		void									OnFocusChanged(bool i_hasFocus);
+		void									OnDisplayChanged();
+
 		void									OnInitialize(int i_param);
 		void									OnFrameStep(f32 i_deltaMs);
 		void									OnCleanUp(int i_param);
@@ -39,6 +44,7 @@ class Application {
 		}
 
 	private:
+		bool									m_Initialized;
 		ITestSuite*								m_CurrentTestSuite;
 		IDebugUI*								m_CurrentTestSuiteUI;
 };

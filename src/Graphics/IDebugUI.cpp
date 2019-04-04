@@ -8,6 +8,7 @@
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
 #include <insigne/memory.h>
+#include <insigne/driver.h>
 
 namespace stone
 {
@@ -69,9 +70,9 @@ IDebugUI::IDebugUI()
 	: m_CursorPressed(false)
 	, m_CursorHeldThisFrame(false)
 
-	, m_ShowDebugMenu(false)
+	, m_ShowDebugMenu(true)
 	, m_ShowDebugInfo(false)
-	, m_ShowInsigneInfo(false)
+	, m_ShowInsigneInfo(true)
 	, m_ShowTestSuiteUI(false)
 	, m_ShowTestSuiteUIProfiler(false)
 
@@ -204,7 +205,32 @@ void IDebugUI::OnFrameUpdate(const f32 i_deltaMs)
 	if (m_ShowInsigneInfo)
 	{
 		ImGui::Begin("Insigne Information");
-		// allocators
+
+		if (ImGui::CollapsingHeader("OpenGL", ImGuiTreeNodeFlags_DefaultOpen))
+		{
+			const insigne::gl_debug_info& debugInfo = insigne::get_driver_info();
+			ImGui::Text("Renderer:");
+			ImGui::SameLine(150); ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", debugInfo.renderer_name);
+			ImGui::Text("Vendor:");
+			ImGui::SameLine(150); ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", debugInfo.vendor_name);
+			ImGui::Text("OpenGL Version:");
+			ImGui::SameLine(150); ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", debugInfo.ogl_version);
+			ImGui::Text("GLSL Version:");
+			ImGui::SameLine(150); ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%s", debugInfo.glsl_version);
+			ImGui::Text("Extensions Number:");
+			ImGui::SameLine(150); ImGui::TextColored(ImVec4(1.0f, 1.0f, 0.0f, 1.0f), "%d", debugInfo.num_extensions);
+			ImGui::Indent(25);
+			if (ImGui::CollapsingHeader("Extension Details"))
+			{
+				for (u32 i = 0; i < debugInfo.num_extensions; i++)
+				{
+					ImGui::Text("%3d: %s", i + 1, debugInfo.extensions[i]);
+				}
+			}
+			ImGui::Unindent(25);
+		}
+
+		if (ImGui::CollapsingHeader("Allocators"))
 		{
 			f32 persistPercent = (f32)insigne::g_persistance_allocator.get_used_bytes() / insigne::g_persistance_allocator.get_size_in_bytes() * 100.0f;
 			f32 arenaPercent = (f32)insigne::g_arena_allocator.get_used_bytes() / insigne::g_arena_allocator.get_size_in_bytes() * 100.0f;

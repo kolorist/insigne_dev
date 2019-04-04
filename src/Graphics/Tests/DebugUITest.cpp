@@ -1,5 +1,7 @@
 #include "DebugUITest.h"
 
+#include <context.h>
+
 #include <clover.h>
 #include <insigne/commons.h>
 #include <insigne/ut_buffers.h>
@@ -27,7 +29,12 @@ void DebugUITest::OnUpdate(const f32 i_deltaMs)
 
 void DebugUITest::OnDebugUIUpdate(const f32 i_deltaMs)
 {
+	ImGui::SetNextWindowSize(ImVec2(400, 800));
 	ImGui::Begin("DebugUITest Controller");
+	ImGui::Text("Screen resolution: %d x %d",
+			calyx::g_context_attribs->window_width,
+			calyx::g_context_attribs->window_height);
+
 	if (ImGui::Button("Test Clover Log"))
 	{
 		CLOVER_DEBUG("test test test");

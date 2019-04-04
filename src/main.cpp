@@ -26,14 +26,82 @@ void initialize()
 
 	s_Controller = g_PersistanceAllocator.allocate<Controller>();
 	s_Application = g_PersistanceAllocator.allocate<Application>(s_Controller);
-	s_Controller->IOEvents.OnInitialize(1);
 }
 
 void run(event_buffer_t* i_evtBuffer)
 {
 	using namespace stone;
-	calyx::interact_event_t event;
+	using namespace calyx;
+
+	interact_event_t event;
+
+	static bool appRunning = false;
+
+	while (true) // TODO: exiting event
+	{
+		// event processing
+		while (i_evtBuffer->try_pop_into(event)) {
+			switch (event.event_type) {
+				case interact_event_e::window_lifecycle:
+				{
+					life_cycle_event_type_e lifeCycleEvent = (life_cycle_event_type_e)event.payload;
+					switch (lifeCycleEvent) {
+						case life_cycle_event_type_e::pause:
+						{
+							appRunning = false;
+							CLOVER_VERBOSE("Logic will be paused");
+							break;
+						}
+
+						case life_cycle_event_type_e::resume:
+						{
+							appRunning = true;
+							CLOVER_VERBOSE("Logic will be resumed, but Insigne may still block the frame update");
+							break;
+						}
+
+						case life_cycle_event_type_e::display_update:
+						{
+							CLOVER_VERBOSE("Insigne will be updated");
+							s_Controller->IOEvents.OnDisplayChanged();
+							break;
+						}
+
+						case life_cycle_event_type_e::focus_gain:
+						{
+							CLOVER_VERBOSE("Insigne may be resumed");
+							s_Controller->IOEvents.OnFocusChanged(true);
+							break;
+						}
+
+						case life_cycle_event_type_e::focus_lost:
+						{
+							CLOVER_VERBOSE("Insigne may be stopped");
+							s_Controller->IOEvents.OnFocusChanged(false);
+							break;
+						}
+
+						default:
+							break;
+					}
+					break;
+				}
+
+				default:
+					break;
+			}
+		}
+
+		// the app
+		if (appRunning)
+		{
+			s_Controller->IOEvents.OnFrameStep(16.6f);
+		}
+	}
+
+#if 0
 	while (true) {
+		// event processing
 		while (i_evtBuffer->try_pop_into(event)) {
 			switch (event.event_type) {
 				case calyx::interact_event_e::cursor_interact:
@@ -83,12 +151,28 @@ void run(event_buffer_t* i_evtBuffer)
 						}
 						break;
 					}
+				
+				case calyx::interact_event_e::window_lifecycle:
+				{
+					if (event.payload == 0) { // onPause
+						readyToRender = false;
+					} else if (event.payload == 1) { // onResume
+						readyToRender = true;
+					}
+					break;
+				}
 				default:
 					break;
 			};
 		}
-		s_Controller->IOEvents.OnFrameStep(16.6f);
+		
+		if (readyToRender)
+		{
+			// logic and render commands building
+			s_Controller->IOEvents.OnFrameStep(16.6f);
+		}
 	}
+#endif
 }
 
 void clean_up()

@@ -36,9 +36,17 @@
 namespace stone {
 
 Application::Application(Controller* i_controller)
+	: m_Initialized(false)
+	, m_CurrentTestSuite(nullptr)
+	, m_CurrentTestSuiteUI(nullptr)
 {
 	//s_profileEvents[0].init(4096u, &g_SystemAllocator);
 	//s_profileEvents[1].init(4096u, &g_SystemAllocator);
+
+	i_controller->IOEvents.OnPause.bind<Application, &Application::OnPause>(this);
+	i_controller->IOEvents.OnResume.bind<Application, &Application::OnResume>(this);
+	i_controller->IOEvents.OnFocusChanged.bind<Application, &Application::OnFocusChanged>(this);
+	i_controller->IOEvents.OnDisplayChanged.bind<Application, &Application::OnDisplayChanged>(this);
 
 	i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
 	i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
@@ -58,8 +66,7 @@ Application::Application(Controller* i_controller)
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
-	_CreateTestSuite<CbFormats>();
-	//_CreateTestSuite<DebugUITest>();
+	//_CreateTestSuite<CbFormats>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
@@ -100,8 +107,38 @@ void Application::RenderFrame(f32 i_deltaMs)
 }
 
 // -----------------------------------------
+void Application::OnPause()
+{
+}
+
+void Application::OnResume()
+{
+}
+
+void Application::OnFocusChanged(bool i_hasFocus)
+{
+	if (i_hasFocus)
+	{
+		OnInitialize(1);
+	}
+	else
+	{
+	}
+}
+
+void Application::OnDisplayChanged()
+{
+	insigne::request_refresh_context();
+}
+
 void Application::OnInitialize(int i_param)
 {
+	CLOVER_VERBOSE(__FUNCTION__);
+	if (m_Initialized)
+	{
+		return;
+	}
+
 	// insigne settings
 	insigne::g_settings.frame_shader_allocator_size_mb = 4u;
 	insigne::g_settings.frame_buffers_allocator_size_mb = 48u;
@@ -128,19 +165,25 @@ void Application::OnInitialize(int i_param)
 	insigne::initialize_render_thread();
 	insigne::wait_for_initialization();
 
+	_CreateTestSuite<DebugUITest>();
+
 	if (m_CurrentTestSuite)
 	{
 		m_CurrentTestSuite->OnInitialize();
 		m_CurrentTestSuiteUI->Initialize();
 	}
+	m_Initialized = true;
 }
 
 void Application::OnFrameStep(f32 i_deltaMs)
 {
-	insigne::begin_frame();
-	UpdateFrame(i_deltaMs);
-	RenderFrame(i_deltaMs);
-	insigne::end_frame();
+	if (m_Initialized)
+	{
+		insigne::begin_frame();
+		UpdateFrame(i_deltaMs);
+		RenderFrame(i_deltaMs);
+		insigne::end_frame();
+	}
 }
 
 void Application::OnCleanUp(int i_param)
