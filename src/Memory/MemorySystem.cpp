@@ -2,15 +2,15 @@
 
 #include <clover.h>
 #include <refrain2.h>
-#include <context.h>
+#include <calyx/memory.h>
 #include <insigne/memory.h>
 #include <lotus/memory.h>
 
 helich::memory_manager							g_MemoryManager;
 
-// allocators for amborella
+// allocators for calyx
 namespace calyx {
-	allocators									g_allocators;
+	allocators_t								s_allocators;
 }
 
 // allocators for clover
@@ -52,7 +52,7 @@ void init_memory_system()
 {
 	using namespace helich;
 	g_MemoryManager.initialize(
-			memory_region<calyx::stack_allocator_t> 	{ "calyx/subsystems",			SIZE_MB(1),		&calyx::g_allocators.subsystems_allocator },
+			memory_region<calyx::stack_allocator_t> 	{ "calyx/subsystems",			SIZE_MB(1),		&calyx::s_allocators.subsystems_allocator },
 			memory_region<clover::LinearAllocator>		{ "clover/allocator",			SIZE_MB(1),		&clover::g_LinearAllocator },
 			memory_region<refrain2::FreelistAllocator>	{ "refrain2/task",				SIZE_MB(4),		&refrain2::g_TaskAllocator },
 			memory_region<refrain2::FreelistAllocator>	{ "refrain2/taskdata",			SIZE_MB(16),	&refrain2::g_TaskDataAllocator },

@@ -1,6 +1,6 @@
 #include "IDebugUI.h"
 
-#include <context.h>
+#include <calyx/context.h>
 #include <clover.h>
 
 #include <insigne/ut_textures.h>
@@ -89,10 +89,12 @@ void IDebugUI::Initialize()
 	io.MemAllocFn = &ImGuiCustomAlloc;
 	io.MemFreeFn = &ImGuiCustomFree;
 
+	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
+
 	// display size
 	io.DisplaySize = ImVec2(
-			(f32)calyx::g_context_attribs->window_width,
-			(f32)calyx::g_context_attribs->window_height);
+			(f32)commonCtx->window_width,
+			(f32)commonCtx->window_height);
 	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
 
 	// fonts

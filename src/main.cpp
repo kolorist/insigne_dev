@@ -1,10 +1,14 @@
-#include <life_cycle.h>
-#include <context.h>
+#include <calyx/life_cycle.h>
+#include <calyx/context.h>
+#include <calyx/events.h>
 
 #include <floral.h>
 #include <clover.h>
-#include <platform/windows/event_defs.h>
 #include <lotus/profiler.h>
+
+#include <thread/mutex.h>
+#include <thread/condition_variable.h>
+#include <atomic>
 
 #include "Memory/MemorySystem.h"
 #include "System/Controller.h"
@@ -12,12 +16,176 @@
 
 namespace stone {
 
-static Controller*							s_Controller;
-static Application*							s_Application;
+static Controller*								s_Controller;
+static Application*								s_Application;
 
 }
 
 namespace calyx {
+
+std::atomic_bool								s_logicResumed(false);
+
+bool											s_inputResumed = false;
+floral::mutex									s_inputResumedMtx;
+floral::condition_variable						s_inputResumedCdv;
+
+bool											s_gpuReady = false;;
+bool											s_logicActive = false;
+
+//----------------------------------------------
+void FlushLogicThread()
+{
+	CLOVER_VERBOSE("Flushing LogicThread (update)...");
+	while (s_logicResumed.load(std::memory_order_acquire))
+	{
+	}
+	CLOVER_VERBOSE("LogicThread (update) flushed");
+}
+
+void TryWakeLogicThread()
+{
+	floral::lock_guard guard(s_inputResumedMtx);
+	if (!s_inputResumed)
+	{
+		CLOVER_VERBOSE("Waking up the LogicThread");
+		s_inputResumed = true;
+		s_inputResumedCdv.notify_one();
+	}
+	else
+	{
+		CLOVER_VERBOSE("LogicThread already awakes");
+	}
+}
+
+void UpdateLogicThreadFlags()
+{
+	using namespace stone;
+
+	if (s_logicActive && s_gpuReady)
+	{
+		bool expected = false;
+		if (s_logicResumed.compare_exchange_strong(expected, true, std::memory_order_relaxed))
+		{
+			CLOVER_VERBOSE("LogicThread (update) will be resumed");
+			s_Controller->IOEvents.OnResume();
+		}
+	}
+	else
+	{
+		bool expected = true;
+		if (s_logicResumed.compare_exchange_strong(expected, false, std::memory_order_release))
+		{
+			CLOVER_VERBOSE("LogicThread (update) will be paused");
+			s_Controller->IOEvents.OnPause();
+		}
+	}
+
+	if (s_logicActive == false && s_gpuReady == false)
+	{
+		if (s_inputResumed)
+		{
+			s_inputResumed = false;
+			CLOVER_VERBOSE("LogicThread (input handling) will be paused");
+		}
+	}
+	else
+	{
+		if (!s_inputResumed)
+		{
+			s_inputResumed = true;
+			CLOVER_VERBOSE("LogicThread (input handling) will be resumed");
+		}
+	}
+}
+
+void CheckAndPauseLogicThread()
+{
+	floral::lock_guard guard(s_inputResumedMtx);
+	while (!s_inputResumed)
+	{
+		CLOVER_VERBOSE("Entire LogicThread paused");
+		s_inputResumedCdv.wait(s_inputResumedMtx);
+		CLOVER_VERBOSE("LogicThread (input handling) resumed");
+	}
+}
+
+void UpdateLogic(event_buffer_t* i_evtBuffer)
+{
+	event_buffer_t::queue_t& ioBuffer = i_evtBuffer->flip();
+	calyx::event_t eve;
+	while (ioBuffer.try_pop_into(eve))
+	{
+		switch(eve.type)
+		{
+			case calyx::event_type_e::interact:
+			{
+				break;
+			}
+
+			case calyx::event_type_e::lifecycle:
+			{
+				switch (eve.lifecycle_event_data.inner_type)
+				{
+					case calyx::lifecycle_event_type_e::pause:
+					{
+						s_logicActive = false;
+						UpdateLogicThreadFlags();
+						break;
+					}
+
+					case calyx::lifecycle_event_type_e::resume:
+					{
+						s_logicActive = true;
+						UpdateLogicThreadFlags();
+						break;
+					}
+
+					case calyx::lifecycle_event_type_e::surface_ready:
+					{
+						s_gpuReady = true;
+						UpdateLogicThreadFlags();
+						break;
+					}
+
+					case calyx::lifecycle_event_type_e::surface_destroyed:
+					{
+						s_gpuReady = false;
+						UpdateLogicThreadFlags();
+						break;
+					}
+
+					default:
+						break;
+				}
+				break;
+			}
+
+			default:
+				break;
+		}
+	}
+}
+
+//----------------------------------------------
+
+void setup_surface(context_attribs* io_commonCtx)
+{
+	io_commonCtx->window_title = "demo";
+	io_commonCtx->window_width = 1280;
+	io_commonCtx->window_height = 720;
+	io_commonCtx->window_offset_left = 50;
+	io_commonCtx->window_offset_top = 50;
+}
+
+void try_wake_mainthread()
+{
+	TryWakeLogicThread();
+}
+
+void flush_mainthread()
+{
+	FlushLogicThread();
+}
 
 void initialize()
 {
@@ -33,12 +201,11 @@ void run(event_buffer_t* i_evtBuffer)
 	using namespace stone;
 	using namespace calyx;
 
-	interact_event_t event;
-
-	static bool appRunning = false;
-
 	while (true) // TODO: exiting event
 	{
+		CheckAndPauseLogicThread();
+		UpdateLogic(i_evtBuffer);
+#if 0
 		// event processing
 		while (i_evtBuffer->try_pop_into(event)) {
 			switch (event.event_type) {
@@ -97,6 +264,7 @@ void run(event_buffer_t* i_evtBuffer)
 		{
 			s_Controller->IOEvents.OnFrameStep(16.6f);
 		}
+#endif
 	}
 
 #if 0

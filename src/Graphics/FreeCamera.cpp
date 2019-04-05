@@ -1,7 +1,7 @@
 #include "FreeCamera.h"
 
 #include <clover.h>
-#include <platform/windows/event_defs.h>
+#include <calyx/platform/windows/event_defs.h>
 
 namespace stone
 {
