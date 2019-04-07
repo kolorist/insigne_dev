@@ -3,6 +3,7 @@
 #include <calyx/context.h>
 #include <clover.h>
 
+#include <insigne/counters.h>
 #include <insigne/ut_textures.h>
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
@@ -207,6 +208,7 @@ void IDebugUI::OnFrameUpdate(const f32 i_deltaMs)
 	if (m_ShowInsigneInfo)
 	{
 		ImGui::Begin("Insigne Information");
+		ImGui::Text("Rendered frames count: %zd", insigne::g_global_counters.current_frame_idx.load(std::memory_order_relaxed));
 
 		if (ImGui::CollapsingHeader("OpenGL", ImGuiTreeNodeFlags_DefaultOpen))
 		{

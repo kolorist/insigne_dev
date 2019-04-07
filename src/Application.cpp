@@ -43,19 +43,21 @@ Application::Application(Controller* i_controller)
 	//s_profileEvents[0].init(4096u, &g_SystemAllocator);
 	//s_profileEvents[1].init(4096u, &g_SystemAllocator);
 
+	i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
 	i_controller->IOEvents.OnPause.bind<Application, &Application::OnPause>(this);
 	i_controller->IOEvents.OnResume.bind<Application, &Application::OnResume>(this);
+	i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
+	/*
 	i_controller->IOEvents.OnFocusChanged.bind<Application, &Application::OnFocusChanged>(this);
 	i_controller->IOEvents.OnDisplayChanged.bind<Application, &Application::OnDisplayChanged>(this);
 
-	i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
-	i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
 	i_controller->IOEvents.OnCleanUp.bind<Application, &Application::OnCleanUp>(this);
 
 	i_controller->IOEvents.CharacterInput.bind<Application, &Application::OnCharacterInput>(this);
 	i_controller->IOEvents.KeyInput.bind<Application, &Application::OnKeyInput>(this);
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
+	*/
 
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
 	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHBaking>();
@@ -109,21 +111,18 @@ void Application::RenderFrame(f32 i_deltaMs)
 // -----------------------------------------
 void Application::OnPause()
 {
+	// pause render thread
+	insigne::pause_render_thread();
 }
 
 void Application::OnResume()
 {
+	// resume render thread
+	insigne::resume_render_thread();
 }
 
 void Application::OnFocusChanged(bool i_hasFocus)
 {
-	if (i_hasFocus)
-	{
-		OnInitialize(1);
-	}
-	else
-	{
-	}
 }
 
 void Application::OnDisplayChanged()
@@ -131,7 +130,7 @@ void Application::OnDisplayChanged()
 	insigne::request_refresh_context();
 }
 
-void Application::OnInitialize(int i_param)
+void Application::OnInitialize()
 {
 	CLOVER_VERBOSE(__FUNCTION__);
 	if (m_Initialized)
@@ -172,6 +171,9 @@ void Application::OnInitialize(int i_param)
 		m_CurrentTestSuite->OnInitialize();
 		m_CurrentTestSuiteUI->Initialize();
 	}
+
+	SnapshotAllocatorInfos();
+
 	m_Initialized = true;
 }
 

@@ -24,7 +24,7 @@ class Application {
 		void									OnFocusChanged(bool i_hasFocus);
 		void									OnDisplayChanged();
 
-		void									OnInitialize(int i_param);
+		void									OnInitialize();
 		void									OnFrameStep(f32 i_deltaMs);
 		void									OnCleanUp(int i_param);
 

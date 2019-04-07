@@ -111,6 +111,8 @@ void CheckAndPauseLogicThread()
 
 void UpdateLogic(event_buffer_t* i_evtBuffer)
 {
+	using namespace stone;
+
 	event_buffer_t::queue_t& ioBuffer = i_evtBuffer->flip();
 	calyx::event_t eve;
 	while (ioBuffer.try_pop_into(eve))
@@ -164,6 +166,12 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 				break;
 		}
 	}
+
+	// frame update
+	if (s_logicResumed.load(std::memory_order_relaxed))
+	{
+		s_Controller->IOEvents.OnFrameStep(16.6f);
+	}
 }
 
 //----------------------------------------------
@@ -194,6 +202,8 @@ void initialize()
 
 	s_Controller = g_PersistanceAllocator.allocate<Controller>();
 	s_Application = g_PersistanceAllocator.allocate<Application>(s_Controller);
+
+	s_Controller->IOEvents.OnInitialize();
 }
 
 void run(event_buffer_t* i_evtBuffer)
