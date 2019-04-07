@@ -6,8 +6,6 @@
 #include <clover.h>
 #include <lotus/profiler.h>
 
-#include <thread/mutex.h>
-#include <thread/condition_variable.h>
 #include <atomic>
 
 #include "Memory/MemorySystem.h"
