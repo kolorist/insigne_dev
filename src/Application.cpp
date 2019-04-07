@@ -145,7 +145,7 @@ void Application::OnInitialize()
 	insigne::g_settings.frame_render_allocator_size_mb = 4u;
 	insigne::g_settings.frame_draw_allocator_size_mb = 4u;
 
-	insigne::g_settings.draw_command_buffer_size = 2048u;
+	//insigne::g_settings.draw_command_buffer_size = 2048u;
 
 	insigne::g_settings.native_res_x = 1280u;
 	insigne::g_settings.native_res_y = 720u;
@@ -154,11 +154,11 @@ void Application::OnInitialize()
 	insigne::initialize_driver();
 	insigne::allocate_draw_command_buffers(6);
 
-	insigne::register_surface_type<SurfacePC>();
-	insigne::register_surface_type<SurfacePNC>();
-	insigne::register_surface_type<SurfacePNCC>();
-	insigne::register_surface_type<SurfaceP>();
-	insigne::register_surface_type<DebugLine>();
+	//insigne::register_surface_type<SurfacePC>();
+	//insigne::register_surface_type<SurfacePNC>();
+	//insigne::register_surface_type<SurfacePNCC>();
+	//insigne::register_surface_type<SurfaceP>();
+	//insigne::register_surface_type<DebugLine>();
 	insigne::register_surface_type<ImGuiSurface>();
 
 	insigne::initialize_render_thread();

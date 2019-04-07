@@ -204,6 +204,7 @@ struct ImGuiVertex {
 
 struct ImGuiSurface {
 	static u32 index;
+	static const u32 draw_calls_budget = 32u;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
 	static void setup_states()
