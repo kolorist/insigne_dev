@@ -39,7 +39,7 @@ void											GenIcosphere_Tris(TemporalVertices* o_vertices, TemporalIndices* 
 
 // ---------------------------------------------
 template <typename TAllocator>
-void											GenTessellated3DPlane_Tris_PNC(const floral::mat4x4f& i_xform,
+void											GenTesselated3DPlane_Tris_PNC(const floral::mat4x4f& i_xform,
 													const f32 i_baseSize, const u32 i_gridsCount,
 													const floral::vec4f& i_color,
 													floral::fixed_array<VertexPNC, TAllocator>& o_vertices,

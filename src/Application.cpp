@@ -20,6 +20,8 @@
 #include "Graphics/Tests/SHBaking.h"
 #include "Graphics/Tests/FormFactorsValidating.h"
 #include "Graphics/Tests/CornelBox.h"
+#include "Graphics/Tests/OctreePartition.h"
+#include "Graphics/Tests/LightProbePlacement.h"
 #include "Graphics/Tests/CbFormats.h"
 #include "Graphics/Tests/DebugUITest.h"
 #if 0
@@ -154,25 +156,26 @@ void Application::OnInitialize()
 	insigne::initialize_driver();
 	insigne::allocate_draw_command_buffers(6);
 
-	//insigne::register_surface_type<SurfacePC>();
+	insigne::register_surface_type<SurfacePNC>();
 	//insigne::register_surface_type<SurfacePNC>();
 	//insigne::register_surface_type<SurfacePNCC>();
 	//insigne::register_surface_type<SurfaceP>();
-	//insigne::register_surface_type<DebugLine>();
+	insigne::register_surface_type<DebugLine>();
 	insigne::register_surface_type<ImGuiSurface>();
 
 	insigne::initialize_render_thread();
 	insigne::wait_for_initialization();
 
-	_CreateTestSuite<DebugUITest>();
+	//_CreateTestSuite<DebugUITest>();
+	//_CreateTestSuite<CornelBox>();
+	//_CreateTestSuite<OctreePartition>();
+	_CreateTestSuite<LightProbePlacement>();
 
 	if (m_CurrentTestSuite)
 	{
 		m_CurrentTestSuite->OnInitialize();
 		m_CurrentTestSuiteUI->Initialize();
 	}
-
-	SnapshotAllocatorInfos();
 
 	m_Initialized = true;
 }

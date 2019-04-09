@@ -4,19 +4,19 @@
 #include <insigne/commons.h>
 
 #include "ITestSuite.h"
-#include "Graphics/IDebugUI.h"
-
 #include "Memory/MemorySystem.h"
+#include "Graphics/IDebugUI.h"
 #include "Graphics/SurfaceDefinitions.h"
+#include "Graphics/DebugDrawer.h"
 
 namespace stone
 {
 
-class CornelBox : public ITestSuite, public IDebugUI
+class LightProbePlacement : public ITestSuite, public IDebugUI
 {
 public:
-	CornelBox();
-	~CornelBox();
+	LightProbePlacement();
+	~LightProbePlacement();
 
 	void										OnInitialize() override;
 	void										OnUpdate(const f32 i_deltaMs) override;
@@ -27,10 +27,26 @@ public:
 	ICameraMotion*								GetCameraMotion() override { return nullptr; }
 
 private:
+	void										DoScenePartition();
+	const bool									CanStopPartition(floral::aabb3f& i_rootOctant);
+	const bool									IsOctantTooSmall(floral::aabb3f& i_rootOctant);
+	const bool									IsOctantHasTriangles(floral::aabb3f& i_rootOctant, const u32 i_threshold);
+	void										Partition(floral::aabb3f& i_rootOctant);
+
+private:
 	floral::fixed_array<VertexPNC, LinearAllocator>		m_Vertices;
 	floral::fixed_array<u32, LinearAllocator>			m_Indices;
 	floral::fixed_array<GeoQuad, LinearAllocator>		m_Patches;
 
+	floral::aabb3f								m_SceneAABB;
+	struct Octant
+	{
+		floral::aabb3f							Geometry;
+		bool									IsLeaf;
+		bool									HasTriangle;
+	};
+	floral::fixed_array<Octant, LinearAllocator>	m_Octants;
+	floral::fixed_array<floral::vec3f, LinearAllocator>	m_ProbeLocations;
 
 	struct SceneData {
 		floral::mat4x4f							XForm;
@@ -49,6 +65,7 @@ private:
 	floral::camera_persp_t						m_CamProj;
 
 	LinearArena*								m_MemoryArena;
+	DebugDrawer									m_DebugDrawer;
 };
 
 }

@@ -69,7 +69,7 @@ void init_memory_system()
 			memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(32),	&stone::g_PersistanceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(256),	&stone::g_PersistanceResourceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(16),	&stone::g_SceneResourceAllocator },
-			memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(256),	&stone::g_StreammingAllocator },
+			memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(64),	&stone::g_StreammingAllocator },
 			memory_region<stone::LinearArena>			{ "stone/temporal_lin",			SIZE_MB(128),	&stone::g_TemporalLinearArena },
 			memory_region<stone::FreelistArena>			{ "stone/temporal_free",		SIZE_MB(128),	&stone::g_TemporalFreeArena }
 			);

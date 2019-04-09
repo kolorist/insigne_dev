@@ -154,17 +154,16 @@ void DebugDrawer::DrawIcosphere3D(const floral::vec3f& i_origin, const f32 i_rad
 
 void DebugDrawer::Initialize()
 {
-	static const u32 s_verticesLimit = 8192u;
-	static const s32 s_indicesLimit = 16384u;
+	static const u32 s_verticesLimit = 1u << 17;
+	static const s32 s_indicesLimit = 1u << 18;
 	m_DebugVertices[0].init(s_verticesLimit, m_MemoryArena);
 	m_DebugVertices[1].init(s_verticesLimit, m_MemoryArena);
 	m_DebugIndices[0].init(s_indicesLimit, m_MemoryArena);
 	m_DebugIndices[1].init(s_indicesLimit, m_MemoryArena);
 
-
 	{
 		insigne::vbdesc_t desc;
-		desc.region_size = SIZE_KB(64);
+		desc.region_size = SIZE_MB(32);
 		desc.stride = sizeof(VertexPC);
 		desc.data = nullptr;
 		desc.count = 0;
@@ -176,7 +175,7 @@ void DebugDrawer::Initialize()
 
 	{
 		insigne::ibdesc_t desc;
-		desc.region_size = SIZE_KB(64);
+		desc.region_size = SIZE_MB(16);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -203,6 +202,8 @@ void DebugDrawer::Initialize()
 
 		strcpy(desc.vs, s_VertexShader);
 		strcpy(desc.fs, s_FragmentShader);
+		desc.vs_path = floral::path("/internal/debug_draw_vs");
+		desc.fs_path = floral::path("/internal/debug_draw_fs");
 
 		m_Shader = insigne::create_shader(desc);
 		insigne::infuse_material(m_Shader, m_Material);

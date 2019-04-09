@@ -146,6 +146,8 @@ void IDebugUI::Initialize()
 
 		strcpy(desc.vs, s_VertexShader);
 		strcpy(desc.fs, s_FragmentShader);
+		desc.vs_path = floral::path("/internal/debugui_vs");
+		desc.fs_path = floral::path("/internal/debugui_fs");
 
 		m_Shader = insigne::create_shader(desc);
 		insigne::infuse_material(m_Shader, m_Material);

@@ -150,7 +150,7 @@ void SHBaking::OnInitialize()
 			* floral::construct_quaternion_euler(90.0f, 0.0f, 0.0f).to_transform()
 			* floral::construct_scaling3d(1.0f, 1.0f, 0.5f);
 
-		GenTessellated3DPlane_Tris_PNC(m1, 1.5f, 10, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+		GenTesselated3DPlane_Tris_PNC(m1, 1.5f, 10, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
 				m_GeoVertices, m_GeoIndices);
 
 		// here, extract the locations to render SH environment map
@@ -161,10 +161,10 @@ void SHBaking::OnInitialize()
 			m_SHData.push_back(d);
 		}
 
-		GenTessellated3DPlane_Tris_PNC(m2, 1.5f, 3, floral::vec4f(1.5f, 0.0f, 0.0f, 1.0f),
+		GenTesselated3DPlane_Tris_PNC(m2, 1.5f, 3, floral::vec4f(1.5f, 0.0f, 0.0f, 1.0f),
 				m_GeoVertices, m_GeoIndices);
 
-		GenTessellated3DPlane_Tris_PNC(m3, 1.5f, 3, floral::vec4f(0.0f, 1.5f, 0.0f, 1.0f),
+		GenTesselated3DPlane_Tris_PNC(m3, 1.5f, 3, floral::vec4f(0.0f, 1.5f, 0.0f, 1.0f),
 				m_GeoVertices, m_GeoIndices);
 	}
 
