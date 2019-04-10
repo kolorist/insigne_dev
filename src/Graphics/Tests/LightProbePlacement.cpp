@@ -215,10 +215,15 @@ void LightProbePlacement::DoScenePartition()
 			if (v.y > maxCorner.y) maxCorner.y = v.y;
 			if (v.z > maxCorner.z) maxCorner.z = v.z;
 		}
-		m_SceneAABB.min_corner = minCorner - floral::vec3f(0.1f);
-		m_SceneAABB.max_corner = maxCorner + floral::vec3f(0.1f);
+		m_SceneAABB.min_corner = minCorner;
+		m_SceneAABB.max_corner = maxCorner;
+
+		floral::aabb3f extrapolateSceneAABB = m_SceneAABB;
+		extrapolateSceneAABB.min_corner = minCorner - floral::vec3f(0.1f);
+		extrapolateSceneAABB.max_corner = maxCorner + floral::vec3f(0.1f);
+
+		Partition(extrapolateSceneAABB);
 	}
-	Partition(m_SceneAABB);
 
 	for (u32 i = 0; i < m_Octants.get_size(); i++)
 	{
@@ -235,8 +240,11 @@ void LightProbePlacement::DoScenePartition()
 
 		for (u32 j = 0; j < 8; j++)
 		{
-			if (m_ProbeLocations.find(v[j]) == m_ProbeLocations.get_terminated_index())
-				m_ProbeLocations.push_back(v[j]);
+			if (floral::point_inside_aabb(v[j], m_SceneAABB))
+			{
+				if (m_ProbeLocations.find(v[j]) == m_ProbeLocations.get_terminated_index())
+					m_ProbeLocations.push_back(v[j]);
+			}
 		}
 	}
 }
