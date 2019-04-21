@@ -99,6 +99,8 @@ void LightProbePlacement::OnInitialize()
 		floral::mat4x4f mB1Right = floral::construct_quaternion_euler(0.0f, -47.0f, 0.0f).to_transform()
 			* floral::construct_translation3d(-0.35f, -0.3f, 0.0f)
 			* floral::construct_quaternion_euler(0.0f, 0.0f, 90.0f).to_transform();
+		floral::mat4x4f mB1Bottom = floral::construct_translation3d(0.0f, -1.0f, 0.0f)
+			* floral::construct_quaternion_euler(180.0f, 43.0f, 0.0f).to_transform();
 		GenQuadTesselated3DPlane_Tris_PNC(
 				mB1Top,
 				0.7f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.4f, 0.5f, 1.0f),
@@ -118,6 +120,10 @@ void LightProbePlacement::OnInitialize()
 		GenQuadTesselated3DPlane_Tris_PNC(
 				mB1Right,
 				1.4f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+				m_Vertices, m_Indices, m_Patches);
+		GenQuadTesselated3DPlane_Tris_PNC(
+				mB1Bottom,
+				0.7f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.4f, 0.5f, 1.0f),
 				m_Vertices, m_Indices, m_Patches);
 	}
 
@@ -192,9 +198,12 @@ void LightProbePlacement::OnInitialize()
 
 	m_DebugDrawer.Initialize();
 
+	m_ProbeValidator.Initialize();
+
 	DoScenePartition();
 
 	SnapshotAllocatorInfos();
+	m_ProbeValidator.Setup(m_SceneData.XForm, m_ProbeLocations);
 }
 
 void LightProbePlacement::DoScenePartition()
@@ -349,7 +358,11 @@ void LightProbePlacement::OnUpdate(const f32 i_deltaMs)
 	{
 		m_DebugDrawer.DrawAABB3D(m_Octants[i].Geometry, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
 	}
+	//f32 colorStep = 1.0f / m_ProbeLocations.get_size();
+	//u32 pmax = 20;
+	//f32 colorStep = 1.0f / pmax;
 	for (u32 i = 0; i < m_ProbeLocations.get_size(); i++)
+	//for (u32 i = 0; i < pmax; i++)
 	{
 		m_DebugDrawer.DrawIcosahedron3D(m_ProbeLocations[i], 
 			0.05f, floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f));
@@ -363,12 +376,34 @@ void LightProbePlacement::OnDebugUIUpdate(const f32 i_deltaMs)
 
 void LightProbePlacement::OnRender(const f32 i_deltaMs)
 {
+	{
+		floral::simple_callback<void, const insigne::material_desc_t&> renderCb;
+		renderCb.bind<LightProbePlacement, &LightProbePlacement::RenderCallback>(this);
+
+		m_ProbeValidator.Validate(renderCb);
+	}
+
+	if (m_ProbeValidator.IsValidationFinished())
+	{
+		static bool updated = false;
+		if (!updated)
+		{
+			m_ProbeLocations = m_ProbeValidator.GetValidatedLocations();
+			updated = true;
+		}
+	}
+
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-	insigne::draw_surface<SurfacePC>(m_VB, m_IB, m_Material);
+	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
 	m_DebugDrawer.Render(m_SceneData.WVP);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
+}
+
+void LightProbePlacement::RenderCallback(const insigne::material_desc_t& i_material)
+{
+	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, i_material);
 }
 
 void LightProbePlacement::OnCleanUp()

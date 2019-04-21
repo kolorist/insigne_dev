@@ -4,6 +4,7 @@
 #include <insigne/commons.h>
 
 #include "ITestSuite.h"
+#include "SHBakingUtils.h"
 #include "Memory/MemorySystem.h"
 #include "Graphics/IDebugUI.h"
 #include "Graphics/SurfaceDefinitions.h"
@@ -23,6 +24,8 @@ public:
 	void										OnDebugUIUpdate(const f32 i_deltaMs) override;
 	void										OnRender(const f32 i_deltaMs) override;
 	void										OnCleanUp() override;
+
+	void										RenderCallback(const insigne::material_desc_t& i_material);
 
 	ICameraMotion*								GetCameraMotion() override { return nullptr; }
 
@@ -59,12 +62,15 @@ private:
 	insigne::ib_handle_t						m_IB;
 	insigne::ub_handle_t						m_UB;
 	insigne::shader_handle_t					m_Shader;
+	insigne::shader_handle_t					m_ValidationShader;
 	insigne::material_desc_t					m_Material;
+	insigne::material_desc_t					m_ValidationMaterial;
 
 	floral::camera_view_t						m_CamView;
 	floral::camera_persp_t						m_CamProj;
 
 	LinearArena*								m_MemoryArena;
+	ProbeValidator								m_ProbeValidator;
 	DebugDrawer									m_DebugDrawer;
 };
 
