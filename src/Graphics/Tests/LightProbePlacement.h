@@ -9,6 +9,7 @@
 #include "Graphics/IDebugUI.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/DebugDrawer.h"
+#include "Graphics/FreeCamera.h"
 
 namespace stone
 {
@@ -27,7 +28,7 @@ public:
 
 	void										RenderCallback(const insigne::material_desc_t& i_material);
 
-	ICameraMotion*								GetCameraMotion() override { return nullptr; }
+	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
 	void										DoScenePartition();
@@ -56,6 +57,13 @@ private:
 		floral::mat4x4f							WVP;
 	};
 
+	bool										m_DrawCoordinate;
+	bool										m_DrawProbeLocations;
+	s32											m_DrawProbeRangeMin;
+	s32											m_DrawProbeRangeMax;
+	bool										m_DrawOctree;
+	bool										m_DrawScene;
+
 	SceneData									m_SceneData;
 
 	insigne::vb_handle_t						m_VB;
@@ -66,12 +74,10 @@ private:
 	insigne::material_desc_t					m_Material;
 	insigne::material_desc_t					m_ValidationMaterial;
 
-	floral::camera_view_t						m_CamView;
-	floral::camera_persp_t						m_CamProj;
-
 	LinearArena*								m_MemoryArena;
 	ProbeValidator								m_ProbeValidator;
 	DebugDrawer									m_DebugDrawer;
+	FreeCamera									m_CameraMotion;
 };
 
 }

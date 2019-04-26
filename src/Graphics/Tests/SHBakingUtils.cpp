@@ -167,8 +167,11 @@ void main() {
 static const_cstr s_ProbeValidatorFS = R"(#version 300 es
 layout (location = 0) out mediump vec4 o_Color;
 
+in mediump vec4 v_VertexColor;
+
 void main()
 {
+#if 1
 	if (gl_FrontFacing)
 	{
 		o_Color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -177,6 +180,9 @@ void main()
 	{
 		o_Color = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	}
+#else
+	o_Color = v_VertexColor;
+#endif
 }
 )";
 
@@ -238,6 +244,7 @@ void ProbeValidator::Setup(const floral::mat4x4f& i_XForm, floral::fixed_array<f
 	m_ProbeSceneData.init(i_shPositions.get_size() * 6, &g_StreammingAllocator);
 
 	m_ProbeLocs = i_shPositions;
+	m_CurrentProbeIdx = 0;
 
 	static floral::vec3f faceUpDirs[] = {
 		floral::vec3f(0.0f, 1.0f, 0.0f),	// positive X
@@ -270,7 +277,7 @@ void ProbeValidator::Setup(const floral::mat4x4f& i_XForm, floral::fixed_array<f
 	for (u32 i = 0; i < i_shPositions.get_size(); i++) {
 		for (u32 f = 0; f < 6; f++) {
 			floral::camera_view_t camView;
-			camView.position = i_shPositions[i] + floral::vec3f(0.0f, 0.2f, 0.0f);
+			camView.position = i_shPositions[i];
 			camView.up_direction = faceUpDirs[f];
 			camView.look_at = faceLookAtDirs[f];
 			floral::mat4x4f wvp = proj * floral::construct_lookat_dir(camView);
@@ -330,6 +337,7 @@ void ProbeValidator::Validate(floral::simple_callback<void, const insigne::mater
 			m_CurrentProbeIdx++;
 		}
 		if (m_CurrentProbeIdx == m_ProbeLocs.get_size()) m_ValidationFinished = true;
+		//if (m_CurrentProbeIdx == 186) m_ValidationFinished = true;
 	}
 }
 
@@ -389,7 +397,6 @@ void SHBaker::Initialize(const floral::mat4x4f& i_XForm, floral::fixed_array<flo
 		}
 	}
 
-
 	{
 		// 1536 x 256
 		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
@@ -429,8 +436,8 @@ void SHBaker::SetupValidator(insigne::material_desc_t& io_material)
 	m_FinishValidation = false;
 	m_EnvCaptured = false;
 	m_FrameIdx = 0;
-	//m_EnvIdx = 20;
-	m_EnvIdx = 0;
+	m_EnvIdx = 185;
+	//m_EnvIdx = 0;
 	{
 		u32 ubSlot = insigne::get_material_uniform_block_slot(io_material, "ub_Scene");
 		io_material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 256, m_EnvMapSceneUB };
@@ -477,8 +484,8 @@ void SHBaker::Validate(insigne::material_desc_t& i_material, floral::simple_call
 				CLOVER_DEBUG("Capture %d probes: %4.2f", m_EnvIdx, total);
 			}
 		}
-		if (m_EnvIdx == m_SHPositions.get_size()) m_FinishValidation = true;
-		//if (m_EnvIdx == 21) m_FinishValidation = true;
+		//if (m_EnvIdx == m_SHPositions.get_size()) m_FinishValidation = true;
+		if (m_EnvIdx == 186) m_FinishValidation = true;
 	}
 }
 

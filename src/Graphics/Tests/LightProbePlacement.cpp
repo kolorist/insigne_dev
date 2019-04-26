@@ -44,6 +44,15 @@ void main()
 )";
 
 LightProbePlacement::LightProbePlacement()
+	: m_CameraMotion(
+			floral::camera_view_t { floral::vec3f(5.0f, 2.5f, 2.0f), floral::vec3f(-5.0f, -2.5f, -2.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
+			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
+	, m_DrawCoordinate(false)
+	, m_DrawProbeLocations(false)
+	, m_DrawProbeRangeMin(0)
+	, m_DrawProbeRangeMax(0)
+	, m_DrawOctree(false)
+	, m_DrawScene(true)
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 }
@@ -162,15 +171,7 @@ void LightProbePlacement::OnInitialize()
 		insigne::ub_handle_t newUB = insigne::create_ub(desc);
 
 		// camera
-		m_CamView.position = floral::vec3f(5.0f, 2.5f, 2.0f);
-		m_CamView.look_at = floral::vec3f(0.0f, 0.0f, 0.0f);
-		m_CamView.up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
-
-		m_CamProj.near_plane = 0.01f; m_CamProj.far_plane = 100.0f;
-		m_CamProj.fov = 60.0f;
-		m_CamProj.aspect_ratio = 16.0f / 9.0f;
-
-		m_SceneData.WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
+		m_SceneData.WVP = m_CameraMotion.GetWVP();
 		m_SceneData.XForm = floral::mat4x4f(1.0f);
 
 		insigne::update_ub(newUB, &m_SceneData, sizeof(SceneData), 0);
@@ -353,29 +354,69 @@ void LightProbePlacement::Partition(floral::aabb3f& i_rootOctant)
 
 void LightProbePlacement::OnUpdate(const f32 i_deltaMs)
 {
+	m_CameraMotion.OnUpdate(i_deltaMs);
 	m_DebugDrawer.BeginFrame();
-	for (u32 i = 0; i < m_Octants.get_size(); i++)
+
+	if (m_DrawCoordinate)
 	{
-		m_DebugDrawer.DrawAABB3D(m_Octants[i].Geometry, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+		m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), floral::vec3f(1.0f, 0.0f, 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+		m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 1.0f, 0.0f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+		m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 0.0f, 1.0f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
 	}
-	//f32 colorStep = 1.0f / m_ProbeLocations.get_size();
-	//u32 pmax = 20;
-	//f32 colorStep = 1.0f / pmax;
-	for (u32 i = 0; i < m_ProbeLocations.get_size(); i++)
-	//for (u32 i = 0; i < pmax; i++)
+
+	if (m_DrawOctree)
 	{
-		m_DebugDrawer.DrawIcosahedron3D(m_ProbeLocations[i], 
-			0.05f, floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f));
+		for (u32 i = 0; i < m_Octants.get_size(); i++)
+		{
+			m_DebugDrawer.DrawAABB3D(m_Octants[i].Geometry, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+		}
+	}
+
+	if (m_DrawProbeLocations)
+	{
+		if (m_DrawProbeRangeMax >= m_DrawProbeRangeMin)
+		{
+			//for (u32 i = 0; i < m_ProbeLocations.get_size(); i++)
+			for (u32 i = m_DrawProbeRangeMin; i < m_DrawProbeRangeMax; i++)
+			{
+				m_DebugDrawer.DrawIcosahedron3D(m_ProbeLocations[i], 
+						0.05f, floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f));
+			}
+		}
 	}
 	m_DebugDrawer.EndFrame();
 }
 
 void LightProbePlacement::OnDebugUIUpdate(const f32 i_deltaMs)
 {
+	ImGui::SetNextWindowSize(ImVec2(400, 400));
+	ImGui::Begin("LightProbePlacement Controller");
+	if (ImGui::CollapsingHeader("CameraMotion", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		floral::vec2f cp = m_CameraMotion.GetCursorPos();
+		floral::vec3f pos = m_CameraMotion.GetPosition();
+
+		ImGui::Text("Position: (%4.2f; %4.2f; %4.2f)", pos.x, pos.y, pos.z);
+		ImGui::Text("Cursor position: (%4.2f; %4.2f)", cp.x, cp.y);
+	}
+	if (ImGui::CollapsingHeader("DebugDraw", ImGuiTreeNodeFlags_DefaultOpen))
+	{
+		ImGui::Checkbox("Draw coordinates", &m_DrawCoordinate);
+		ImGui::Checkbox("Draw probes' locations", &m_DrawProbeLocations);
+		ImGui::SliderInt("Probe's draw range FROM", &m_DrawProbeRangeMin, 0, m_ProbeLocations.get_size());
+		ImGui::SliderInt("Probe's draw range TO", &m_DrawProbeRangeMax, 0, m_ProbeLocations.get_size());
+		ImGui::Checkbox("Draw octree", &m_DrawOctree);
+		ImGui::Checkbox("Draw scene", &m_DrawScene);
+	}
+	ImGui::End();
 }
 
 void LightProbePlacement::OnRender(const f32 i_deltaMs)
 {
+	// camera
+	m_SceneData.WVP = m_CameraMotion.GetWVP();
+	insigne::update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
+
 	{
 		floral::simple_callback<void, const insigne::material_desc_t&> renderCb;
 		renderCb.bind<LightProbePlacement, &LightProbePlacement::RenderCallback>(this);
@@ -394,8 +435,14 @@ void LightProbePlacement::OnRender(const f32 i_deltaMs)
 	}
 
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
+
+	if (m_DrawScene)
+	{
+		insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
+	}
+
 	m_DebugDrawer.Render(m_SceneData.WVP);
+
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();

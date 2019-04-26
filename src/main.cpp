@@ -1,6 +1,7 @@
 #include <calyx/life_cycle.h>
 #include <calyx/context.h>
 #include <calyx/events.h>
+#include <calyx/platform/windows/event_defs.h>
 
 #include <floral.h>
 #include <clover.h>
@@ -119,6 +120,46 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 		{
 			case calyx::event_type_e::interact:
 			{
+				switch (eve.interact_event_data.inner_type)
+				{
+					case calyx::interact_event_e::key_input:
+					{
+						if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY)) {
+							u32 keyCode = eve.interact_event_data.payload >> 4;
+							if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY_PRESSED)) {
+								s_Controller->IOEvents.KeyInput(keyCode, 0);
+							} else if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY_HELD)) {
+								s_Controller->IOEvents.KeyInput(keyCode, 1);
+							} else {
+								s_Controller->IOEvents.KeyInput(keyCode, 2);
+							}
+						}
+						break;
+					}
+
+					case calyx::interact_event_e::cursor_interact:
+					{
+						if (TEST_BIT(eve.interact_event_data.payload, CLX_MOUSE_LEFT_BUTTON)) {
+							s_Controller->IOEvents.CursorInteract(
+									TEST_BIT_BOOL(eve.interact_event_data.payload, CLX_MOUSE_BUTTON_PRESSED),
+									1);
+						}
+						if (TEST_BIT(eve.interact_event_data.payload, CLX_MOUSE_RIGHT_BUTTON)) {
+							s_Controller->IOEvents.CursorInteract(
+									TEST_BIT_BOOL(eve.interact_event_data.payload, CLX_MOUSE_BUTTON_PRESSED),
+									2);
+						}
+						break;
+					}
+
+					case calyx::interact_event_e::cursor_move:
+					{
+						u32 x = eve.interact_event_data.payload & 0xFFFF;
+						u32 y = (eve.interact_event_data.payload & 0xFFFF0000) >> 16;
+						s_Controller->IOEvents.CursorMove(x, y);
+						break;
+					}
+				}
 				break;
 			}
 
@@ -213,142 +254,7 @@ void run(event_buffer_t* i_evtBuffer)
 	{
 		CheckAndPauseLogicThread();
 		UpdateLogic(i_evtBuffer);
-#if 0
-		// event processing
-		while (i_evtBuffer->try_pop_into(event)) {
-			switch (event.event_type) {
-				case interact_event_e::window_lifecycle:
-				{
-					life_cycle_event_type_e lifeCycleEvent = (life_cycle_event_type_e)event.payload;
-					switch (lifeCycleEvent) {
-						case life_cycle_event_type_e::pause:
-						{
-							appRunning = false;
-							CLOVER_VERBOSE("Logic will be paused");
-							break;
-						}
-
-						case life_cycle_event_type_e::resume:
-						{
-							appRunning = true;
-							CLOVER_VERBOSE("Logic will be resumed, but Insigne may still block the frame update");
-							break;
-						}
-
-						case life_cycle_event_type_e::display_update:
-						{
-							CLOVER_VERBOSE("Insigne will be updated");
-							s_Controller->IOEvents.OnDisplayChanged();
-							break;
-						}
-
-						case life_cycle_event_type_e::focus_gain:
-						{
-							CLOVER_VERBOSE("Insigne may be resumed");
-							s_Controller->IOEvents.OnFocusChanged(true);
-							break;
-						}
-
-						case life_cycle_event_type_e::focus_lost:
-						{
-							CLOVER_VERBOSE("Insigne may be stopped");
-							s_Controller->IOEvents.OnFocusChanged(false);
-							break;
-						}
-
-						default:
-							break;
-					}
-					break;
-				}
-
-				default:
-					break;
-			}
-		}
-
-		// the app
-		if (appRunning)
-		{
-			s_Controller->IOEvents.OnFrameStep(16.6f);
-		}
-#endif
 	}
-
-#if 0
-	while (true) {
-		// event processing
-		while (i_evtBuffer->try_pop_into(event)) {
-			switch (event.event_type) {
-				case calyx::interact_event_e::cursor_interact:
-					{
-						if (TEST_BIT(event.payload, CLX_MOUSE_LEFT_BUTTON)) {
-							s_Controller->IOEvents.CursorInteract(
-									TEST_BIT_BOOL(event.payload, CLX_MOUSE_BUTTON_PRESSED),
-									1);
-						}
-						if (TEST_BIT(event.payload, CLX_MOUSE_RIGHT_BUTTON)) {
-							s_Controller->IOEvents.CursorInteract(
-									TEST_BIT_BOOL(event.payload, CLX_MOUSE_BUTTON_PRESSED),
-									2);
-						}
-						break;
-					}
-
-				case calyx::interact_event_e::cursor_move:
-					{
-						u32 x = event.payload & 0xFFFF;
-						u32 y = (event.payload & 0xFFFF0000) >> 16;
-						s_Controller->IOEvents.CursorMove(x, y);
-						break;
-					}
-
-				case calyx::interact_event_e::scroll:
-					{
-						break;
-					}
-
-				case calyx::interact_event_e::character_input:
-					{
-						break;
-					}
-
-				case calyx::interact_event_e::key_input:
-					{
-						if (TEST_BIT(event.payload, CLX_KEY)) {
-							u32 keyCode = event.payload >> 4;
-							if (TEST_BIT(event.payload, CLX_KEY_PRESSED)) {
-								s_Controller->IOEvents.KeyInput(keyCode, 0);
-							} else if (TEST_BIT(event.payload, CLX_KEY_HELD)) {
-								s_Controller->IOEvents.KeyInput(keyCode, 1);
-							} else {
-								s_Controller->IOEvents.KeyInput(keyCode, 2);
-							}
-						}
-						break;
-					}
-				
-				case calyx::interact_event_e::window_lifecycle:
-				{
-					if (event.payload == 0) { // onPause
-						readyToRender = false;
-					} else if (event.payload == 1) { // onResume
-						readyToRender = true;
-					}
-					break;
-				}
-				default:
-					break;
-			};
-		}
-		
-		if (readyToRender)
-		{
-			// logic and render commands building
-			s_Controller->IOEvents.OnFrameStep(16.6f);
-		}
-	}
-#endif
 }
 
 void clean_up()

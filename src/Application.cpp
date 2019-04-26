@@ -55,25 +55,11 @@ Application::Application(Controller* i_controller)
 
 	i_controller->IOEvents.OnCleanUp.bind<Application, &Application::OnCleanUp>(this);
 
-	i_controller->IOEvents.CharacterInput.bind<Application, &Application::OnCharacterInput>(this);
+	*/
+	//i_controller->IOEvents.CharacterInput.bind<Application, &Application::OnCharacterInput>(this);
 	i_controller->IOEvents.KeyInput.bind<Application, &Application::OnKeyInput>(this);
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
-	*/
-
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainQuadTest>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHBaking>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<FormFactorsBaking>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<FormFactorsValidating>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<PlainTextureQuad>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CubeMapTexture>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<VectorMath>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GPUVectorMath>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<CornelBox>();
-	//_CreateTestSuite<CbFormats>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<OmniShadow>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<SHMath>();
-	//m_CurrentTestSuite = g_PersistanceAllocator.allocate<GlobalIllumination>();
 }
 
 Application::~Application()
