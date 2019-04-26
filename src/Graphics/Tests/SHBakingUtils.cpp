@@ -208,7 +208,7 @@ void ProbeValidator::Initialize()
 	// scene data uniform buffer
 	{
 		insigne::ubdesc_t desc;
-		desc.region_size = SIZE_KB(512);
+		desc.region_size = SIZE_MB(2);
 		desc.data = nullptr;
 		desc.data_size = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -244,6 +244,7 @@ void ProbeValidator::Setup(const floral::mat4x4f& i_XForm, floral::fixed_array<f
 	m_ProbeSceneData.init(i_shPositions.get_size() * 6, &g_StreammingAllocator);
 
 	m_ProbeLocs = i_shPositions;
+	//m_CurrentProbeIdx = 498;
 	m_CurrentProbeIdx = 0;
 
 	static floral::vec3f faceUpDirs[] = {
@@ -337,7 +338,7 @@ void ProbeValidator::Validate(floral::simple_callback<void, const insigne::mater
 			m_CurrentProbeIdx++;
 		}
 		if (m_CurrentProbeIdx == m_ProbeLocs.get_size()) m_ValidationFinished = true;
-		//if (m_CurrentProbeIdx == 186) m_ValidationFinished = true;
+		//if (m_CurrentProbeIdx == 499) m_ValidationFinished = true;
 	}
 }
 

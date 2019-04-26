@@ -49,8 +49,8 @@ void main()
 )";
 
 static const size k_CPUMemoryBudget = SIZE_MB(4);
-static const size k_VertexBufferBudget = SIZE_KB(512);
-static const size k_IndexBufferBudget = SIZE_KB(256);
+static const size k_VertexBufferBudget = SIZE_MB(4);
+static const size k_IndexBufferBudget = SIZE_MB(2);
 
 static FreelistArena* s_MemoryArena = nullptr;
 

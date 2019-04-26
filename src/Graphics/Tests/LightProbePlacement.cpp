@@ -66,20 +66,20 @@ void LightProbePlacement::OnInitialize()
 	m_Vertices.init(2048u, &g_StreammingAllocator);
 	m_Indices.init(8192u, &g_StreammingAllocator);
 	m_Patches.init(1024u, &g_StreammingAllocator);
-	m_ProbeLocations.init(1024u, &g_StreammingAllocator);
+	m_ProbeLocations.init(2048u, &g_StreammingAllocator);
 
 	{
 		floral::mat4x4f mBottom = floral::construct_translation3d(0.0f, -1.0f, 0.0f);
-		floral::mat4x4f mLeft = floral::construct_translation3d(0.0f, 0.0f, 1.5f)
+		floral::mat4x4f mLeft = floral::construct_translation3d(0.0f, 0.0f, 2.5f)
 			* floral::construct_quaternion_euler(-90.0f, 0.0f, 0.0f).to_transform();
-		floral::mat4x4f mRight = floral::construct_translation3d(0.0f, 0.0f, -1.5f)
+		floral::mat4x4f mRight = floral::construct_translation3d(0.0f, 0.0f, -2.5f)
 			* floral::construct_quaternion_euler(90.0f, 0.0f, 0.0f).to_transform();
 		floral::mat4x4f mBack = floral::construct_translation3d(-1.0f, 0.0f, 0.0f)
 			* floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
 
 		GenQuadTesselated3DPlane_Tris_PNC(
 				mBottom,
-				2.0f, 3.0f, 0.3f, floral::vec4f(0.3f, 0.0f, 0.3f, 1.0f),
+				2.0f, 5.0f, 0.3f, floral::vec4f(0.3f, 0.0f, 0.3f, 1.0f),
 				m_Vertices, m_Indices, m_Patches);
 		GenQuadTesselated3DPlane_Tris_PNC(
 				mLeft,
@@ -91,7 +91,7 @@ void LightProbePlacement::OnInitialize()
 				m_Vertices, m_Indices, m_Patches);
 		GenQuadTesselated3DPlane_Tris_PNC(
 				mBack,
-				2.0f, 3.0f, 0.3f, floral::vec4f(0.0f, 0.3f, 0.3f, 1.0f),
+				2.0f, 5.0f, 0.3f, floral::vec4f(0.0f, 0.3f, 0.3f, 1.0f),
 				m_Vertices, m_Indices, m_Patches);
 
 		floral::mat4x4f mB1Top = floral::construct_translation3d(0.0f, 0.4f, 0.0f)
@@ -108,7 +108,7 @@ void LightProbePlacement::OnInitialize()
 		floral::mat4x4f mB1Right = floral::construct_quaternion_euler(0.0f, -47.0f, 0.0f).to_transform()
 			* floral::construct_translation3d(-0.35f, -0.3f, 0.0f)
 			* floral::construct_quaternion_euler(0.0f, 0.0f, 90.0f).to_transform();
-		floral::mat4x4f mB1Bottom = floral::construct_translation3d(0.0f, -1.0f, 0.0f)
+		floral::mat4x4f mB1Bottom = floral::construct_translation3d(0.0f, -0.999f, 0.0f)
 			* floral::construct_quaternion_euler(180.0f, 43.0f, 0.0f).to_transform();
 		GenQuadTesselated3DPlane_Tris_PNC(
 				mB1Top,
@@ -271,7 +271,7 @@ const bool LightProbePlacement::CanStopPartition(floral::aabb3f& i_rootOctant)
 
 const bool LightProbePlacement::IsOctantTooSmall(floral::aabb3f& i_rootOctant)
 {
-	if (i_rootOctant.max_corner.x - i_rootOctant.min_corner.x < 0.3f)
+	if (i_rootOctant.max_corner.x - i_rootOctant.min_corner.x < 0.15f)
 		return true;
 	return false;
 }
@@ -389,7 +389,7 @@ void LightProbePlacement::OnUpdate(const f32 i_deltaMs)
 
 void LightProbePlacement::OnDebugUIUpdate(const f32 i_deltaMs)
 {
-	ImGui::SetNextWindowSize(ImVec2(400, 400));
+//	ImGui::SetNextWindowSize(ImVec2(400, 400));
 	ImGui::Begin("LightProbePlacement Controller");
 	if (ImGui::CollapsingHeader("CameraMotion", ImGuiTreeNodeFlags_DefaultOpen))
 	{
@@ -416,7 +416,7 @@ void LightProbePlacement::OnRender(const f32 i_deltaMs)
 	// camera
 	m_SceneData.WVP = m_CameraMotion.GetWVP();
 	insigne::update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
-
+#if 1
 	{
 		floral::simple_callback<void, const insigne::material_desc_t&> renderCb;
 		renderCb.bind<LightProbePlacement, &LightProbePlacement::RenderCallback>(this);
@@ -433,7 +433,7 @@ void LightProbePlacement::OnRender(const f32 i_deltaMs)
 			updated = true;
 		}
 	}
-
+#endif
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
 	if (m_DrawScene)
