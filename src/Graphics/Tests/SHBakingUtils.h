@@ -19,8 +19,11 @@ public:
 
 	void										Initialize();
 	void										Setup(const floral::mat4x4f& i_XForm, floral::fixed_array<floral::vec3f, LinearAllocator>& i_shPositions);
+	void										SetupGIMaterial(const insigne::material_desc_t& i_giMat) { m_GIMaterial = i_giMat; }
 	void										Validate(floral::simple_callback<void, const insigne::material_desc_t&> i_renderCb);
+	void										BakeSH(floral::simple_callback<void, const insigne::material_desc_t&> i_renderCb);
 	const bool									IsValidationFinished() { return m_ValidationFinished; }
+	const bool									IsSHBakingFinished() { return m_SHBakingFinished; }
 	const floral::fixed_array<floral::vec3f, LinearAllocator>&	GetValidatedLocations() { return m_ValidatedProbeLocs; }
 
 private:
@@ -32,6 +35,7 @@ private:
 private:
 	floral::fixed_array<floral::vec3f, LinearAllocator>	m_ProbeLocs;
 	floral::fixed_array<floral::vec3f, LinearAllocator>	m_ValidatedProbeLocs;
+	floral::fixed_array<u32, LinearAllocator>	m_ValidatedProbeDataIdx;
 
 	floral::fixed_array<SceneData, LinearAllocator>		m_ProbeSceneData;
 
@@ -41,50 +45,16 @@ private:
 
 	insigne::shader_handle_t					m_ValidationShader;
 	insigne::material_desc_t					m_ValidationMaterial;
+	insigne::material_desc_t					m_GIMaterial;
 
 	bool										m_ValidationFinished;
+	bool										m_SHBakingFinished;
 	bool										m_CurrentProbeCaptured;
 	u64											m_PixelDataReadyFrameIdx;
 	u32											m_CurrentProbeIdx;
+	u32											m_CurrentSHIdx;
 };
 
 //----------------------------------------------
-
-class SHBaker
-{
-public:
-	SHBaker();
-	~SHBaker();
-
-	void										Initialize(const floral::mat4x4f& i_XForm, floral::fixed_array<floral::vec3f, LinearAllocator>& i_shPositions);
-	void										SetupValidator(insigne::material_desc_t& io_material);
-	void										Validate(insigne::material_desc_t& i_material,
-													floral::simple_callback<void, const bool> i_renderCb);
-
-private:
-	struct SceneData {
-		floral::mat4x4f							XForm;
-		floral::mat4x4f							WVP;
-	};
-
-	struct SHProbeData {
-		floral::mat4x4f							XForm;
-		floral::vec4f							CoEffs[9];
-	};
-
-private:
-	floral::fixed_array<floral::vec3f, LinearAllocator>		m_SHPositions;
-	floral::fixed_array<SceneData, LinearAllocator>			m_EnvSceneData;
-	floral::fixed_array<SHProbeData, LinearAllocator>		m_SHData;
-
-	insigne::ub_handle_t						m_EnvMapSceneUB;
-	insigne::framebuffer_handle_t				m_EnvMapRenderBuffer;
-	f32*										m_EnvMapPixelData;
-
-	bool										m_FinishValidation;
-	bool										m_EnvCaptured;
-	u64											m_FrameIdx;
-	u32											m_EnvIdx;
-};
 
 }

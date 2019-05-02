@@ -63,6 +63,8 @@ private:
 	s32											m_DrawProbeRangeMax;
 	bool										m_DrawOctree;
 	bool										m_DrawScene;
+	bool										m_ProbePlacement;
+	bool										m_SHBaking;
 
 	SceneData									m_SceneData;
 

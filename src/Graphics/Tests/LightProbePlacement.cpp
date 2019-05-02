@@ -205,6 +205,7 @@ void LightProbePlacement::OnInitialize()
 
 	SnapshotAllocatorInfos();
 	m_ProbeValidator.Setup(m_SceneData.XForm, m_ProbeLocations);
+	m_ProbeValidator.SetupGIMaterial(m_Material);
 }
 
 void LightProbePlacement::DoScenePartition()
@@ -271,7 +272,7 @@ const bool LightProbePlacement::CanStopPartition(floral::aabb3f& i_rootOctant)
 
 const bool LightProbePlacement::IsOctantTooSmall(floral::aabb3f& i_rootOctant)
 {
-	if (i_rootOctant.max_corner.x - i_rootOctant.min_corner.x < 0.15f)
+	if (i_rootOctant.max_corner.x - i_rootOctant.min_corner.x < 0.3f)
 		return true;
 	return false;
 }
@@ -389,7 +390,6 @@ void LightProbePlacement::OnUpdate(const f32 i_deltaMs)
 
 void LightProbePlacement::OnDebugUIUpdate(const f32 i_deltaMs)
 {
-//	ImGui::SetNextWindowSize(ImVec2(400, 400));
 	ImGui::Begin("LightProbePlacement Controller");
 	if (ImGui::CollapsingHeader("CameraMotion", ImGuiTreeNodeFlags_DefaultOpen))
 	{
@@ -407,6 +407,16 @@ void LightProbePlacement::OnDebugUIUpdate(const f32 i_deltaMs)
 		ImGui::SliderInt("Probe's draw range TO", &m_DrawProbeRangeMax, 0, m_ProbeLocations.get_size());
 		ImGui::Checkbox("Draw octree", &m_DrawOctree);
 		ImGui::Checkbox("Draw scene", &m_DrawScene);
+
+		if (ImGui::Button("Place probes"))
+		{
+			m_ProbePlacement = true;
+		}
+
+		if (ImGui::Button("Bake SHs"))
+		{
+			m_SHBaking = true;
+		}
 	}
 	ImGui::End();
 }
@@ -416,24 +426,39 @@ void LightProbePlacement::OnRender(const f32 i_deltaMs)
 	// camera
 	m_SceneData.WVP = m_CameraMotion.GetWVP();
 	insigne::update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
-#if 1
-	{
-		floral::simple_callback<void, const insigne::material_desc_t&> renderCb;
-		renderCb.bind<LightProbePlacement, &LightProbePlacement::RenderCallback>(this);
 
-		m_ProbeValidator.Validate(renderCb);
-	}
-
-	if (m_ProbeValidator.IsValidationFinished())
+	if (m_ProbePlacement)
 	{
-		static bool updated = false;
-		if (!updated)
+		if (!m_ProbeValidator.IsValidationFinished())
 		{
-			m_ProbeLocations = m_ProbeValidator.GetValidatedLocations();
-			updated = true;
+			floral::simple_callback<void, const insigne::material_desc_t&> renderCb;
+			renderCb.bind<LightProbePlacement, &LightProbePlacement::RenderCallback>(this);
+
+			m_ProbeValidator.Validate(renderCb);
+		}
+
+		if (m_ProbeValidator.IsValidationFinished())
+		{
+			static bool updated = false;
+			if (!updated)
+			{
+				m_ProbeLocations = m_ProbeValidator.GetValidatedLocations();
+				updated = true;
+			}
 		}
 	}
-#endif
+
+	if (m_SHBaking)
+	{
+		if (!m_ProbeValidator.IsSHBakingFinished())
+		{
+			floral::simple_callback<void, const insigne::material_desc_t&> renderCb;
+			renderCb.bind<LightProbePlacement, &LightProbePlacement::RenderCallback>(this);
+
+			m_ProbeValidator.BakeSH(renderCb);
+		}
+	}
+
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
 	if (m_DrawScene)

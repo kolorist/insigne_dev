@@ -171,7 +171,6 @@ in mediump vec4 v_VertexColor;
 
 void main()
 {
-#if 1
 	if (gl_FrontFacing)
 	{
 		o_Color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -180,9 +179,6 @@ void main()
 	{
 		o_Color = vec4(0.0f, 0.0f, 0.0f, 1.0f);
 	}
-#else
-	o_Color = v_VertexColor;
-#endif
 }
 )";
 
@@ -241,11 +237,12 @@ void ProbeValidator::Setup(const floral::mat4x4f& i_XForm, floral::fixed_array<f
 {
 	m_ProbeLocs.init(i_shPositions.get_size(), &g_StreammingAllocator);
 	m_ValidatedProbeLocs.init(i_shPositions.get_size(), &g_StreammingAllocator);
+	m_ValidatedProbeDataIdx.init(i_shPositions.get_size(), &g_StreammingAllocator);
 	m_ProbeSceneData.init(i_shPositions.get_size() * 6, &g_StreammingAllocator);
 
 	m_ProbeLocs = i_shPositions;
-	//m_CurrentProbeIdx = 498;
 	m_CurrentProbeIdx = 0;
+	m_CurrentSHIdx = 0;
 
 	static floral::vec3f faceUpDirs[] = {
 		floral::vec3f(0.0f, 1.0f, 0.0f),	// positive X
@@ -333,161 +330,57 @@ void ProbeValidator::Validate(floral::simple_callback<void, const insigne::mater
 			{
 				CLOVER_DEBUG("Capture probe %d: %4.2f", m_CurrentProbeIdx, total);
 				m_ValidatedProbeLocs.push_back(m_ProbeLocs[m_CurrentProbeIdx]);
+				m_ValidatedProbeDataIdx.push_back(m_CurrentProbeIdx);
 			}
 			m_CurrentProbeCaptured = false;
 			m_CurrentProbeIdx++;
 		}
-		if (m_CurrentProbeIdx == m_ProbeLocs.get_size()) m_ValidationFinished = true;
-		//if (m_CurrentProbeIdx == 499) m_ValidationFinished = true;
-	}
-}
 
-//----------------------------------------------
-
-SHBaker::SHBaker()
-{
-}
-
-SHBaker::~SHBaker()
-{
-}
-
-void SHBaker::Initialize(const floral::mat4x4f& i_XForm, floral::fixed_array<floral::vec3f, LinearAllocator>& i_shPositions)
-{
-	m_SHPositions.init(i_shPositions.get_size(), &g_StreammingAllocator);
-	m_EnvSceneData.init(i_shPositions.get_size() * 6, &g_StreammingAllocator);
-
-	m_SHPositions = i_shPositions;
-
-	static floral::vec3f faceUpDirs[] = {
-		floral::vec3f(0.0f, 1.0f, 0.0f),	// positive X
-		floral::vec3f(0.0f, 1.0f, 0.0f),	// negative X
-
-		floral::vec3f(1.0f, 0.0f, 0.0f),	// positive Y
-		floral::vec3f(0.0f, 0.0f, -1.0f),	// negative Y
-
-		floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Z
-		floral::vec3f(0.0f, 1.0f, 0.0f),	// negative Z
-	};
-
-	static floral::vec3f faceLookAtDirs[] = {
-		floral::vec3f(1.0f, 0.0f, 0.0f),	// positive X
-		floral::vec3f(-1.0f, 0.0f, 0.0f),	// negative X
-
-		floral::vec3f(0.0f, 1.0f, 0.0f),	// positive Y
-		floral::vec3f(0.0f, -1.0f, 0.0f),	// negative Y
-
-		floral::vec3f(0.0f, 0.0f, 1.0f),	// positive Z
-		floral::vec3f(0.0f, 0.0f, -1.0f),	// negative Z
-	};
-
-	floral::camera_persp_t camProj;
-	camProj.near_plane = 0.01f; camProj.far_plane = 20.0f;
-	camProj.fov = 90.0f;
-	camProj.aspect_ratio = 1.0f;
-	floral::mat4x4f proj = floral::construct_perspective(camProj);
-
-	for (u32 i = 0; i < i_shPositions.get_size(); i++) {
-		for (u32 f = 0; f < 6; f++) {
-			floral::camera_view_t camView;
-			camView.position = i_shPositions[i] + floral::vec3f(0.0f, 0.2f, 0.0f);
-			camView.up_direction = faceUpDirs[f];
-			camView.look_at = faceLookAtDirs[f];
-			floral::mat4x4f wvp = proj * floral::construct_lookat_dir(camView);
-			m_EnvSceneData.push_back(SceneData{ i_XForm, wvp });
+		if (m_CurrentProbeIdx == m_ProbeLocs.get_size())
+		{
+			m_ValidationFinished = true;
+			m_CurrentProbeIdx = 0;
+			m_PixelDataReadyFrameIdx = 0;
 		}
 	}
-
-	{
-		// 1536 x 256
-		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
-		desc.color_attachments->push_back(insigne::color_attachment_t("main_color", insigne::texture_format_e::hdr_rgb));
-		desc.width = 1536; desc.height = 256;
-		m_EnvMapRenderBuffer = insigne::create_framebuffer(desc);
-	}
-
-	{
-		insigne::ubdesc_t desc;
-		desc.region_size = SIZE_KB(512);
-		desc.data = nullptr;
-		desc.data_size = 0;
-		desc.usage = insigne::buffer_usage_e::dynamic_draw;
-
-		insigne::ub_handle_t newUB = insigne::create_ub(desc);
-
-		g_TemporalLinearArena.free_all();
-		FLORAL_ASSERT(256 * m_EnvSceneData.get_size() <= desc.region_size);
-		p8 cpuData = (p8)g_TemporalLinearArena.allocate(desc.region_size);
-		memset(cpuData, 0, desc.region_size);
-
-		for (u32 i = 0; i < m_EnvSceneData.get_size(); i++) {
-			p8 pData = cpuData + 256 * i;
-			memcpy(pData, &m_EnvSceneData[i], sizeof(SceneData));
-		}
-
-		insigne::copy_update_ub(newUB, cpuData, 256 * m_EnvSceneData.get_size(), 0);
-		m_EnvMapSceneUB = newUB;
-	}
-
-	//insigne::dispatch_render_pass();
 }
 
-void SHBaker::SetupValidator(insigne::material_desc_t& io_material)
+void ProbeValidator::BakeSH(floral::simple_callback<void, const insigne::material_desc_t&> i_renderCb)
 {
-	m_FinishValidation = false;
-	m_EnvCaptured = false;
-	m_FrameIdx = 0;
-	m_EnvIdx = 185;
-	//m_EnvIdx = 0;
-	{
-		u32 ubSlot = insigne::get_material_uniform_block_slot(io_material, "ub_Scene");
-		io_material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 256, m_EnvMapSceneUB };
-	}
-}
-
-void SHBaker::Validate(insigne::material_desc_t& i_material, floral::simple_callback<void, const bool> i_renderCb)
-{
-	if (!m_FinishValidation) {
-		if (!m_EnvCaptured) {
+	if (!m_SHBakingFinished) {
+		if (!m_CurrentProbeCaptured) {
 			for (u32 f = 0; f < 6; f++) {
-				insigne::begin_render_pass(m_EnvMapRenderBuffer, 256 * f, 0, 256, 256);
-				u32 ubSlot = insigne::get_material_uniform_block_slot(i_material, "ub_Scene");
-				i_material.uniform_blocks[ubSlot].value.offset = 256 * (f + 6 * m_EnvIdx);
+				insigne::begin_render_pass(m_ProbeRB, 256 * f, 0, 256, 256);
+				u32 ubSlot = insigne::get_material_uniform_block_slot(m_GIMaterial, "ub_Scene");
+				m_GIMaterial.uniform_blocks[ubSlot].value.offset = 256 * (f + 6 * m_ValidatedProbeDataIdx[m_CurrentSHIdx]);
+				m_GIMaterial.uniform_blocks[ubSlot].value.range = 256;
+				m_GIMaterial.uniform_blocks[ubSlot].value.ub_handle = m_ProbeSceneDataUB;
 
-				//insigne::draw_surface<SurfacePNC>(m_VB, m_IB, i_material);
-				i_renderCb(true);
+				i_renderCb(m_GIMaterial);
 
-				insigne::end_render_pass(m_EnvMapRenderBuffer);
+				insigne::end_render_pass(m_ProbeRB);
 				insigne::dispatch_render_pass();
 			}
 
 			g_TemporalLinearArena.free_all();
-			m_EnvMapPixelData = g_TemporalLinearArena.allocate_array<f32>(1536 * 256 * 3);
-			m_FrameIdx = insigne::schedule_framebuffer_capture(m_EnvMapRenderBuffer, m_EnvMapPixelData);
-			m_EnvCaptured = true;
+			m_ProbePixelData = g_TemporalLinearArena.allocate_array<f32>(1536 * 256 * 3);
+			m_PixelDataReadyFrameIdx = insigne::schedule_framebuffer_capture(m_ProbeRB, m_ProbePixelData);
+			m_CurrentProbeCaptured = true;
 		}
 
-		if (m_EnvCaptured && insigne::get_current_frame_idx() >= m_FrameIdx) {
-			m_EnvIdx++;
-			m_EnvCaptured = false;
-			f32 total = 0.0f;
-			for (size i = 0; i < 1536 * 256; i++)
-			{
-				total += m_EnvMapPixelData[i * 3];
-			}
-			total = total / (1536.0f * 256.0f) * 100.0f;
-			if (total <= 10.0f)
-			{
-				CLOVER_DEBUG("Capture %d probes: %4.2f - REJECTED", m_EnvIdx, total);
-			}
-			else
-			{
-				CLOVER_DEBUG("Capture %d probes: %4.2f", m_EnvIdx, total);
-			}
+		if (m_CurrentProbeCaptured && insigne::get_current_frame_idx() >= m_PixelDataReadyFrameIdx) {
+			f64 shr[9];
+			f64 shg[9];
+			f64 shb[9];
+			ComputeSH(shr, shg, shb, m_ProbePixelData);
+			m_CurrentProbeCaptured = false;
+			m_CurrentSHIdx++;
+			CLOVER_DEBUG("SH captured: %d", m_CurrentSHIdx);
 		}
-		//if (m_EnvIdx == m_SHPositions.get_size()) m_FinishValidation = true;
-		if (m_EnvIdx == 186) m_FinishValidation = true;
+		if (m_CurrentSHIdx == m_ValidatedProbeDataIdx.get_size()) m_SHBakingFinished = true;
 	}
 }
+
+//----------------------------------------------
 
 }
