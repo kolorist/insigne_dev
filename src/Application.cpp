@@ -145,7 +145,7 @@ void Application::OnInitialize()
 	insigne::register_surface_type<SurfacePNC>();
 	//insigne::register_surface_type<SurfacePNC>();
 	//insigne::register_surface_type<SurfacePNCC>();
-	//insigne::register_surface_type<SurfaceP>();
+	insigne::register_surface_type<SurfaceP>();
 	insigne::register_surface_type<DebugLine>();
 	insigne::register_surface_type<ImGuiSurface>();
 

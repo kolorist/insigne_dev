@@ -38,9 +38,19 @@ private:
 	void										Partition(floral::aabb3f& i_rootOctant);
 
 private:
+	struct SHProbeData {
+		floral::mat4x4f							XForm;
+		floral::vec4f							CoEffs[9];
+	};
+
+private:
 	floral::fixed_array<VertexPNC, LinearAllocator>		m_Vertices;
 	floral::fixed_array<u32, LinearAllocator>			m_Indices;
 	floral::fixed_array<GeoQuad, LinearAllocator>		m_Patches;
+
+	floral::fixed_array<VertexP, LinearAllocator>	m_ProbeVertices;
+	floral::fixed_array<u32, LinearAllocator>		m_ProbeIndices;
+	floral::fixed_array<SHProbeData, LinearAllocator>		m_SHData;
 
 	floral::aabb3f								m_SceneAABB;
 	struct Octant
@@ -57,12 +67,14 @@ private:
 		floral::mat4x4f							WVP;
 	};
 
+
 	bool										m_DrawCoordinate;
 	bool										m_DrawProbeLocations;
 	s32											m_DrawProbeRangeMin;
 	s32											m_DrawProbeRangeMax;
 	bool										m_DrawOctree;
 	bool										m_DrawScene;
+	bool										m_DrawSHProbes;
 	bool										m_ProbePlacement;
 	bool										m_SHBaking;
 
@@ -75,6 +87,12 @@ private:
 	insigne::shader_handle_t					m_ValidationShader;
 	insigne::material_desc_t					m_Material;
 	insigne::material_desc_t					m_ValidationMaterial;
+
+	insigne::vb_handle_t						m_ProbeVB;
+	insigne::ib_handle_t						m_ProbeIB;
+	insigne::ub_handle_t						m_ProbeUB;
+	insigne::shader_handle_t					m_ProbeShader;
+	insigne::material_desc_t					m_ProbeMaterial;
 
 	LinearArena*								m_MemoryArena;
 	ProbeValidator								m_ProbeValidator;

@@ -238,6 +238,7 @@ void ProbeValidator::Setup(const floral::mat4x4f& i_XForm, floral::fixed_array<f
 	m_ProbeLocs.init(i_shPositions.get_size(), &g_StreammingAllocator);
 	m_ValidatedProbeLocs.init(i_shPositions.get_size(), &g_StreammingAllocator);
 	m_ValidatedProbeDataIdx.init(i_shPositions.get_size(), &g_StreammingAllocator);
+	m_ValidatedSHData.init(i_shPositions.get_size(), &g_StreammingAllocator);
 	m_ProbeSceneData.init(i_shPositions.get_size() * 6, &g_StreammingAllocator);
 
 	m_ProbeLocs = i_shPositions;
@@ -373,6 +374,15 @@ void ProbeValidator::BakeSH(floral::simple_callback<void, const insigne::materia
 			f64 shg[9];
 			f64 shb[9];
 			ComputeSH(shr, shg, shb, m_ProbePixelData);
+			SHData shData;
+			for (u32 i = 0; i < 9; i++)
+			{
+				shData.CoEffs[i].x = (f32)shr[i];
+				shData.CoEffs[i].y = (f32)shg[i];
+				shData.CoEffs[i].z = (f32)shb[i];
+				shData.CoEffs[i].w = 0.0f;
+			}
+			m_ValidatedSHData.push_back(shData);
 			m_CurrentProbeCaptured = false;
 			m_CurrentSHIdx++;
 			CLOVER_DEBUG("SH captured: %d", m_CurrentSHIdx);

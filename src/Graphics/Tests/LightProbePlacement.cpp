@@ -43,6 +43,71 @@ void main()
 }
 )";
 
+// ---------------------------------------------
+
+static const_cstr s_ProbeVS = R"(#version 300 es
+layout (location = 0) in highp vec3 l_Position_L;
+
+layout(std140) uniform ub_Scene
+{
+	highp mat4 iu_XForm_unused;
+	highp mat4 iu_WVP;
+};
+
+layout(std140) uniform ub_ProbeData
+{
+	highp mat4 iu_XForm;
+	mediump vec4 iu_Coeffs[9];
+};
+
+out mediump vec3 v_Normal;
+
+void main() {
+	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
+	v_Normal = normalize(l_Position_L);
+	gl_Position = iu_WVP * pos_W;
+}
+)";
+
+static const_cstr s_ProbeFS = R"(#version 300 es
+layout (location = 0) out mediump vec4 o_Color;
+
+layout(std140) uniform ub_ProbeData
+{
+	highp mat4 iu_XForm;
+	mediump vec4 iu_Coeffs[9];
+};
+
+in mediump vec3 v_Normal;
+
+const mediump float c0 = 0.2820947918f;
+const mediump float c1 = 0.4886025119f;
+const mediump float c2 = 2.185096861f;	// sqrt(15/pi)
+const mediump float c3 = 1.261566261f;	// sqrt(5/pi)
+
+mediump vec3 evalSH(in mediump vec3 i_normal)
+{
+	return
+		c0 * iu_Coeffs[0].xyz					// band 0
+
+		- c1 * i_normal.y * iu_Coeffs[1].xyz * 0.667f
+		+ c1 * i_normal.z * iu_Coeffs[2].xyz * 0.667f
+		- c1 * i_normal.x * iu_Coeffs[3].xyz * 0.667f
+
+		+ c2 * i_normal.x * i_normal.y * 0.5f * iu_Coeffs[4].xyz * 0.25f
+		- c2 * i_normal.y * i_normal.z * 0.5f * iu_Coeffs[5].xyz * 0.25f
+		+ c3 * (-1.0f + 3.0f * i_normal.z * i_normal.z) * 0.25f * iu_Coeffs[6].xyz * 0.25f
+		- c2 * i_normal.x * i_normal.z * 0.5f * iu_Coeffs[7].xyz * 0.25f
+		+ c2 * (i_normal.x * i_normal.x - i_normal.y * i_normal.y) * 0.25f * iu_Coeffs[8].xyz * 0.25f;
+}
+
+void main()
+{
+	mediump vec3 c = evalSH(v_Normal);
+	o_Color = vec4(c, 1.0f);
+}
+)";
+
 LightProbePlacement::LightProbePlacement()
 	: m_CameraMotion(
 			floral::camera_view_t { floral::vec3f(5.0f, 2.5f, 2.0f), floral::vec3f(-5.0f, -2.5f, -2.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
@@ -53,6 +118,7 @@ LightProbePlacement::LightProbePlacement()
 	, m_DrawProbeRangeMax(0)
 	, m_DrawOctree(false)
 	, m_DrawScene(true)
+	, m_DrawSHProbes(false)
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 }
@@ -67,6 +133,15 @@ void LightProbePlacement::OnInitialize()
 	m_Indices.init(8192u, &g_StreammingAllocator);
 	m_Patches.init(1024u, &g_StreammingAllocator);
 	m_ProbeLocations.init(2048u, &g_StreammingAllocator);
+
+	m_ProbeVertices.init(1024u, &g_StreammingAllocator);
+	m_ProbeIndices.init(4096u, &g_StreammingAllocator);
+	m_SHData.init(512u, &g_StreammingAllocator);
+
+	{
+		floral::mat4x4f m = floral::construct_scaling3d(floral::vec3f(0.1f));
+		GenIcosphere_Tris_P(m, m_ProbeVertices, m_ProbeIndices);
+	}
 
 	{
 		floral::mat4x4f mBottom = floral::construct_translation3d(0.0f, -1.0f, 0.0f);
@@ -161,6 +236,34 @@ void LightProbePlacement::OnInitialize()
 		m_IB = newIB;
 	}
 
+	// upload probe geometry
+	{
+		insigne::vbdesc_t desc;
+		desc.region_size = SIZE_KB(64);
+		desc.stride = sizeof(VertexP);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::vb_handle_t newVB = insigne::create_vb(desc);
+
+		insigne::update_vb(newVB, &m_ProbeVertices[0], m_ProbeVertices.get_size(), 0);
+		m_ProbeVB = newVB;
+	}
+
+	{
+		insigne::ibdesc_t desc;
+		desc.region_size = SIZE_KB(16);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ib_handle_t newIB = insigne::create_ib(desc);
+
+		insigne::update_ib(newIB, &m_ProbeIndices[0], m_ProbeIndices.get_size(), 0);
+		m_ProbeIB = newIB;
+	}
+
 	{
 		insigne::ubdesc_t desc;
 		desc.region_size = SIZE_KB(4);
@@ -176,6 +279,18 @@ void LightProbePlacement::OnInitialize()
 
 		insigne::update_ub(newUB, &m_SceneData, sizeof(SceneData), 0);
 		m_UB = newUB;
+	}
+
+	// upload probe data
+	{
+		insigne::ubdesc_t desc;
+		desc.region_size = SIZE_KB(512);
+		desc.data = nullptr;
+		desc.data_size = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ub_handle_t newUB = insigne::create_ub(desc);
+		m_ProbeUB = newUB;
 	}
 
 	{
@@ -194,6 +309,31 @@ void LightProbePlacement::OnInitialize()
 		{
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Scene");
 			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
+		}
+	}
+
+	// probe shaders
+	{
+		insigne::shader_desc_t desc = insigne::create_shader_desc();
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_ProbeData", insigne::param_data_type_e::param_ub));
+
+		strcpy(desc.vs, s_ProbeVS);
+		strcpy(desc.fs, s_ProbeFS);
+		desc.vs_path = floral::path("/debug/probe_vs");
+		desc.fs_path = floral::path("/debug/probe_fs");
+
+		m_ProbeShader = insigne::create_shader(desc);
+		insigne::infuse_material(m_ProbeShader, m_ProbeMaterial);
+
+		{
+			u32 ubSlot = insigne::get_material_uniform_block_slot(m_ProbeMaterial, "ub_Scene");
+			m_ProbeMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
+		}
+
+		{
+			u32 ubSlot = insigne::get_material_uniform_block_slot(m_ProbeMaterial, "ub_ProbeData");
+			m_ProbeMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 256, m_ProbeUB };
 		}
 	}
 
@@ -385,6 +525,11 @@ void LightProbePlacement::OnUpdate(const f32 i_deltaMs)
 			}
 		}
 	}
+
+	if (m_DrawSHProbes)
+	{
+	}
+
 	m_DebugDrawer.EndFrame();
 }
 
@@ -416,6 +561,27 @@ void LightProbePlacement::OnDebugUIUpdate(const f32 i_deltaMs)
 		if (ImGui::Button("Bake SHs"))
 		{
 			m_SHBaking = true;
+		}
+
+		if (ImGui::Button("Draw SH probes"))
+		{
+			if (m_ProbeValidator.IsSHBakingFinished())
+			{
+				// upload SH data
+				g_TemporalLinearArena.free_all();
+				FLORAL_ASSERT(sizeof(SHProbeData) <= 256);
+				FLORAL_ASSERT(256 * m_SHData.get_size() <= SIZE_KB(512));
+				p8 cpuData = (p8)g_TemporalLinearArena.allocate(SIZE_KB(512));
+				memset(cpuData, 0, SIZE_KB(512));
+
+				for (u32 i = 0; i < m_SHData.get_size(); i++) {
+					p8 pData = cpuData + 256 * i;
+					memcpy(pData, &m_SHData[i], sizeof(SHProbeData));
+				}
+
+				insigne::copy_update_ub(m_ProbeUB, cpuData, 256 * m_SHData.get_size(), 0);
+				m_DrawSHProbes = true;
+			}
 		}
 	}
 	ImGui::End();
@@ -457,6 +623,28 @@ void LightProbePlacement::OnRender(const f32 i_deltaMs)
 
 			m_ProbeValidator.BakeSH(renderCb);
 		}
+
+		if (m_ProbeValidator.IsSHBakingFinished())
+		{
+			static bool updated = false;
+			if (!updated)
+			{
+				const floral::fixed_array<floral::vec3f, LinearAllocator>& shPos = m_ProbeValidator.GetValidatedLocations();
+				const floral::fixed_array<SHData, LinearAllocator>& shData = m_ProbeValidator.GetValidatedSHData();
+
+				for (u32 i = 0; i < shPos.get_size(); i++) {
+					SHProbeData d;
+					d.XForm = floral::construct_translation3d(shPos[i]) * floral::construct_scaling3d(floral::vec3f(0.8f));
+					for (u32 j = 0; j < 9; j++)
+					{
+						d.CoEffs[j] = shData[i].CoEffs[j];
+					}
+					m_SHData.push_back(d);
+				}
+
+				updated = true;
+			}
+		}
 	}
 
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
@@ -464,6 +652,15 @@ void LightProbePlacement::OnRender(const f32 i_deltaMs)
 	if (m_DrawScene)
 	{
 		insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
+	}
+
+	if (m_DrawSHProbes)
+	{
+		for (u32 i = 0; i < m_SHData.get_size(); i++) {
+			u32 ubSlot = insigne::get_material_uniform_block_slot(m_ProbeMaterial, "ub_ProbeData");
+			m_ProbeMaterial.uniform_blocks[ubSlot].value.offset = 256 * i;
+			insigne::draw_surface<SurfaceP>(m_ProbeVB, m_ProbeIB, m_ProbeMaterial);
+		}
 	}
 
 	m_DebugDrawer.Render(m_SceneData.WVP);

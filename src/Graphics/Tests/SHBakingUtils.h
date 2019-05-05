@@ -10,6 +10,9 @@ namespace stone {
 void											ComputeSH(f64* o_shr, f64* o_shg, f64* o_shb, f32* i_envMap);
 
 //----------------------------------------------
+struct SHData {
+	floral::vec4f								CoEffs[9];
+};
 
 class ProbeValidator
 {
@@ -24,7 +27,9 @@ public:
 	void										BakeSH(floral::simple_callback<void, const insigne::material_desc_t&> i_renderCb);
 	const bool									IsValidationFinished() { return m_ValidationFinished; }
 	const bool									IsSHBakingFinished() { return m_SHBakingFinished; }
+
 	const floral::fixed_array<floral::vec3f, LinearAllocator>&	GetValidatedLocations() { return m_ValidatedProbeLocs; }
+	const floral::fixed_array<SHData, LinearAllocator>&	GetValidatedSHData() { return m_ValidatedSHData; }
 
 private:
 	struct SceneData {
@@ -35,6 +40,7 @@ private:
 private:
 	floral::fixed_array<floral::vec3f, LinearAllocator>	m_ProbeLocs;
 	floral::fixed_array<floral::vec3f, LinearAllocator>	m_ValidatedProbeLocs;
+	floral::fixed_array<SHData, LinearAllocator>	m_ValidatedSHData;
 	floral::fixed_array<u32, LinearAllocator>	m_ValidatedProbeDataIdx;
 
 	floral::fixed_array<SceneData, LinearAllocator>		m_ProbeSceneData;
