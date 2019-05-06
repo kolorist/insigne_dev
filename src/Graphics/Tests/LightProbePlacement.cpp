@@ -1,5 +1,7 @@
 #include "LightProbePlacement.h"
 
+#include <floral/io/nativeio.h>
+
 #include <insigne/commons.h>
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
@@ -137,6 +139,18 @@ void LightProbePlacement::OnInitialize()
 	m_ProbeVertices.init(1024u, &g_StreammingAllocator);
 	m_ProbeIndices.init(4096u, &g_StreammingAllocator);
 	m_SHData.init(512u, &g_StreammingAllocator);
+
+	// test io
+	{
+		floral::file_info f = floral::open_output_file("o.txt");
+		floral::output_file_stream os;
+		floral::map_output_file(f, os);
+		const_cstr testData = "testData";
+		os.write_bytes((voidptr)testData, strlen(testData));
+		os.write_bytes((voidptr)testData, strlen(testData));
+		os.write_bytes((voidptr)testData, strlen(testData));
+		floral::close_file(f);
+	}
 
 	{
 		floral::mat4x4f m = floral::construct_scaling3d(floral::vec3f(0.1f));
