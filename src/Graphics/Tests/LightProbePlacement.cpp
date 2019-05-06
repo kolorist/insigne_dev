@@ -2,6 +2,8 @@
 
 #include <floral/io/nativeio.h>
 
+#include <clover/Logger.h>
+
 #include <insigne/commons.h>
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
@@ -139,18 +141,6 @@ void LightProbePlacement::OnInitialize()
 	m_ProbeVertices.init(1024u, &g_StreammingAllocator);
 	m_ProbeIndices.init(4096u, &g_StreammingAllocator);
 	m_SHData.init(512u, &g_StreammingAllocator);
-
-	// test io
-	{
-		floral::file_info f = floral::open_output_file("o.txt");
-		floral::output_file_stream os;
-		floral::map_output_file(f, os);
-		const_cstr testData = "testData";
-		os.write_bytes((voidptr)testData, strlen(testData));
-		os.write_bytes((voidptr)testData, strlen(testData));
-		os.write_bytes((voidptr)testData, strlen(testData));
-		floral::close_file(f);
-	}
 
 	{
 		floral::mat4x4f m = floral::construct_scaling3d(floral::vec3f(0.1f));
@@ -532,7 +522,7 @@ void LightProbePlacement::OnUpdate(const f32 i_deltaMs)
 		if (m_DrawProbeRangeMax >= m_DrawProbeRangeMin)
 		{
 			//for (u32 i = 0; i < m_ProbeLocations.get_size(); i++)
-			for (u32 i = m_DrawProbeRangeMin; i < m_DrawProbeRangeMax; i++)
+			for (s32 i = m_DrawProbeRangeMin; i < m_DrawProbeRangeMax; i++)
 			{
 				m_DebugDrawer.DrawIcosahedron3D(m_ProbeLocations[i], 
 						0.05f, floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f));
@@ -595,6 +585,31 @@ void LightProbePlacement::OnDebugUIUpdate(const f32 i_deltaMs)
 
 				insigne::copy_update_ub(m_ProbeUB, cpuData, 256 * m_SHData.get_size(), 0);
 				m_DrawSHProbes = true;
+			}
+		}
+
+		if (ImGui::Button("Export SH data"))
+		{
+			if (m_ProbeValidator.IsSHBakingFinished())
+			{
+				floral::file_info f = floral::open_output_file("shdata.bin");
+				floral::output_file_stream os;
+				floral::map_output_file(f, os);
+
+				u32 numSHProbes = m_ProbeLocations.get_size();
+				os.write(numSHProbes);
+
+				for (u32 i = 0; i < numSHProbes; i++)
+				{
+					os.write(m_ProbeLocations[i]);
+					for (u32 j = 0; j < 9; j++)
+					{
+						os.write(m_SHData[i].CoEffs[j]);
+					}
+				}
+
+				floral::close_file(f);
+				CLOVER_DEBUG("SH data exported");
 			}
 		}
 	}

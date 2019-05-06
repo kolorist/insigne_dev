@@ -37,6 +37,8 @@ private:
 	const bool									IsOctantHasTriangles(floral::aabb3f& i_rootOctant, const u32 i_threshold);
 	void										Partition(floral::aabb3f& i_rootOctant);
 
+	void										ExportSHData();
+
 private:
 	struct SHProbeData {
 		floral::mat4x4f							XForm;
