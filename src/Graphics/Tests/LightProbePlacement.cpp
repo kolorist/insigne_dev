@@ -416,7 +416,7 @@ const bool LightProbePlacement::CanStopPartition(floral::aabb3f& i_rootOctant)
 
 const bool LightProbePlacement::IsOctantTooSmall(floral::aabb3f& i_rootOctant)
 {
-	if (i_rootOctant.max_corner.x - i_rootOctant.min_corner.x < 0.3f)
+	if (i_rootOctant.max_corner.x - i_rootOctant.min_corner.x < 0.8f)
 		return true;
 	return false;
 }

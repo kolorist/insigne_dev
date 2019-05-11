@@ -63,6 +63,7 @@ file (GLOB_RECURSE file_list
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/LightProbePlacement.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CbFormats.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/DebugUITest.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GILightProbe.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/OmniShadow.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHMath.cpp"
 

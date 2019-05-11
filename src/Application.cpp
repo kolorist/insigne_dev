@@ -24,6 +24,7 @@
 #include "Graphics/Tests/LightProbePlacement.h"
 #include "Graphics/Tests/CbFormats.h"
 #include "Graphics/Tests/DebugUITest.h"
+#include "Graphics/Tests/GILightProbe.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -155,7 +156,8 @@ void Application::OnInitialize()
 	//_CreateTestSuite<DebugUITest>();
 	//_CreateTestSuite<CornelBox>();
 	//_CreateTestSuite<OctreePartition>();
-	_CreateTestSuite<LightProbePlacement>();
+	//_CreateTestSuite<LightProbePlacement>();
+	_CreateTestSuite<GILightProbe>();
 
 	if (m_CurrentTestSuite)
 	{
