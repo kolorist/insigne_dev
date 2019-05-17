@@ -45,6 +45,7 @@ private:
 	floral::fixed_array<VertexPNC, LinearAllocator>		m_Vertices;
 	floral::fixed_array<u32, LinearAllocator>			m_Indices;
 	floral::fixed_array<GeoQuad, LinearAllocator>		m_Patches;
+	floral::fixed_array<floral::vec3f, LinearAllocator>	m_SHPositions;
 
 	SceneData									m_SceneData;
 	LightGridData								m_LightGridData;

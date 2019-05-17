@@ -8,6 +8,7 @@
 #include <insigne/system.h>
 #include <insigne/driver.h>
 #include <insigne/ut_render.h>
+#include <calyx/context.h>
 
 #include "System/Controller.h"
 
@@ -46,7 +47,9 @@ Application::Application(Controller* i_controller)
 	//s_profileEvents[0].init(4096u, &g_SystemAllocator);
 	//s_profileEvents[1].init(4096u, &g_SystemAllocator);
 
-	i_controller->IOEvents.OnInitialize.bind<Application, &Application::OnInitialize>(this);
+	i_controller->IOEvents.OnInitializePlatform.bind<Application, &Application::OnInitializePlatform>(this);
+	i_controller->IOEvents.OnInitializeRenderer.bind<Application, &Application::OnInitializeRenderer>(this);
+	i_controller->IOEvents.OnInitializeGame.bind<Application, &Application::OnInitializeGame>(this);
 	i_controller->IOEvents.OnPause.bind<Application, &Application::OnPause>(this);
 	i_controller->IOEvents.OnResume.bind<Application, &Application::OnResume>(this);
 	i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
@@ -101,12 +104,16 @@ void Application::RenderFrame(f32 i_deltaMs)
 void Application::OnPause()
 {
 	// pause render thread
+	LOG_TOPIC("app");
+	CLOVER_VERBOSE("Pausing Render thread");
 	insigne::pause_render_thread();
 }
 
 void Application::OnResume()
 {
 	// resume render thread
+	LOG_TOPIC("app");
+	CLOVER_VERBOSE("Resuming Render thread");
 	insigne::resume_render_thread();
 }
 
@@ -116,17 +123,12 @@ void Application::OnFocusChanged(bool i_hasFocus)
 
 void Application::OnDisplayChanged()
 {
-	insigne::request_refresh_context();
 }
 
-void Application::OnInitialize()
+void Application::OnInitializePlatform()
 {
-	CLOVER_VERBOSE(__FUNCTION__);
-	if (m_Initialized)
-	{
-		return;
-	}
-
+	LOG_TOPIC("app");
+	CLOVER_VERBOSE("Initialize platform settings");
 	// insigne settings
 	insigne::g_settings.frame_shader_allocator_size_mb = 4u;
 	insigne::g_settings.frame_buffers_allocator_size_mb = 48u;
@@ -134,11 +136,16 @@ void Application::OnInitialize()
 	insigne::g_settings.frame_render_allocator_size_mb = 4u;
 	insigne::g_settings.frame_draw_allocator_size_mb = 4u;
 
-	//insigne::g_settings.draw_command_buffer_size = 2048u;
+	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 
-	insigne::g_settings.native_res_x = 1280u;
-	insigne::g_settings.native_res_y = 720u;
-	
+	insigne::g_settings.native_res_x = commonCtx->window_width;
+	insigne::g_settings.native_res_y = commonCtx->window_height;
+}
+
+void Application::OnInitializeRenderer()
+{
+	LOG_TOPIC("app");
+	CLOVER_VERBOSE("Initialize renderer settings");
 	// graphics init
 	insigne::initialize_driver();
 	insigne::allocate_draw_command_buffers(6);
@@ -153,18 +160,23 @@ void Application::OnInitialize()
 	insigne::initialize_render_thread();
 	insigne::wait_for_initialization();
 
-	//_CreateTestSuite<DebugUITest>();
+}
+
+void Application::OnInitializeGame()
+{
+	LOG_TOPIC("app");
+	CLOVER_VERBOSE("Initialize game settings");
+	_CreateTestSuite<DebugUITest>();
 	//_CreateTestSuite<CornelBox>();
 	//_CreateTestSuite<OctreePartition>();
 	//_CreateTestSuite<LightProbePlacement>();
-	_CreateTestSuite<GILightProbe>();
+	//_CreateTestSuite<GILightProbe>();
 
 	if (m_CurrentTestSuite)
 	{
 		m_CurrentTestSuite->OnInitialize();
 		m_CurrentTestSuiteUI->Initialize();
 	}
-
 	m_Initialized = true;
 }
 

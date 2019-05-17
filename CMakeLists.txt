@@ -45,8 +45,8 @@ file (GLOB_RECURSE file_list
 	"${PROJECT_SOURCE_DIR}/src/Graphics/TrackballCamera.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/FreeCamera.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/GeometryBuilder.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/shapegen.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/shapegen_geom.cpp"
+	# "${PROJECT_SOURCE_DIR}/src/Graphics/shapegen.cpp"
+	# "${PROJECT_SOURCE_DIR}/src/Graphics/shapegen_geom.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/SurfaceDefinitions.cpp"
 
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainQuad.cpp"

@@ -7,6 +7,8 @@
 #include <clover.h>
 #include <lotus/profiler.h>
 
+#include <insigne/system.h>
+
 #include <atomic>
 
 #include "Memory/MemorySystem.h"
@@ -30,25 +32,31 @@ floral::condition_variable						s_inputResumedCdv;
 
 bool											s_gpuReady = false;;
 bool											s_logicActive = false;
+bool											s_rendererInited = false;
+bool											s_gameInited = false;
 
 //----------------------------------------------
 void FlushLogicThread()
 {
+	LOG_TOPIC("game");
 	CLOVER_VERBOSE("Flushing LogicThread (update)...");
 	while (s_logicResumed.load(std::memory_order_acquire))
 	{
 	}
+	insigne::wait_finish_dispatching();
 	CLOVER_VERBOSE("LogicThread (update) flushed");
 }
 
 void TryWakeLogicThread()
 {
 	floral::lock_guard guard(s_inputResumedMtx);
+	LOG_TOPIC("game");
+	CLOVER_VERBOSE("Waking up the LogicThread");
 	if (!s_inputResumed)
 	{
-		CLOVER_VERBOSE("Waking up the LogicThread");
 		s_inputResumed = true;
 		s_inputResumedCdv.notify_one();
+		CLOVER_VERBOSE("WakeUp signal triggered for LogicThread");
 	}
 	else
 	{
@@ -62,6 +70,11 @@ void UpdateLogicThreadFlags()
 
 	if (s_logicActive && s_gpuReady)
 	{
+		if (!s_gameInited)
+		{
+			s_Controller->IOEvents.OnInitializeGame();
+			s_gameInited = true;
+		}
 		bool expected = false;
 		if (s_logicResumed.compare_exchange_strong(expected, true, std::memory_order_relaxed))
 		{
@@ -111,11 +124,13 @@ void CheckAndPauseLogicThread()
 void UpdateLogic(event_buffer_t* i_evtBuffer)
 {
 	using namespace stone;
+	LOG_TOPIC("game");
 
 	event_buffer_t::queue_t& ioBuffer = i_evtBuffer->flip();
 	calyx::event_t eve;
 	while (ioBuffer.try_pop_into(eve))
 	{
+		LOG_TOPIC("io_event_loop");
 		switch(eve.type)
 		{
 			case calyx::event_type_e::interact:
@@ -169,6 +184,7 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 				{
 					case calyx::lifecycle_event_type_e::pause:
 					{
+						CLOVER_VERBOSE("<pause> event received");
 						s_logicActive = false;
 						UpdateLogicThreadFlags();
 						break;
@@ -176,6 +192,7 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 
 					case calyx::lifecycle_event_type_e::resume:
 					{
+						CLOVER_VERBOSE("<resume> event received");
 						s_logicActive = true;
 						UpdateLogicThreadFlags();
 						break;
@@ -183,13 +200,20 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 
 					case calyx::lifecycle_event_type_e::surface_ready:
 					{
+						CLOVER_VERBOSE("<surface_ready> event received");
 						s_gpuReady = true;
+						if (!s_rendererInited)
+						{
+							s_Controller->IOEvents.OnInitializeRenderer();
+							s_rendererInited = true;
+						}
 						UpdateLogicThreadFlags();
 						break;
 					}
 
 					case calyx::lifecycle_event_type_e::surface_destroyed:
 					{
+						CLOVER_VERBOSE("<surface_destroyed> event received");
 						s_gpuReady = false;
 						UpdateLogicThreadFlags();
 						break;
@@ -239,10 +263,13 @@ void initialize()
 	using namespace stone;
 	lotus::init_capture_for_this_thread(0, "main_thread");
 
+	LOG_TOPIC("game");
+	CLOVER_VERBOSE("Initialize Game's system...");
+
 	s_Controller = g_PersistanceAllocator.allocate<Controller>();
 	s_Application = g_PersistanceAllocator.allocate<Application>(s_Controller);
 
-	s_Controller->IOEvents.OnInitialize();
+	s_Controller->IOEvents.OnInitializePlatform();
 }
 
 void run(event_buffer_t* i_evtBuffer)

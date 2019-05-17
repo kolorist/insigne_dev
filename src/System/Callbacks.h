@@ -5,7 +5,9 @@
 namespace stone {
 	
 struct ControllerCallbacks {
-	floral::simple_callback<void>				OnInitialize;
+	floral::simple_callback<void>				OnInitializePlatform;
+	floral::simple_callback<void>				OnInitializeRenderer;
+	floral::simple_callback<void>				OnInitializeGame;
 	floral::simple_callback<void>				OnPause;
 	floral::simple_callback<void>				OnResume;
 	floral::simple_callback<void, bool>			OnFocusChanged;

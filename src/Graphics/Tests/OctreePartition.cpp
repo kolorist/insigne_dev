@@ -7,7 +7,6 @@
 
 #include "Graphics/GeometryBuilder.h"
 #include "Graphics/CBObjLoader.h"
-#include "Graphics/shapegen.h"
 
 namespace stone {
 

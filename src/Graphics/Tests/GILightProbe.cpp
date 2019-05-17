@@ -14,6 +14,8 @@
 namespace stone
 {
 
+#define TO_IDX(x, y, z)							(25 * y + 5 * x + z)
+
 static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
 layout (location = 1) in highp vec3 l_Normal_L;
@@ -85,6 +87,7 @@ void GILightProbe::OnInitialize()
 	m_Vertices.init(2048u, &g_StreammingAllocator);
 	m_Indices.init(8192u, &g_StreammingAllocator);
 	m_Patches.init(1024u, &g_StreammingAllocator);
+	m_SHPositions.init(1024u, &g_StreammingAllocator);
 
 	{
 		floral::mat4x4f mBottom = floral::construct_translation3d(0.0f, -1.0f, 0.0f);
@@ -253,11 +256,12 @@ void GILightProbe::OnInitialize()
 			s32 lx = (s32)roundf((shPos.x - minCorner.x) / sdx);
 			s32 ly = (s32)roundf((shPos.y - minCorner.y) / sdy);
 			s32 lz = (s32)roundf((shPos.z - minCorner.z) / sdz);
+			m_SHPositions.push_back(shPos);
 			CLOVER_DEBUG("Read probe at: %d - %d - %d", lx, ly, lz);
 			for (u32 j = 0; j < 9; j++)
 			{
 				fs.read(&coEffs[j]);
-				s32 idx = ((lx * 5) + ly) * 5 + lz;
+				s32 idx = TO_IDX(lx, ly, lz);
 				m_ProbesData.Probes[idx * 9 + j] = coEffs[j];
 			}
 		}
