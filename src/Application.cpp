@@ -166,11 +166,11 @@ void Application::OnInitializeGame()
 {
 	LOG_TOPIC("app");
 	CLOVER_VERBOSE("Initialize game settings");
-	_CreateTestSuite<DebugUITest>();
+	//_CreateTestSuite<DebugUITest>();
 	//_CreateTestSuite<CornelBox>();
 	//_CreateTestSuite<OctreePartition>();
 	//_CreateTestSuite<LightProbePlacement>();
-	//_CreateTestSuite<GILightProbe>();
+	_CreateTestSuite<GILightProbe>();
 
 	if (m_CurrentTestSuite)
 	{
@@ -184,6 +184,7 @@ void Application::OnFrameStep(f32 i_deltaMs)
 {
 	if (m_Initialized)
 	{
+		//insigne::begin_frame(1e8);
 		insigne::begin_frame();
 		UpdateFrame(i_deltaMs);
 		RenderFrame(i_deltaMs);

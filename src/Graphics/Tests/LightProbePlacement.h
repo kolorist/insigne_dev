@@ -69,7 +69,6 @@ private:
 		floral::mat4x4f							WVP;
 	};
 
-
 	bool										m_DrawCoordinate;
 	bool										m_DrawProbeLocations;
 	s32											m_DrawProbeRangeMin;

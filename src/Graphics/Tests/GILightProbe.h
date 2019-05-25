@@ -47,6 +47,9 @@ private:
 	floral::fixed_array<GeoQuad, LinearAllocator>		m_Patches;
 	floral::fixed_array<floral::vec3f, LinearAllocator>	m_SHPositions;
 
+	floral::fixed_array<VertexP, LinearAllocator>	m_ProbeVertices;
+	floral::fixed_array<u32, LinearAllocator>		m_ProbeIndices;
+
 	SceneData									m_SceneData;
 	LightGridData								m_LightGridData;
 	ProbesData									m_ProbesData;
@@ -58,6 +61,12 @@ private:
 	insigne::ub_handle_t						m_ProbesUB;
 	insigne::shader_handle_t					m_Shader;
 	insigne::material_desc_t					m_Material;
+
+	insigne::vb_handle_t						m_ProbeVB;
+	insigne::ib_handle_t						m_ProbeIB;
+	insigne::ub_handle_t						m_ProbeUB;
+	insigne::shader_handle_t					m_ProbeShader;
+	insigne::material_desc_t					m_ProbeMaterial;
 
 	LinearArena*								m_MemoryArena;
 	DebugDrawer									m_DebugDrawer;
