@@ -26,6 +26,7 @@
 #include "Graphics/Tests/CbFormats.h"
 #include "Graphics/Tests/DebugUITest.h"
 #include "Graphics/Tests/GILightProbe.h"
+#include "Graphics/Tests/SHTest.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -170,7 +171,8 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<CornelBox>();
 	//_CreateTestSuite<OctreePartition>();
 	//_CreateTestSuite<LightProbePlacement>();
-	_CreateTestSuite<GILightProbe>();
+	//_CreateTestSuite<GILightProbe>();
+	_CreateTestSuite<SHTest>();
 
 	if (m_CurrentTestSuite)
 	{

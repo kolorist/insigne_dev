@@ -7,7 +7,6 @@
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "Graphics/stb_image_write.h"
 
 #include "Graphics/GeometryBuilder.h"
