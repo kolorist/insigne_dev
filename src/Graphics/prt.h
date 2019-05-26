@@ -33,4 +33,6 @@ void sh_project_polar_function(sh_polar_fn fn, const int n_samples, const int n_
 void sh_project_light_image(image_t* image, const int n_samples, const int n_coeffs, const sh_sample* samples, color3* result);
 double light_fn(double theta, double phi);
 
+void map_cartesian_to_mirror_ball_tex_coord(float x, float y, float z, float& u, float& v);
+
 }

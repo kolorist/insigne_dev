@@ -152,13 +152,21 @@ double light_fn(double theta, double phi)
 	return std::max(0.0, 5.0 * cos(theta) - 4.0) + std::max(0.0, -4.0 * sin(theta - M_PI) * cos(phi - 2.5) - 3.0);
 }
 
+void map_cartesian_to_mirror_ball_tex_coord(float x, float y, float z, float& u, float& v)
+{
+	float d = sqrtf(x * x + y * y);
+	float r = (d == 0.0f) ? 0.0f : (1.0f / M_PI / 2.0f) * acosf(z) / d;
+	u = 0.5f + x * r;
+	v = 0.5f - y * r;
+}
+
 void light_probe_access(color3* color, image_t* image, vec3 direction)
 {
 	float d = sqrt(direction.x * direction.x + direction.y * direction.y);
 	float r = (d == 0) ? 0.0f : (1.0f / M_PI / 2.0f) * acos(direction.z) / d;
 	float tex_coord[2];
 	tex_coord[0] = 0.5f + direction.x * r;
-	tex_coord[1] = 0.5f + direction.y * r;
+	tex_coord[1] = 0.5f - direction.y * r;
 	int pixel_coord[2];
 	pixel_coord[0] = tex_coord[0] * image->width;
 	pixel_coord[1] = tex_coord[1] * image->height;

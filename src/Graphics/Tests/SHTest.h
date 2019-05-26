@@ -4,6 +4,7 @@
 
 #include "ITestSuite.h"
 #include "Graphics/IDebugUI.h"
+#include "Graphics/DebugDrawer.h"
 #include "Graphics/FreeCamera.h"
 
 namespace stone
@@ -49,6 +50,7 @@ private:
 	insigne::material_desc_t					m_ProbeMaterial;
 
 private:
+	DebugDrawer									m_DebugDrawer;
 	FreeCamera									m_CameraMotion;
 };
 
