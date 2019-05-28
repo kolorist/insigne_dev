@@ -36,6 +36,7 @@ struct CBTexture2DHeader {
 	ColorChannel								colorChannel;
 	f32											encodedGamma;
 	u32											mipsCount;
+	u32											resolution;
 };
 
 #pragma pack(pop)

@@ -10,6 +10,7 @@
 
 #include "Baker2D.h"
 #include "BakerCube.h"
+#include "BakerHDR2D.h"
 
 namespace texbaker {
 
@@ -235,25 +236,28 @@ int main(int argc, char** argv)
 
 	helich::init_memory_system();
 
-	clover::Initialize();
+	clover::Initialize("main_thread", clover::LogLevel::Verbose);
 	clover::InitializeVSOutput("vs", clover::LogLevel::Verbose);
 	clover::InitializeConsoleOutput("console", clover::LogLevel::Verbose);
 
 	CLOVER_INFO("Texture Baker");
-	CLOVER_INFO("Build: 0.1.0a");
+	CLOVER_INFO("Build: 0.2.0a");
 
 	if (argc == 1) {
 		CLOVER_INFO(
 				"Texture Baker Syntax:\n"
 				"	> 2D Texture:           texturebaker.exe -t input_texture.png -m 10 -o output_texture.cbtex\n"
+				"	> HDR 2D Texture:       texturebaker.exe -hdrt input_texture.hdr -m 10 -o output_texture.cbtex\n"
 				"	> ShadingProbe Texture: texturebaker.exe -p input_cubemap_no_ext -f pfm -o output_cubemap.cbprb\n"
-				"	> Spherical Harmonics:	texturebaker.exe -sh input_texture.hdr -o output_shdata.cbsh\n"
+				"	> Spherical Harmonics:  texturebaker.exe -sh input_texture.hdr -o output_shdata.cbsh\n"
 				"	> CubeMap Texture:      texturebaker.exe -s input_skybox_no_ext -f pfm -o output_skybox.cbskb");
 		return 0;
 	}
 
 	if (strcmp(argv[1], "-t") == 0) {
 		ConvertTexture2D(argv[2], argv[6], atoi(argv[4]));
+	} else if (strcmp(argv[1], "-hdrt") == 0) {
+		ConvertTexture2DHDR(argv[2], argv[6], atoi(argv[4]));
 	} else if (strcmp(argv[1], "-p") == 0) {
 		ConvertProbe(argv[2], argv[6]);
 	} else if (strcmp(argv[1], "-s") == 0) {
