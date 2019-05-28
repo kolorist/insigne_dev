@@ -110,7 +110,12 @@ void sh_setup_spherical_samples(sh_sample* samples, int sqrt_n_samples)
 			double theta = 0, phi = 0;
 			map_random_to_spherial_coordinates(x, y, theta, phi);
 			samples[i].sph = vec3{ theta, phi, 1.0 };
-			vec3 vec{ sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta) };
+			//vec3 vec{ sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta) };
+			vec3 vec {
+				sin(theta) * sin(phi),
+				cos(theta),
+				sin(theta) * cos(phi)
+			};
 			samples[i].vec = vec;
 
 			for (int l = 0; l < n_bands; l++)

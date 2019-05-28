@@ -30,25 +30,10 @@ private:
 		floral::mat4x4f							WVP;
 	};
 
-	struct SHProbeData {
-		floral::mat4x4f							XForm;
-		floral::vec4f							CoEffs[9];
-	};
-
 private:
-	floral::fixed_array<VertexP, LinearAllocator>	m_ProbeVertices;
-	floral::fixed_array<u32, LinearAllocator>		m_ProbeIndices;
 	SceneData									m_SceneData;
-	SHProbeData									m_SHData;
 
 	insigne::ub_handle_t						m_UB;
-
-	insigne::vb_handle_t						m_ProbeVB;
-	insigne::ib_handle_t						m_ProbeIB;
-	insigne::ub_handle_t						m_ProbeUB;
-	insigne::shader_handle_t					m_ProbeShader;
-	insigne::material_desc_t					m_ProbeMaterial;
-
 private:
 	DebugDrawer									m_DebugDrawer;
 	FreeCamera									m_CameraMotion;
