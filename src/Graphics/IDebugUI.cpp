@@ -117,6 +117,7 @@ void IDebugUI::Initialize()
 	// TODO: memcpy? really?
 	memcpy(uiTexDesc.data, pixels, dataSize);
 	m_Texture = insigne::create_texture(uiTexDesc);
+	io.Fonts->TexID = &m_Texture;
 
 	io.RenderDrawListsFn = nullptr;
 
@@ -312,6 +313,10 @@ void IDebugUI::RenderImGui(ImDrawData* i_drawData)
 			s32 h = (s32)(drawCmd->ClipRect.w - drawCmd->ClipRect.y);
 
 			insigne::setup_scissor<ImGuiSurface>(true, x0, y0, w, h);
+
+			static s32 texSlot = insigne::get_material_texture_slot(m_Material, "u_Tex");
+			m_Material.textures[texSlot].value = *((insigne::texture_handle_t*)drawCmd->TextureId);
+
 			insigne::draw_surface<ImGuiSurface>(m_VBs[bufferSlot], m_IBs[bufferSlot], m_Material,
 					idxBufferOffset, (s32)drawCmd->ElemCount);
 			idxBufferOffset += drawCmd->ElemCount;

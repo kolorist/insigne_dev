@@ -1,13 +1,16 @@
 #include "SHTest.h"
 
+#include <clover/Logger.h>
+
 #include <insigne/commons.h>
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
+#include <insigne/ut_textures.h>
 
 #include "Graphics/prt.h"
-#include "Graphics/stb_image.h"
 #include "Graphics/GeometryBuilder.h"
+#include "Graphics/CBTexDefinitions.h"
 
 namespace stone
 {
@@ -16,7 +19,9 @@ SHTest::SHTest()
 	: m_CameraMotion(
 			floral::camera_view_t { floral::vec3f(3.0f, 3.0f, 3.0f), floral::vec3f(-3.0f, -3.0f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
+	, m_Counter(1)
 {
+	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 }
 
 SHTest::~SHTest()
@@ -40,6 +45,35 @@ void SHTest::OnInitialize()
 
 		insigne::update_ub(newUB, &m_SceneData, sizeof(SceneData), 0);
 		m_UB = newUB;
+	}
+
+	{
+		m_MemoryArena->free_all();
+		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/grace_probe.cbtex");
+		floral::file_stream dataStream;
+		dataStream.buffer = (p8)m_MemoryArena->allocate(texFile.file_size);
+		floral::read_all_file(texFile, dataStream);
+		floral::close_file(texFile);
+
+		cb::CBTexture2DHeader header;
+		dataStream.read(&header);
+
+		FLORAL_ASSERT(header.colorRange == cb::ColorRange::HDR);
+
+		insigne::texture_desc_t texDesc;
+		texDesc.width = header.resolution;
+		texDesc.height = header.resolution;
+		texDesc.format = insigne::texture_format_e::hdr_rgb;
+		texDesc.min_filter = insigne::filtering_e::linear;
+		texDesc.mag_filter = insigne::filtering_e::linear;
+		texDesc.dimension = insigne::texture_dimension_e::tex_2d;
+		texDesc.has_mipmap = false;
+
+		const size dataSize = insigne::prepare_texture_desc(texDesc);
+
+		// TODO: memcpy? really?
+		dataStream.read_bytes(texDesc.data, dataSize);
+		m_Texture = insigne::create_texture(texDesc);
 	}
 
 	m_DebugDrawer.Initialize();
@@ -75,6 +109,24 @@ void SHTest::OnUpdate(const f32 i_deltaMs)
 
 void SHTest::OnDebugUIUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("DebugUITest Controller");
+	ImGui::Text("grace_probe");
+	ImGui::Image(&m_Texture, ImVec2(128, 128));
+	if (ImGui::Button("Test Task"))
+	{
+		CLOVER_DEBUG("Task enqueued");
+		m_Counter.store(1);
+		refrain2::Task newTask;
+		newTask.pm_Instruction = &SHTest::ComputeSHCoeffs;
+		newTask.pm_Data = nullptr;
+		newTask.pm_Counter = &m_Counter;
+		refrain2::g_TaskManager->PushTask(newTask);
+	}
+	if (refrain2::CheckForCounter(m_Counter, 0))
+	{
+		ImGui::Text("Finished");
+	}
+	ImGui::End();
 }
 
 void SHTest::OnRender(const f32 i_deltaMs)
@@ -94,6 +146,18 @@ void SHTest::OnRender(const f32 i_deltaMs)
 
 void SHTest::OnCleanUp()
 {
+}
+
+//----------------------------------------------
+refrain2::Task SHTest::ComputeSHCoeffs(voidptr i_data)
+{
+	f32 t = 0.0f;
+	for (u32 i = 0; i < 1000000000; i++)
+	{
+		t += i;
+	}
+	CLOVER_VERBOSE("finish");
+	return refrain2::Task();
 }
 
 }

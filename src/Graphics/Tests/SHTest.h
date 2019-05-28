@@ -1,11 +1,16 @@
 #pragma once
 
+#include <refrain2.h>
 #include <floral/stdaliases.h>
+
+#include <atomic>
 
 #include "ITestSuite.h"
 #include "Graphics/IDebugUI.h"
 #include "Graphics/DebugDrawer.h"
 #include "Graphics/FreeCamera.h"
+
+#include "Memory/MemorySystem.h"
 
 namespace stone
 {
@@ -25,6 +30,9 @@ public:
 	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
+	static refrain2::Task						ComputeSHCoeffs(voidptr i_data);
+
+private:
 	struct SceneData {
 		floral::mat4x4f							XForm;
 		floral::mat4x4f							WVP;
@@ -34,9 +42,14 @@ private:
 	SceneData									m_SceneData;
 
 	insigne::ub_handle_t						m_UB;
+	insigne::texture_handle_t					m_Texture;
+
+	std::atomic<u32>							m_Counter;
+
 private:
 	DebugDrawer									m_DebugDrawer;
 	FreeCamera									m_CameraMotion;
+	LinearArena*								m_MemoryArena;
 };
 
 }
