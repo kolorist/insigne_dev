@@ -27,6 +27,7 @@
 #include "Graphics/Tests/DebugUITest.h"
 #include "Graphics/Tests/GILightProbe.h"
 #include "Graphics/Tests/SHTest.h"
+#include "Graphics/Tests/UnshadowedPRT.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -172,7 +173,8 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<OctreePartition>();
 	//_CreateTestSuite<LightProbePlacement>();
 	//_CreateTestSuite<GILightProbe>();
-	_CreateTestSuite<SHTest>();
+	//_CreateTestSuite<SHTest>();
+	_CreateTestSuite<UnshadowedPRT>();
 
 	if (m_CurrentTestSuite)
 	{
