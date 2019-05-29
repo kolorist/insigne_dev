@@ -44,7 +44,17 @@ in mediump vec4 o_VertColor;
 
 void main()
 {
+#if 0
+	mediump float exposure = 1.0f;
+	mediump float gamma = 2.2f;
+	mediump vec4 hdrColor = texture(u_Tex, o_TexCoord.st);
+	mediump vec3 mapped = vec3(1.0) - exp(-hdrColor.rgb * exposure);
+	mapped = pow(mapped, vec3(1.0f / gamma));
+
+	o_Color = o_VertColor * vec4(mapped, hdrColor.a);
+#else
 	o_Color = o_VertColor * texture(u_Tex, o_TexCoord.st);
+#endif
 }
 )";
 

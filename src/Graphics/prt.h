@@ -1,38 +1,27 @@
 #pragma once
 
+#include <floral/stdaliases.h>
+
 namespace stone
 {
 
-struct vec3
+// high precision data structure
+struct highp_vec3_t
 {
-	double x, y, z;
-};
-
-struct color3
-{
-	float r, g, b;
-};
-
-struct image_t
-{
-	int width, height;
-	float* hdr_pixels;
+	f64 x, y, z;
 };
 
 struct sh_sample
 {
-	vec3 sph;
-	vec3 vec;
-	double *coeff;
+	highp_vec3_t sph;
+	highp_vec3_t vec;
+	f64 coeff[9];
 };
+//----------------------------------------------
 
-typedef double(*sh_polar_fn)(double theta, double phi);
-
-void sh_setup_spherical_samples(sh_sample* samples, int sqrt_n_samples);
-void sh_project_polar_function(sh_polar_fn fn, const int n_samples, const int n_coeffs, const sh_sample* samples, double* result);
-void sh_project_light_image(image_t* image, const int n_samples, const int n_coeffs, const sh_sample* samples, color3* result);
-double light_fn(double theta, double phi);
-
-void map_cartesian_to_mirror_ball_tex_coord(float x, float y, float z, float& u, float& v);
+void sh_setup_spherical_samples(sh_sample* samples, s32 sqrt_n_samples);
+void sh_project_light_image(f32* imageData, const s32 resolution, const s32 n_samples, const s32 n_coeffs, const sh_sample* samples, highp_vec3_t* result);
+void reconstruct_sh_radiance_light_probe(highp_vec3_t* coeffs, f32* imageData, const s32 resolution, const s32 n_samples);
+void reconstruct_sh_irradiance_light_probe(highp_vec3_t* coeffs, f32* imageData, const s32 resolution, const s32 n_samples, const f32 exposure = 1.0f, const f32 gamma = 1.0f);
 
 }

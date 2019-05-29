@@ -19,6 +19,10 @@ SHTest::SHTest()
 	: m_CameraMotion(
 			floral::camera_view_t { floral::vec3f(3.0f, 3.0f, 3.0f), floral::vec3f(-3.0f, -3.0f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
+	, m_TextureData(nullptr)
+	, m_RadTextureData(nullptr)
+	, m_IrrTextureData(nullptr)
+	, m_Computed(false)
 	, m_Counter(1)
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
@@ -71,8 +75,15 @@ void SHTest::OnInitialize()
 
 		const size dataSize = insigne::prepare_texture_desc(texDesc);
 
-		// TODO: memcpy? really?
-		dataStream.read_bytes(texDesc.data, dataSize);
+		m_TextureData = (f32*)g_PersistanceResourceAllocator.allocate(dataSize);
+		m_RadTextureData = (f32*)g_PersistanceResourceAllocator.allocate(dataSize);
+		memset(m_RadTextureData, 0, dataSize);
+		m_IrrTextureData = (f32*)g_PersistanceResourceAllocator.allocate(dataSize);
+		memset(m_IrrTextureData, 0, dataSize);
+
+		m_TextureResolution = header.resolution;
+		dataStream.read_bytes(m_TextureData, dataSize);
+		memcpy(texDesc.data, m_TextureData, dataSize);
 		m_Texture = insigne::create_texture(texDesc);
 	}
 
@@ -82,6 +93,44 @@ void SHTest::OnInitialize()
 void SHTest::OnUpdate(const f32 i_deltaMs)
 {
 	m_CameraMotion.OnUpdate(i_deltaMs);
+
+	if (refrain2::CheckForCounter(m_Counter, 0))
+	{
+		if (!m_Computed)
+		{
+			m_Computed = true;
+			// upload!!!
+			{
+				insigne::texture_desc_t texDesc;
+				texDesc.width = m_TextureResolution;
+				texDesc.height = m_TextureResolution;
+				texDesc.format = insigne::texture_format_e::hdr_rgb;
+				texDesc.min_filter = insigne::filtering_e::linear;
+				texDesc.mag_filter = insigne::filtering_e::linear;
+				texDesc.dimension = insigne::texture_dimension_e::tex_2d;
+				texDesc.has_mipmap = false;
+
+				const size dataSize = insigne::prepare_texture_desc(texDesc);
+				memcpy(texDesc.data, m_IrrTextureData, dataSize);
+				m_IrradianceTexture = insigne::create_texture(texDesc);
+			}
+
+			{
+				insigne::texture_desc_t texDesc;
+				texDesc.width = m_TextureResolution;
+				texDesc.height = m_TextureResolution;
+				texDesc.format = insigne::texture_format_e::hdr_rgb;
+				texDesc.min_filter = insigne::filtering_e::linear;
+				texDesc.mag_filter = insigne::filtering_e::linear;
+				texDesc.dimension = insigne::texture_dimension_e::tex_2d;
+				texDesc.has_mipmap = false;
+
+				const size dataSize = insigne::prepare_texture_desc(texDesc);
+				memcpy(texDesc.data, m_RadTextureData, dataSize);
+				m_RadianceTexture = insigne::create_texture(texDesc);
+			}
+		}
+	}
 
 	m_DebugDrawer.BeginFrame();
 
@@ -112,20 +161,43 @@ void SHTest::OnDebugUIUpdate(const f32 i_deltaMs)
 	ImGui::Begin("DebugUITest Controller");
 	ImGui::Text("grace_probe");
 	ImGui::Image(&m_Texture, ImVec2(128, 128));
-	if (ImGui::Button("Test Task"))
+	if (ImGui::Button("Compute SH Coeffs"))
 	{
-		CLOVER_DEBUG("Task enqueued");
-		m_Counter.store(1);
-		refrain2::Task newTask;
-		newTask.pm_Instruction = &SHTest::ComputeSHCoeffs;
-		newTask.pm_Data = nullptr;
-		newTask.pm_Counter = &m_Counter;
-		refrain2::g_TaskManager->PushTask(newTask);
+		if (!m_Computed)
+		{
+			m_SHComputeTaskData.InputTexture = m_TextureData;
+			m_SHComputeTaskData.OutputRadianceTex = m_RadTextureData;
+			m_SHComputeTaskData.OutputIrradianceTex = m_IrrTextureData;
+			m_SHComputeTaskData.Resolution = m_TextureResolution;
+			m_SHComputeTaskData.LocalMemoryArena = m_MemoryArena->allocate_arena<LinearArena>(SIZE_MB(4));
+
+			m_Counter.store(1);
+			refrain2::Task newTask;
+			newTask.pm_Instruction = &SHTest::ComputeSHCoeffs;
+			newTask.pm_Data = (voidptr)&m_SHComputeTaskData;
+			newTask.pm_Counter = &m_Counter;
+			refrain2::g_TaskManager->PushTask(newTask);
+		}
 	}
-	if (refrain2::CheckForCounter(m_Counter, 0))
+
+	if (m_Computed)
 	{
-		ImGui::Text("Finished");
+		ImGui::Text("radiance");
+		ImGui::SameLine(150, 20);
+		ImGui::Text("irradiance");
+		ImGui::Image(&m_RadianceTexture, ImVec2(128, 128));
+		ImGui::SameLine(150, 20);
+		ImGui::Image(&m_IrradianceTexture, ImVec2(128, 128));
+		ImGui::Text("sh coeffs");
+		for (u32 i = 0; i < 9; i++)
+		{
+			c8 bandStr[128];
+			memset(bandStr, 0, 128);
+			sprintf(bandStr, "coeff %d", i + 1);
+			ImGui::InputFloat3(bandStr, &m_SHComputeTaskData.OutputCoeffs[i].x, 5, ImGuiInputTextFlags_ReadOnly);
+		}
 	}
+
 	ImGui::End();
 }
 
@@ -151,12 +223,28 @@ void SHTest::OnCleanUp()
 //----------------------------------------------
 refrain2::Task SHTest::ComputeSHCoeffs(voidptr i_data)
 {
-	f32 t = 0.0f;
-	for (u32 i = 0; i < 1000000000; i++)
+	SHComputeData* input = (SHComputeData*)i_data;
+	s32 sqrtNSamples = 100;
+	s32 NSamples = sqrtNSamples * sqrtNSamples;
+	sh_sample* samples = (sh_sample*)input->LocalMemoryArena->allocate_array<sh_sample>(NSamples);
+	sh_setup_spherical_samples(samples, sqrtNSamples);
+
+	highp_vec3_t shResult[9];
+	sh_project_light_image(input->InputTexture, input->Resolution, NSamples, 9, samples, shResult);
+
+	for (s32 i = 0; i < 9; i++)
 	{
-		t += i;
+		CLOVER_DEBUG("(%f; %f; %f)", shResult[i].x, shResult[i].y, shResult[i].z);
+
+		input->OutputCoeffs[i].x = (f32)shResult[i].x;
+		input->OutputCoeffs[i].y = (f32)shResult[i].y;
+		input->OutputCoeffs[i].z = (f32)shResult[i].z;
 	}
-	CLOVER_VERBOSE("finish");
+
+	reconstruct_sh_radiance_light_probe(shResult, input->OutputRadianceTex, input->Resolution, 1024);
+	reconstruct_sh_irradiance_light_probe(shResult, input->OutputIrradianceTex, input->Resolution, 1024, 0.4f);
+
+	CLOVER_VERBOSE("Compute finished");
 	return refrain2::Task();
 }
 
