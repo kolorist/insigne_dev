@@ -232,44 +232,18 @@ void reconstruct_sh_radiance_light_probe(highp_vec3_t* coeffs, f32* imageData, c
 			if (convert_lightprobe_to_cartesian_coord(uu, vv, vec))
 			{
 				highp_vec3_t outColor{ 0.0, 0.0, 0.0 };
-				outColor.x =
-					c0 * coeffs[0].x
+				outColor=
+					c0 * coeffs[0]
 
-					- c1 * vec.y * coeffs[1].x
-					+ c1 * vec.z * coeffs[2].x
-					- c1 * vec.x * coeffs[3].x
+					- c1 * vec.y * coeffs[1]
+					+ c1 * vec.z * coeffs[2]
+					- c1 * vec.x * coeffs[3]
 
-					+ c2 * vec.x * vec.y * coeffs[4].x
-					- c2 * vec.y * vec.z * coeffs[5].x
-					+ c3 * (3.0 * vec.z * vec.z - 1.0) * coeffs[6].x
-					- c2 * vec.z * vec.x * coeffs[7].x
-					+ c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8].x;
-
-				outColor.y =
-					c0 * coeffs[0].y
-
-					- c1 * vec.y * coeffs[1].y
-					+ c1 * vec.z * coeffs[2].y
-					- c1 * vec.x * coeffs[3].y
-
-					+ c2 * vec.x * vec.y * coeffs[4].y
-					- c2 * vec.y * vec.z * coeffs[5].y
-					+ c3 * (3.0 * vec.z * vec.z - 1.0) * coeffs[6].y
-					- c2 * vec.z * vec.x * coeffs[7].y
-					+ c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8].y;
-
-				outColor.z =
-					c0 * coeffs[0].z
-
-					- c1 * vec.y * coeffs[1].z
-					+ c1 * vec.z * coeffs[2].z
-					- c1 * vec.x * coeffs[3].z
-
-					+ c2 * vec.x * vec.y * coeffs[4].z
-					- c2 * vec.y * vec.z * coeffs[5].z
-					+ c3 * (3.0f * vec.z * vec.z - 1.0f) * coeffs[6].z
-					- c2 * vec.z * vec.x * coeffs[7].z
-					+ c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8].z;
+					+ c2 * vec.x * vec.y * coeffs[4]
+					- c2 * vec.y * vec.z * coeffs[5]
+					+ c3 * (3.0 * vec.z * vec.z - 1.0) * coeffs[6]
+					- c2 * vec.z * vec.x * coeffs[7]
+					+ c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8];
 
 				f64 u, v;
 				convert_cartesian_to_lightprobe_coord(vec, u, v);
@@ -308,44 +282,18 @@ void reconstruct_sh_irradiance_light_probe(highp_vec3_t* coeffs, f32* imageData,
 			if (convert_lightprobe_to_cartesian_coord(uu, vv, vec))
 			{
 				highp_vec3_t outColor{ 0.0, 0.0, 0.0 };
-				outColor.x =
-					a0 * c0 * coeffs[0].x
+				outColor =
+					a0 * c0 * coeffs[0]
 
-					- a1 * c1 * vec.y * coeffs[1].x
-					+ a1 * c1 * vec.z * coeffs[2].x
-					- a1 * c1 * vec.x * coeffs[3].x
+					- a1 * c1 * vec.y * coeffs[1]
+					+ a1 * c1 * vec.z * coeffs[2]
+					- a1 * c1 * vec.x * coeffs[3]
 
-					+ a2 * c2 * vec.x * vec.y * coeffs[4].x
-					- a2 * c2 * vec.y * vec.z * coeffs[5].x
-					+ a2 * c3 * (3.0 * vec.z * vec.z - 1.0) * coeffs[6].x
-					- a2 * c2 * vec.z * vec.x * coeffs[7].x
-					+ a2 * c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8].x;
-
-				outColor.y =
-					a0 * c0 * coeffs[0].y
-
-					- a1 * c1 * vec.y * coeffs[1].y
-					+ a1 * c1 * vec.z * coeffs[2].y
-					- a1 * c1 * vec.x * coeffs[3].y
-
-					+ a2 * c2 * vec.x * vec.y * coeffs[4].y
-					- a2 * c2 * vec.y * vec.z * coeffs[5].y
-					+ a2 * c3 * (3.0 * vec.z * vec.z - 1.0) * coeffs[6].y
-					- a2 * c2 * vec.z * vec.x * coeffs[7].y
-					+ a2 * c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8].y;
-
-				outColor.z =
-					a0 * c0 * coeffs[0].z
-
-					- a1 * c1 * vec.y * coeffs[1].z
-					+ a1 * c1 * vec.z * coeffs[2].z
-					- a1 * c1 * vec.x * coeffs[3].z
-
-					+ a2 * c2 * vec.x * vec.y * coeffs[4].z
-					- a2 * c2 * vec.y * vec.z * coeffs[5].z
-					+ a2 * c3 * (3.0f * vec.z * vec.z - 1.0f) * coeffs[6].z
-					- a2 * c2 * vec.z * vec.x * coeffs[7].z
-					+ a2 * c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8].z;
+					+ a2 * c2 * vec.x * vec.y * coeffs[4]
+					- a2 * c2 * vec.y * vec.z * coeffs[5]
+					+ a2 * c3 * (3.0 * vec.z * vec.z - 1.0) * coeffs[6]
+					- a2 * c2 * vec.z * vec.x * coeffs[7]
+					+ a2 * c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8];
 
 				f64 u, v;
 				convert_cartesian_to_lightprobe_coord(vec, u, v);

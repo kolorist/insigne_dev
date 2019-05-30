@@ -33,6 +33,39 @@ void GenTesselated3DPlane_Tris_PNC(const floral::mat4x4f& i_xform, const f32 i_b
 }
 
 template <typename TAllocator>
+void GenTesselated3DPlane_Tris_PNC(const floral::mat4x4f& i_xform,
+		const f32 i_width, const f32 i_height,
+		const f32 i_gridSize, const floral::vec4f& i_color,
+		floral::fixed_array<VertexPNC, TAllocator>& o_vertices,
+		floral::fixed_array<u32, TAllocator>& o_indices)
+{
+	g_TemporalFreeArena.free_all();
+
+	TemporalVertices vertices(16u, &g_TemporalFreeArena);
+	TemporalIndices	indices(16u, &g_TemporalFreeArena);
+
+	GenTesselated3DPlane_Tris(i_width, i_height, i_gridSize, &vertices, &indices);
+
+	u32 startIdx = o_vertices.get_size();
+
+	for (u32 i = 0; i < vertices.get_size(); i++) {
+		VertexPNC v;
+		floral::vec4f pos(vertices[i].Position.x, vertices[i].Position.y, vertices[i].Position.z, 1.0f);
+		floral::vec4f norm(vertices[i].Normal.x, vertices[i].Normal.y, vertices[i].Normal.z, 0.0f);
+		pos = i_xform * pos;
+		norm = i_xform * norm;
+		v.Position = floral::vec3f(pos.x, pos.y, pos.z);
+		v.Normal = floral::vec3f(norm.x, norm.y, norm.z);
+		v.Color = i_color;
+		o_vertices.push_back(v);
+	}
+
+	for (u32 i = 0; i < indices.get_size(); i++) {
+		o_indices.push_back(indices[i] + startIdx);
+	}
+}
+
+template <typename TAllocator>
 void GenQuadTesselated3DPlane_Tris_PNC(
 		const floral::mat4x4f& i_xform,
 		const f32 i_width, const f32 i_height,

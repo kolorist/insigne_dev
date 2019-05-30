@@ -1,15 +1,20 @@
 #pragma once
 
+#include <floral/gpds/vec.h>
 #include <floral/stdaliases.h>
 
 namespace stone
 {
 
 // high precision data structure
+/*
 struct highp_vec3_t
 {
 	f64 x, y, z;
 };
+*/
+
+typedef floral::vec3<f64> highp_vec3_t;
 
 struct sh_sample
 {

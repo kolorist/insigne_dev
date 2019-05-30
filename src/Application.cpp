@@ -97,8 +97,6 @@ void Application::RenderFrame(f32 i_deltaMs)
 	if (m_CurrentTestSuite)
 	{
 		m_CurrentTestSuite->OnRender(i_deltaMs);
-
-		m_CurrentTestSuiteUI->OnFrameRender(i_deltaMs);
 	}
 }
 
@@ -152,11 +150,14 @@ void Application::OnInitializeRenderer()
 	insigne::initialize_driver();
 	insigne::allocate_draw_command_buffers(6);
 
-	insigne::register_surface_type<SurfacePNC>();
+	//insigne::register_surface_type<SurfacePNC>();
+	insigne::register_surface_type<SurfacePNCSH>();
 	//insigne::register_surface_type<SurfacePNC>();
 	//insigne::register_surface_type<SurfacePNCC>();
 	insigne::register_surface_type<SurfaceP>();
+	insigne::register_surface_type<SurfacePT>();
 	insigne::register_surface_type<DebugLine>();
+
 	insigne::register_surface_type<ImGuiSurface>();
 
 	insigne::initialize_render_thread();

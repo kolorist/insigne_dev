@@ -19,6 +19,11 @@ void											GenTessellated3DPlane_Tris(const floral::mat4x4f& i_xform,
 													const f32 i_baseSize, const u32 i_gridsCount,
 													TemporalVertices* o_vertices, TemporalIndices* o_indices);
 
+void											GenTesselated3DPlane_Tris(const f32 i_width, const f32 i_height,
+													const f32 i_gridSize,
+													TemporalVertices* o_vertices, TemporalIndices* o_indices,
+													const bool i_vtxDup = false);
+
 void											GenQuadTesselated3DPlane_Tris(const f32 i_width, const f32 i_height,
 													const f32 i_gridSize,
 													TemporalVertices* o_vertices, TemporalIndices* o_indices,
@@ -42,6 +47,13 @@ template <typename TAllocator>
 void											GenTesselated3DPlane_Tris_PNC(const floral::mat4x4f& i_xform,
 													const f32 i_baseSize, const u32 i_gridsCount,
 													const floral::vec4f& i_color,
+													floral::fixed_array<VertexPNC, TAllocator>& o_vertices,
+													floral::fixed_array<u32, TAllocator>& o_indices);
+
+template <typename TAllocator>
+void											GenTesselated3DPlane_Tris_PNC(const floral::mat4x4f& i_xform,
+													const f32 i_width, const f32 i_height,
+													const f32 i_gridSize, const floral::vec4f& i_color,
 													floral::fixed_array<VertexPNC, TAllocator>& o_vertices,
 													floral::fixed_array<u32, TAllocator>& o_indices);
 
