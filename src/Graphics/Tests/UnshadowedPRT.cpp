@@ -18,7 +18,16 @@ static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
 layout (location = 1) in highp vec3 l_Normal_L;
 layout (location = 2) in mediump vec4 l_Color;
-layout (location = 3) in mediump vec3 l_SH[9];
+
+layout (location = 3) in mediump vec3 l_SH0;
+layout (location = 4) in mediump vec3 l_SH1;
+layout (location = 5) in mediump vec3 l_SH2;
+layout (location = 6) in mediump vec3 l_SH3;
+layout (location = 7) in mediump vec3 l_SH4;
+layout (location = 8) in mediump vec3 l_SH5;
+layout (location = 9) in mediump vec3 l_SH6;
+layout (location = 10) in mediump vec3 l_SH7;
+layout (location = 11) in mediump vec3 l_SH8;
 
 layout(std140) uniform ub_Scene
 {
@@ -36,14 +45,31 @@ out mediump vec4 v_VertexColor;
 void main() {
 	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
 
-	mediump vec3 vColor;
-	for (int i = 0; i < 9; i++)
-	{
-		vColor += l_SH[i] * iu_LightSH[i].rgb;
-	}
+	mediump vec3 vColor = vec3(0.0f);
 
-	v_VertexColor = l_Color + vec4(vColor, 0.0f);
-	//v_VertexColor = l_Color;
+#if 0
+	//vColor = l_SH0 * iu_LightSH[0].rgb;
+	//vColor += l_SH1 * iu_LightSH[1].rgb;
+	vColor += l_SH2 * iu_LightSH[2].rgb;
+	//vColor += l_SH3 * iu_LightSH[3].rgb;
+	//vColor += l_SH4 * iu_LightSH[4].rgb;
+	//vColor += l_SH5 * iu_LightSH[5].rgb;
+	//vColor += l_SH6 * iu_LightSH[6].rgb;
+	//vColor += l_SH7 * iu_LightSH[7].rgb;
+	//vColor += l_SH8 * iu_LightSH[8].rgb;
+#else
+	vColor = l_SH0 * iu_LightSH[0].rgb;
+	vColor += l_SH1 * iu_LightSH[1].rgb;
+	vColor += l_SH2 * iu_LightSH[2].rgb;
+	vColor += l_SH3 * iu_LightSH[3].rgb;
+	vColor += l_SH4 * iu_LightSH[4].rgb;
+	vColor += l_SH5 * iu_LightSH[5].rgb;
+	vColor += l_SH6 * iu_LightSH[6].rgb;
+	vColor += l_SH7 * iu_LightSH[7].rgb;
+	vColor += l_SH8 * iu_LightSH[8].rgb;
+#endif
+
+	v_VertexColor = vec4(vColor, 0.0f);
 	gl_Position = iu_WVP * pos_W;
 }
 )";
@@ -55,8 +81,7 @@ in mediump vec4 v_VertexColor;
 
 void main()
 {
-	//o_Color = v_VertexColor;
-	o_Color = vec4(3.0f, 0.0f, 0.0f, 1.0f);
+	o_Color = v_VertexColor;
 }
 )";
 
@@ -82,7 +107,7 @@ in mediump vec2 v_TexCoord;
 
 void main()
 {
-	mediump float exposure = 0.5f;
+	mediump float exposure = 0.4f;
 	mediump float gamma = 2.2f;
 	mediump vec4 hdrColor = texture(u_Tex, v_TexCoord);
 
@@ -163,19 +188,19 @@ void UnshadowedPRT::OnInitialize()
 
 		GenTesselated3DPlane_Tris_PNC(
 				mBottom,
-				2.0f, 3.0f, 0.3f, floral::vec4f(0.3f, 0.0f, 0.3f, 1.0f),
+				2.0f, 3.0f, 0.3f, floral::vec4f(1.0f),
 				m_Vertices, m_Indices);
 		GenTesselated3DPlane_Tris_PNC(
 				mLeft,
-				2.0f, 2.0f, 0.3f, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f),
+				2.0f, 2.0f, 0.3f, floral::vec4f(1.0f),
 				m_Vertices, m_Indices);
 		GenTesselated3DPlane_Tris_PNC(
 				mRight,
-				2.0f, 2.0f, 0.3f, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f),
+				2.0f, 2.0f, 0.3f, floral::vec4f(1.0f),
 				m_Vertices, m_Indices);
 		GenTesselated3DPlane_Tris_PNC(
 				mBack,
-				2.0f, 3.0f, 0.3f, floral::vec4f(0.0f, 0.3f, 0.3f, 1.0f),
+				2.0f, 3.0f, 0.3f, floral::vec4f(1.0f),
 				m_Vertices, m_Indices);
 
 		floral::mat4x4f mB1Top = floral::construct_translation3d(0.0f, 0.4f, 0.0f)
@@ -194,23 +219,23 @@ void UnshadowedPRT::OnInitialize()
 			* floral::construct_quaternion_euler(0.0f, 0.0f, 90.0f).to_transform();
 		GenTesselated3DPlane_Tris_PNC(
 				mB1Top,
-				0.7f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.4f, 0.5f, 1.0f),
+				0.7f, 0.7f, 0.3f, floral::vec4f(1.0f),
 				m_Vertices, m_Indices);
 		GenTesselated3DPlane_Tris_PNC(
 				mB1Front,
-				1.4f, 0.7f, 0.3f, floral::vec4f(0.4f, 0.3f, 0.5f, 1.0f),
+				1.4f, 0.7f, 0.3f, floral::vec4f(1.0f),
 				m_Vertices, m_Indices);
 		GenTesselated3DPlane_Tris_PNC(
 				mB1Back,
-				1.4f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.5f, 0.4f, 1.0f),
+				1.4f, 0.7f, 0.3f, floral::vec4f(1.0f),
 				m_Vertices, m_Indices);
 		GenTesselated3DPlane_Tris_PNC(
 				mB1Left,
-				1.4f, 0.7f, 0.3f, floral::vec4f(0.5f, 0.4f, 0.3f, 1.0f),
+				1.4f, 0.7f, 0.3f, floral::vec4f(1.0f),
 				m_Vertices, m_Indices);
 		GenTesselated3DPlane_Tris_PNC(
 				mB1Right,
-				1.4f, 0.7f, 0.3f, floral::vec4f(0.3f, 0.3f, 0.3f, 1.0f),
+				1.4f, 0.7f, 0.3f, floral::vec4f(1.0f),
 				m_Vertices, m_Indices);
 	}
 
@@ -415,14 +440,17 @@ void UnshadowedPRT::ComputePRT()
 		for (u32 j = 0; j < NSamples; j++)
 		{
 			const sh_sample& sample = samples[j];
-			highp_vec3_t normal = highp_vec3_t(m_Vertices[i].Normal.x, m_Vertices[i].Normal.y, m_Vertices[i].Normal.z);
+			highp_vec3_t normal = highp_vec3_t(m_Vertices[i].Normal.z, m_Vertices[i].Normal.x, m_Vertices[i].Normal.y);
 			f64 cosineTerm = floral::dot(normal, sample.vec);
-			const floral::vec4f& vtxColor = m_Vertices[i].Color;
-			for (u32 k = 0; k < 9; k++)
+			if (cosineTerm > 0.0)
 			{
-				highp_vec3_t color(vtxColor.x, vtxColor.y, vtxColor.z); // highp computation
-				f64 shCoeff = sample.coeff[k];
-				coeffs[k] += color * shCoeff * cosineTerm;
+				const floral::vec4f& vtxColor = m_Vertices[i].Color;
+				for (u32 k = 0; k < 9; k++)
+				{
+					highp_vec3_t color(vtxColor.x, vtxColor.y, vtxColor.z); // highp computation
+					f64 shCoeff = sample.coeff[k];
+					coeffs[k] += color * shCoeff * cosineTerm;
+				}
 			}
 		}
 
