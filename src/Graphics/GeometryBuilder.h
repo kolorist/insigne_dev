@@ -97,6 +97,12 @@ void											GenIcosphere_Tris_P(const floral::mat4x4f& i_xform,
 													floral::fixed_array<VertexP, TAllocator>& o_vertices,
 													floral::fixed_array<u32, TAllocator>& o_indices);
 
+template <typename TAllocator>
+void											GenIcosphere_Tris_PNC(const floral::mat4x4f& i_xform,
+													const floral::vec4f& i_color,
+													floral::fixed_array<VertexP, TAllocator>& o_vertices,
+													floral::fixed_array<u32, TAllocator>& o_indices);
+
 #if 0
 template <typename TAllocator>
 void											Gen3DPlane_Tris_PosColor(const floral::vec4f& i_color,

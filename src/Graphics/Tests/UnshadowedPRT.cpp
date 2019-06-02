@@ -10,6 +10,7 @@
 
 #include "Graphics/prt.h"
 #include "Graphics/GeometryBuilder.h"
+#include "Graphics/CBTexDefinitions.h"
 
 namespace stone
 {
@@ -49,14 +50,14 @@ void main() {
 
 #if 0
 	//vColor = l_SH0 * iu_LightSH[0].rgb;
-	//vColor += l_SH1 * iu_LightSH[1].rgb;
-	vColor += l_SH2 * iu_LightSH[2].rgb;
+	vColor += l_SH1 * iu_LightSH[1].rgb;
+	//vColor += l_SH2 * iu_LightSH[2].rgb;
 	//vColor += l_SH3 * iu_LightSH[3].rgb;
 	//vColor += l_SH4 * iu_LightSH[4].rgb;
 	//vColor += l_SH5 * iu_LightSH[5].rgb;
 	//vColor += l_SH6 * iu_LightSH[6].rgb;
 	//vColor += l_SH7 * iu_LightSH[7].rgb;
-	//vColor += l_SH8 * iu_LightSH[8].rgb;
+	vColor += l_SH8 * iu_LightSH[8].rgb;
 #else
 	vColor = l_SH0 * iu_LightSH[0].rgb;
 	vColor += l_SH1 * iu_LightSH[1].rgb;
@@ -120,7 +121,7 @@ void main()
 
 UnshadowedPRT::UnshadowedPRT()
 	: m_CameraMotion(
-			floral::camera_view_t { floral::vec3f(3.0f, 3.0f, 3.0f), floral::vec3f(-3.0f, -3.0f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
+			floral::camera_view_t { floral::vec3f(0.0f, 0.3f, 3.0f), floral::vec3f(0.0f, -0.3f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
@@ -149,6 +150,8 @@ void UnshadowedPRT::OnInitialize()
 		m_UB = newUB;
 	}
 
+	ComputeLightSH();
+
 	{
 		insigne::ubdesc_t desc;
 		desc.region_size = SIZE_KB(4);
@@ -158,17 +161,6 @@ void UnshadowedPRT::OnInitialize()
 
 		insigne::ub_handle_t newUB = insigne::create_ub(desc);
 
-		// light
-		m_SceneLight.LightSH[0] = floral::vec4f(2.611720f, 1.460087f, 1.741204f, 0.0f);
-		m_SceneLight.LightSH[1] = floral::vec4f(-1.377519f, -1.212461f, -1.984652f, 0.0f);
-		m_SceneLight.LightSH[2] = floral::vec4f(-0.964628f, -0.480308f, -0.827692f, 0.0f);
-		m_SceneLight.LightSH[3] = floral::vec4f(0.955071f, 0.184159f, -0.036141f, 0.0f);
-		m_SceneLight.LightSH[4] = floral::vec4f(-0.282414f, -0.104354f, -0.333588f, 0.0f);
-		m_SceneLight.LightSH[5] = floral::vec4f(0.609179f, 0.529313f, 1.451220f, 0.0f);
-		m_SceneLight.LightSH[6] = floral::vec4f(-0.485359f, -0.289056f, -0.500897f, 0.0f);
-		m_SceneLight.LightSH[7] = floral::vec4f(-1.702566f, -0.608685f, -0.352614f, 0.0f);
-		m_SceneLight.LightSH[8] = floral::vec4f(0.557868f, -0.274987f, -1.048760f, 0.0f);
-
 		insigne::update_ub(newUB, &m_SceneLight, sizeof(SceneLight), 0);
 		m_LightUB = newUB;
 	}
@@ -177,6 +169,12 @@ void UnshadowedPRT::OnInitialize()
 	m_SHVertices.init(2048u, &g_StreammingAllocator);
 	m_Indices.init(8192u, &g_StreammingAllocator);
 
+	if (0)
+	{
+		floral::mat4x4f mIco = floral::construct_scaling3d(0.3f, 0.3f, 0.3f);
+		GenIcosphere_Tris_PNC(mIco, floral::vec4f(1.0f), m_Vertices, m_Indices);
+	}
+	else
 	{
 		floral::mat4x4f mBottom = floral::construct_translation3d(0.0f, -1.0f, 0.0f);
 		floral::mat4x4f mLeft = floral::construct_translation3d(0.0f, 0.0f, 1.5f)
@@ -425,6 +423,45 @@ void UnshadowedPRT::OnCleanUp()
 }
 
 //----------------------------------------------
+
+void UnshadowedPRT::ComputeLightSH()
+{
+	m_MemoryArena->free_all();
+	floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/grace_probe.cbtex");
+	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/Alexs_Apt_2k_lightprobe.cbtex");
+	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/ArboretumInBloom_lightprobe.cbtex");
+	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/CharlesRiver_lightprobe.cbtex");
+	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/uffizi_probe.cbtex");
+	floral::file_stream dataStream;
+	dataStream.buffer = (p8)m_MemoryArena->allocate(texFile.file_size);
+	floral::read_all_file(texFile, dataStream);
+	floral::close_file(texFile);
+
+	cb::CBTexture2DHeader header;
+	dataStream.read(&header);
+
+	FLORAL_ASSERT(header.colorRange == cb::ColorRange::HDR);
+	u32 dataSize = header.resolution * header.resolution * 3 * sizeof(f32);
+
+	f32* texData = (f32*)m_MemoryArena->allocate(dataSize);
+	dataStream.read_bytes(texData, dataSize);
+
+	s32 sqrtNSamples = 100;
+	s32 NSamples = sqrtNSamples * sqrtNSamples;
+	sh_sample* samples = m_MemoryArena->allocate_array<sh_sample>(NSamples);
+	sh_setup_spherical_samples(samples, sqrtNSamples);
+
+	highp_vec3_t shResult[9];
+	sh_project_light_image(texData, header.resolution, NSamples, 9, samples, shResult);
+
+	for (u32 i = 0; i < 9; i++)
+	{
+		//shResult[i] = highp_vec3_t(1.0);
+		CLOVER_DEBUG("(%f; %f; %f)", shResult[i].x, shResult[i].y, shResult[i].z);
+		m_SceneLight.LightSH[i] = floral::vec4f((f32)shResult[i].x, (f32)shResult[i].y, (f32)shResult[i].z, 0.0f);
+	}
+}
+
 void UnshadowedPRT::ComputePRT()
 {
 	s32 sqrtNSamples = 100;
@@ -437,10 +474,11 @@ void UnshadowedPRT::ComputePRT()
 	for (u32 i = 0; i < m_Vertices.get_size(); i++)
 	{
 		memset(coeffs, 0, sizeof(coeffs));
-		for (u32 j = 0; j < NSamples; j++)
+		for (s32 j = 0; j < NSamples; j++)
 		{
 			const sh_sample& sample = samples[j];
-			highp_vec3_t normal = highp_vec3_t(m_Vertices[i].Normal.z, m_Vertices[i].Normal.x, m_Vertices[i].Normal.y);
+			//highp_vec3_t normal = highp_vec3_t(m_Vertices[i].Normal.x, m_Vertices[i].Normal.y, m_Vertices[i].Normal.z);
+			highp_vec3_t normal = highp_vec3_t(m_Vertices[i].Normal.x, m_Vertices[i].Normal.y, m_Vertices[i].Normal.z);
 			f64 cosineTerm = floral::dot(normal, sample.vec);
 			if (cosineTerm > 0.0)
 			{

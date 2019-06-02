@@ -174,8 +174,8 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<OctreePartition>();
 	//_CreateTestSuite<LightProbePlacement>();
 	//_CreateTestSuite<GILightProbe>();
-	//_CreateTestSuite<SHTest>();
-	_CreateTestSuite<UnshadowedPRT>();
+	_CreateTestSuite<SHTest>();
+	//_CreateTestSuite<UnshadowedPRT>();
 
 	if (m_CurrentTestSuite)
 	{

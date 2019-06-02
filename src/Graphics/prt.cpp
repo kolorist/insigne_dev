@@ -35,9 +35,15 @@ void convert_spherical_to_catersian_coord(f64 theta, f64 phi, highp_vec3_t& vec)
 	// phi : 0 - M_PI
 	// theta : 0 - 2*M_PI
 
+#if 0
 	vec.x = sin(theta) * cos(phi);
 	vec.y = sin(theta) * sin(phi);
 	vec.z = cos(theta);
+#else
+	vec.z = sin(theta) * cos(phi);
+	vec.x = sin(theta) * sin(phi);
+	vec.y = cos(theta);
+#endif
 }
 
 void convert_cartesian_to_lightprobe_coord(highp_vec3_t vec, f64& u, f64& v)
@@ -235,15 +241,15 @@ void reconstruct_sh_radiance_light_probe(highp_vec3_t* coeffs, f32* imageData, c
 				outColor=
 					c0 * coeffs[0]
 
-					- c1 * vec.y * coeffs[1]
-					+ c1 * vec.z * coeffs[2]
-					- c1 * vec.x * coeffs[3]
+					- c1 * vec.x * coeffs[1]
+					+ c1 * vec.y * coeffs[2]
+					- c1 * vec.z * coeffs[3]
 
-					+ c2 * vec.x * vec.y * coeffs[4]
-					- c2 * vec.y * vec.z * coeffs[5]
-					+ c3 * (3.0 * vec.z * vec.z - 1.0) * coeffs[6]
-					- c2 * vec.z * vec.x * coeffs[7]
-					+ c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8];
+					+ c2 * vec.z * vec.x * coeffs[4]
+					- c2 * vec.x * vec.y * coeffs[5]
+					+ c3 * (3.0 * vec.y * vec.y - 1.0) * coeffs[6]
+					- c2 * vec.y * vec.z * coeffs[7]
+					+ c4 * (vec.z * vec.z - vec.x * vec.x) * coeffs[8];
 
 				f64 u, v;
 				convert_cartesian_to_lightprobe_coord(vec, u, v);
@@ -285,15 +291,15 @@ void reconstruct_sh_irradiance_light_probe(highp_vec3_t* coeffs, f32* imageData,
 				outColor =
 					a0 * c0 * coeffs[0]
 
-					- a1 * c1 * vec.y * coeffs[1]
-					+ a1 * c1 * vec.z * coeffs[2]
-					- a1 * c1 * vec.x * coeffs[3]
+					- a1 * c1 * vec.x * coeffs[1]
+					+ a1 * c1 * vec.y * coeffs[2]
+					- a1 * c1 * vec.z * coeffs[3]
 
-					+ a2 * c2 * vec.x * vec.y * coeffs[4]
-					- a2 * c2 * vec.y * vec.z * coeffs[5]
-					+ a2 * c3 * (3.0 * vec.z * vec.z - 1.0) * coeffs[6]
-					- a2 * c2 * vec.z * vec.x * coeffs[7]
-					+ a2 * c4 * (vec.x * vec.x - vec.y * vec.y) * coeffs[8];
+					+ a2 * c2 * vec.z * vec.x * coeffs[4]
+					- a2 * c2 * vec.x * vec.y * coeffs[5]
+					+ a2 * c3 * (3.0 * vec.y * vec.y - 1.0) * coeffs[6]
+					- a2 * c2 * vec.y * vec.z * coeffs[7]
+					+ a2 * c4 * (vec.z * vec.z - vec.x * vec.x) * coeffs[8];
 
 				f64 u, v;
 				convert_cartesian_to_lightprobe_coord(vec, u, v);

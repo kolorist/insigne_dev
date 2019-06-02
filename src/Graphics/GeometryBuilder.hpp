@@ -253,6 +253,40 @@ void GenIcosphere_Tris_P(const floral::mat4x4f& i_xform,
 	}
 }
 
+template <typename TAllocator>
+void GenIcosphere_Tris_PNC(const floral::mat4x4f& i_xform,
+		const floral::vec4f& i_color,
+		floral::fixed_array<VertexPNC, TAllocator>& o_vertices,
+		floral::fixed_array<u32, TAllocator>& o_indices)
+{
+	g_TemporalFreeArena.free_all();
+
+	TemporalVertices vertices(16u, &g_TemporalFreeArena);
+	TemporalIndices	indices(16u, &g_TemporalFreeArena);
+
+	GenIcosphere_Tris(&vertices, &indices);
+
+	u32 startIdx = o_vertices.get_size();
+
+	for (u32 i = 0; i < vertices.get_size(); i++) {
+		VertexPNC v;
+		floral::vec4f pos(vertices[i].Position.x, vertices[i].Position.y, vertices[i].Position.z, 1.0f);
+		floral::vec4f norm(pos.x, pos.y, pos.z, 0.0f);
+		pos = i_xform * pos;
+		norm = i_xform * floral::normalize(norm);
+		
+		v.Position = floral::vec3f(pos.x, pos.y, pos.z);
+		v.Normal = floral::vec3f(norm.x, norm.y, norm.z);
+		v.Color = i_color;
+		o_vertices.push_back(v);
+	}
+
+	for (u32 i = 0; i < indices.get_size(); i++) {
+		o_indices.push_back(startIdx + indices[i]);
+	}
+}
+
+
 #if 0
 template <typename TAllocator>
 void Gen3DPlane_Tris_PosColor(const floral::vec4f& i_color, const floral::mat4x4f& i_xform,

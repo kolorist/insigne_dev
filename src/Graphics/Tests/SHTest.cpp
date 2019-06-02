@@ -210,6 +210,7 @@ void SHTest::OnRender(const f32 i_deltaMs)
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
 	m_DebugDrawer.Render(m_SceneData.WVP);
+	IDebugUI::OnFrameRender(i_deltaMs);
 
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
@@ -234,6 +235,7 @@ refrain2::Task SHTest::ComputeSHCoeffs(voidptr i_data)
 
 	for (s32 i = 0; i < 9; i++)
 	{
+		//shResult[i] = highp_vec3_t(1.0);
 		CLOVER_DEBUG("(%f; %f; %f)", shResult[i].x, shResult[i].y, shResult[i].z);
 
 		input->OutputCoeffs[i].x = (f32)shResult[i].x;

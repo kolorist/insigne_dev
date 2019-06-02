@@ -25,6 +25,7 @@ public:
 	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
+	void										ComputeLightSH();
 	void										ComputePRT();
 
 private:
