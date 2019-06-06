@@ -28,6 +28,8 @@
 #include "Graphics/Tests/GILightProbe.h"
 #include "Graphics/Tests/SHTest.h"
 #include "Graphics/Tests/UnshadowedPRT.h"
+#include "Graphics/Tests/ShapeGen.h"
+#include "Graphics/Tests/ShadowedPRT.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -131,8 +133,8 @@ void Application::OnInitializePlatform()
 	CLOVER_VERBOSE("Initialize platform settings");
 	// insigne settings
 	insigne::g_settings.frame_shader_allocator_size_mb = 4u;
-	insigne::g_settings.frame_buffers_allocator_size_mb = 48u;
-	insigne::g_settings.frame_textures_allocator_size_mb = 48u;
+	insigne::g_settings.frame_buffers_allocator_size_mb = 16u;
+	insigne::g_settings.frame_textures_allocator_size_mb = 16u;
 	insigne::g_settings.frame_render_allocator_size_mb = 4u;
 	insigne::g_settings.frame_draw_allocator_size_mb = 4u;
 
@@ -150,9 +152,8 @@ void Application::OnInitializeRenderer()
 	insigne::initialize_driver();
 	insigne::allocate_draw_command_buffers(6);
 
-	//insigne::register_surface_type<SurfacePNC>();
+	insigne::register_surface_type<SurfacePNC>();
 	insigne::register_surface_type<SurfacePNCSH>();
-	//insigne::register_surface_type<SurfacePNC>();
 	//insigne::register_surface_type<SurfacePNCC>();
 	insigne::register_surface_type<SurfaceP>();
 	insigne::register_surface_type<SurfacePT>();
@@ -174,8 +175,10 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<OctreePartition>();
 	//_CreateTestSuite<LightProbePlacement>();
 	//_CreateTestSuite<GILightProbe>();
-	_CreateTestSuite<SHTest>();
+	//_CreateTestSuite<SHTest>();
 	//_CreateTestSuite<UnshadowedPRT>();
+	_CreateTestSuite<ShapeGen>();
+	//_CreateTestSuite<ShadowedPRT>();
 
 	if (m_CurrentTestSuite)
 	{
