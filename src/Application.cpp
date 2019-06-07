@@ -30,6 +30,7 @@
 #include "Graphics/Tests/UnshadowedPRT.h"
 #include "Graphics/Tests/ShapeGen.h"
 #include "Graphics/Tests/ShadowedPRT.h"
+#include "Graphics/Tests/InterreflectPRT.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -179,6 +180,7 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<UnshadowedPRT>();
 	_CreateTestSuite<ShapeGen>();
 	//_CreateTestSuite<ShadowedPRT>();
+	//_CreateTestSuite<InterreflectPRT>();
 
 	if (m_CurrentTestSuite)
 	{

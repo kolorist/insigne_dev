@@ -1,6 +1,7 @@
 #include "GeometryBuilder.h"
 
-namespace stone {
+namespace stone
+{
 
 static bool CompareVertexPosition(const floral::vec3f& i_a, const floral::vec3f& i_b)
 {

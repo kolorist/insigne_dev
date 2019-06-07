@@ -6,7 +6,8 @@
 #include "Memory/MemorySystem.h"
 #include "Graphics/SurfaceDefinitions.h"
 
-namespace stone {
+namespace stone
+{
 
 // up direction: positive Y
 
