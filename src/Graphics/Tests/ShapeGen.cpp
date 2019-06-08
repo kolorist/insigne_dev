@@ -15,7 +15,7 @@ namespace stone
 
 static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
-//layout (location = 1) in highp vec3 l_Normal_L;
+layout (location = 1) in highp vec3 l_Normal_L;
 //layout (location = 2) in mediump vec4 l_Color;
 
 layout(std140) uniform ub_Scene
@@ -24,18 +24,24 @@ layout(std140) uniform ub_Scene
 	highp mat4 iu_WVP;
 };
 
+out highp vec3 v_Normal_W;
+
 void main() {
 	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
+	highp vec4 norm_W = iu_XForm * vec4(l_Normal_L, 0.0f);
 	gl_Position = iu_WVP * pos_W;
+	v_Normal_W = norm_W.xyz;
 }
 )";
 
 static const_cstr s_FragmentShader = R"(#version 300 es
 layout (location = 0) out mediump vec4 o_Color;
 
+in highp vec3 v_Normal_W;
+
 void main()
 {
-	o_Color = vec4(1.0f, 1.0f, 1.0f, 1.0f);
+	o_Color = vec4(v_Normal_W, 1.0f);
 }
 )";
 
@@ -96,18 +102,88 @@ void ShapeGen::OnInitialize()
 	// generate geometry and upload
 	{
 		g_TemporalLinearArena.free_all();
-		floral::fixed_array<VertexPNC, LinearArena> vertices(128u, &g_TemporalLinearArena);
-		floral::fixed_array<s32, LinearArena> indices(256u, &g_TemporalLinearArena);
+		floral::fixed_array<VertexPNC, LinearArena> vertices(2048u, &g_TemporalLinearArena);
+		floral::fixed_array<s32, LinearArena> indices(4096u, &g_TemporalLinearArena);
+		floral::fixed_array<VertexPNC, LinearArena> mnfVertices(2048u, &g_TemporalLinearArena);
+		floral::fixed_array<s32, LinearArena> mnfIndices(4096u, &g_TemporalLinearArena);
 
-		vertices.resize_ex(128u);
-		indices.resize_ex(256u);
+		vertices.resize_ex(2048u);
+		indices.resize_ex(4096u);
+		mnfVertices.resize_ex(2048u);
+		mnfIndices.resize_ex(4096u);
 
-		floral::geo_generate_result_t genResult = floral::generate_unit_box_3d(0, sizeof(VertexPNC), &vertices[0], &indices[0]);
-		vertices.resize_ex(genResult.vertices_generated);
-		indices.resize_ex(genResult.indices_generated);
+		u32 vtxCount = 0, idxCount = 0;
+		u32 mnfVtxCount = 0, mnfIdxCount = 0;
 
-		insigne::copy_update_vb(m_VB, &vertices[0], vertices.get_size(), sizeof(VertexPNC), 0);
-		insigne::copy_update_ib(m_IB, &indices[0], indices.get_size(), 0);
+		floral::push_generation_transform(floral::construct_translation3d(1.0f, 0.0f, 0.0f));
+		floral::push_generation_transform(floral::construct_scaling3d(0.5f, 0.5f, 0.5f));
+		floral::quaternionf q = floral::construct_quaternion_euler(45.0f, 0.0f, 0.0f);
+		floral::push_generation_transform(q.to_transform());
+
+		{
+			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_unit_plane_3d(
+					0, sizeof(VertexPNC),
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+					&vertices[0], &indices[0],
+
+					0, sizeof(VertexPNC), 0.05f,
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+					&mnfVertices[0], &mnfIndices[0]);
+
+			vtxCount += genResult.vertices_generated;
+			idxCount += genResult.indices_generated;
+			mnfVtxCount += genResult.manifold_vertices_generated;
+			mnfIdxCount += genResult.manifold_indices_generated;
+		}
+
+		floral::reset_generation_transforms_stack();
+
+		floral::push_generation_transform(floral::construct_translation3d(0.0f, 0.0f, 1.0f));
+		floral::push_generation_transform(floral::construct_scaling3d(0.3f, 0.3f, 0.3f));
+
+		{
+			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_unit_plane_3d(
+					vtxCount, sizeof(VertexPNC),
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+					&vertices[vtxCount], &indices[idxCount],
+
+					mnfVtxCount, sizeof(VertexPNC), 0.05f,
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+					&mnfVertices[mnfVtxCount], &mnfIndices[mnfIdxCount]);
+
+			vtxCount += genResult.vertices_generated;
+			idxCount += genResult.indices_generated;
+			mnfVtxCount += genResult.manifold_vertices_generated;
+			mnfIdxCount += genResult.manifold_indices_generated;
+		}
+
+		floral::reset_generation_transforms_stack();
+
+		{
+			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_quadtes_unit_plane_3d(
+					vtxCount, sizeof(VertexPNC),
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal, 0.1f,
+					&vertices[vtxCount], &indices[idxCount],
+
+					mnfVtxCount, sizeof(VertexPNC), 0.05f,
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+					&mnfVertices[mnfVtxCount], &mnfIndices[mnfIdxCount]);
+
+			vtxCount += genResult.vertices_generated;
+			idxCount += genResult.indices_generated;
+			mnfVtxCount += genResult.manifold_vertices_generated;
+			mnfIdxCount += genResult.manifold_indices_generated;
+		}
+
+		vertices.resize_ex(vtxCount);
+		indices.resize_ex(idxCount);
+		mnfVertices.resize_ex(mnfVtxCount);
+		mnfIndices.resize_ex(mnfIdxCount);
+
+		//insigne::copy_update_vb(m_VB, &vertices[0], vertices.get_size(), sizeof(VertexPNC), 0);
+		//insigne::copy_update_ib(m_IB, &indices[0], indices.get_size(), 0);
+		insigne::copy_update_vb(m_VB, &mnfVertices[0], mnfVertices.get_size(), sizeof(VertexPNC), 0);
+		insigne::copy_update_ib(m_IB, &mnfIndices[0], mnfIndices.get_size(), 0);
 	}
 
 	{
@@ -128,7 +204,6 @@ void ShapeGen::OnInitialize()
 			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
 		}
 	}
-
 
 	m_DebugDrawer.Initialize();
 }
