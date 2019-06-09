@@ -115,36 +115,12 @@ void ShapeGen::OnInitialize()
 		u32 vtxCount = 0, idxCount = 0;
 		u32 mnfVtxCount = 0, mnfIdxCount = 0;
 
-		floral::push_generation_transform(floral::construct_translation3d(1.0f, 0.0f, 0.0f));
-		floral::push_generation_transform(floral::construct_scaling3d(0.5f, 0.5f, 0.5f));
-		floral::quaternionf q = floral::construct_quaternion_euler(45.0f, 0.0f, 0.0f);
-		floral::push_generation_transform(q.to_transform());
-
+		// bottom
 		{
-			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_unit_plane_3d(
-					0, sizeof(VertexPNC),
-					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
-					&vertices[0], &indices[0],
-
-					0, sizeof(VertexPNC), 0.05f,
-					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
-					&mnfVertices[0], &mnfIndices[0]);
-
-			vtxCount += genResult.vertices_generated;
-			idxCount += genResult.indices_generated;
-			mnfVtxCount += genResult.manifold_vertices_generated;
-			mnfIdxCount += genResult.manifold_indices_generated;
-		}
-
-		floral::reset_generation_transforms_stack();
-
-		floral::push_generation_transform(floral::construct_translation3d(0.0f, 0.0f, 1.0f));
-		floral::push_generation_transform(floral::construct_scaling3d(0.3f, 0.3f, 0.3f));
-
-		{
-			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_unit_plane_3d(
+			floral::reset_generation_transforms_stack();
+			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_quadtes_unit_plane_3d(
 					vtxCount, sizeof(VertexPNC),
-					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal, 0.2f,
 					&vertices[vtxCount], &indices[idxCount],
 
 					mnfVtxCount, sizeof(VertexPNC), 0.05f,
@@ -156,13 +132,37 @@ void ShapeGen::OnInitialize()
 			mnfVtxCount += genResult.manifold_vertices_generated;
 			mnfIdxCount += genResult.manifold_indices_generated;
 		}
-
-		floral::reset_generation_transforms_stack();
-
+		// right
 		{
+			floral::reset_generation_transforms_stack();
+			floral::push_generation_transform(floral::construct_translation3d(0.0f, 1.0f, -1.0f));
+			floral::quaternionf q = floral::construct_quaternion_euler(90.0f, 0.0f, 0.0f);
+			floral::push_generation_transform(q.to_transform());
+
 			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_quadtes_unit_plane_3d(
 					vtxCount, sizeof(VertexPNC),
-					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal, 0.1f,
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal, 0.2f,
+					&vertices[vtxCount], &indices[idxCount],
+
+					mnfVtxCount, sizeof(VertexPNC), 0.05f,
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+					&mnfVertices[mnfVtxCount], &mnfIndices[mnfIdxCount]);
+
+			vtxCount += genResult.vertices_generated;
+			idxCount += genResult.indices_generated;
+			mnfVtxCount += genResult.manifold_vertices_generated;
+			mnfIdxCount += genResult.manifold_indices_generated;
+		}
+		// back
+		{
+			floral::reset_generation_transforms_stack();
+			floral::push_generation_transform(floral::construct_translation3d(-1.0f, 1.0f, 0.0f));
+			floral::quaternionf q = floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f);
+			floral::push_generation_transform(q.to_transform());
+
+			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_quadtes_unit_plane_3d(
+					vtxCount, sizeof(VertexPNC),
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal, 0.2f,
 					&vertices[vtxCount], &indices[idxCount],
 
 					mnfVtxCount, sizeof(VertexPNC), 0.05f,
@@ -180,10 +180,10 @@ void ShapeGen::OnInitialize()
 		mnfVertices.resize_ex(mnfVtxCount);
 		mnfIndices.resize_ex(mnfIdxCount);
 
-		//insigne::copy_update_vb(m_VB, &vertices[0], vertices.get_size(), sizeof(VertexPNC), 0);
-		//insigne::copy_update_ib(m_IB, &indices[0], indices.get_size(), 0);
-		insigne::copy_update_vb(m_VB, &mnfVertices[0], mnfVertices.get_size(), sizeof(VertexPNC), 0);
-		insigne::copy_update_ib(m_IB, &mnfIndices[0], mnfIndices.get_size(), 0);
+		insigne::copy_update_vb(m_VB, &vertices[0], vertices.get_size(), sizeof(VertexPNC), 0);
+		insigne::copy_update_ib(m_IB, &indices[0], indices.get_size(), 0);
+		//insigne::copy_update_vb(m_VB, &mnfVertices[0], mnfVertices.get_size(), sizeof(VertexPNC), 0);
+		//insigne::copy_update_ib(m_IB, &mnfIndices[0], mnfIndices.get_size(), 0);
 	}
 
 	{

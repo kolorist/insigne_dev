@@ -63,22 +63,6 @@ InterreflectPRT::~InterreflectPRT()
 void InterreflectPRT::OnInitialize()
 {
 	{
-		floral::fixed_array<VertexPNC, LinearAllocator> vertices;
-		floral::fixed_array<s32, LinearAllocator> indices;
-
-		vertices.init(128u, &g_StreammingAllocator);
-		indices.init(256u, &g_StreammingAllocator);
-
-		vertices.resize_ex(128u);
-		indices.resize_ex(256u);
-
-		floral::geo_generate_result_t genResult = floral::generate_unit_box_3d(0, sizeof(VertexPNC), &vertices[0], &indices[0]);
-		vertices.resize_ex(genResult.vertices_generated);
-		indices.resize_ex(genResult.indices_generated);
-		CLOVER_DEBUG("done.");
-	}
-
-	{
 		insigne::ubdesc_t desc;
 		desc.region_size = SIZE_KB(4);
 		desc.data = nullptr;
