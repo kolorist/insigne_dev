@@ -245,6 +245,7 @@ void InterreflectPRT::OnInitialize()
 			mnfIdxCount += genResult.manifold_indices_generated;
 		}
 		// sphere
+		if (1)
 		{
 			floral::reset_generation_transforms_stack();
 			floral::push_generation_transform(floral::construct_scaling3d(0.4f, 0.4f, 0.4f));
@@ -470,8 +471,8 @@ void InterreflectPRT::ComputeLightSH()
 {
 	m_MemoryArena->free_all();
 	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/grace_probe.cbtex");
-	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/Alexs_Apt_2k_lightprobe.cbtex");
-	floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/ArboretumInBloom_lightprobe.cbtex");
+	floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/Alexs_Apt_2k_lightprobe.cbtex");
+	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/ArboretumInBloom_lightprobe.cbtex");
 	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/CharlesRiver_lightprobe.cbtex");
 	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/uffizi_probe.cbtex");
 	floral::file_stream dataStream;
@@ -663,6 +664,8 @@ void InterreflectPRT::ComputePRT()
 						u32 tIdx1 = m_Indices[idx + 1];
 						u32 tIdx2 = m_Indices[idx + 2];
 
+						if (tIdx0 == i || tIdx1 == i || tIdx2 == i) continue;
+
 						float tt = 0.0f, bb0 = 0.0f, bb1 = 0.0f;
 						const bool isHit = ray_triangle_intersect(
 								ray,
@@ -671,19 +674,23 @@ void InterreflectPRT::ComputePRT()
 								m_Vertices[tIdx2].Position,
 								&tt, &bb0, &bb1);
 
-						if (isHit && tt > 0.001f & tt < t)
+						if (isHit && tt >= 0.0f & tt < t)
 						{
-							t = tt;
-							b0 = bb0; b1 = bb1;
-							b2 = 1.0f - b0 - b1;
-							ix0 = tIdx0; ix1 = tIdx1; ix2 = tIdx2;
-							rayHit = true;
+							f32 cosinTermHit = floral::dot(m_Vertices[tIdx0].Normal, ray.d);
+							if (cosinTermHit <= 0.0f)
+							{
+								t = tt;
+								b0 = bb0; b1 = bb1;
+								b2 = 1.0f - b0 - b1;
+								ix0 = tIdx0; ix1 = tIdx1; ix2 = tIdx2;
+								rayHit = true;
+							}
 						}
 					}
 
 					if (rayHit)
 					{
-						FLORAL_ASSERT(b0 > 0.0 && b1 > 0.0 && b2 > 0.0);
+						//FLORAL_ASSERT(b0 > 0.0 && b1 > 0.0 && b2 > 0.0);
 						highp_vec3_t sh[9];
 						for (size k = 0; k < 9; k++)
 						{
