@@ -1,5 +1,7 @@
 #include "ShadowedPRT.h"
 
+#include <floral/comgeo/shapegen.h>
+
 #include <clover/Logger.h>
 
 #include <insigne/commons.h>
@@ -9,7 +11,6 @@
 #include <insigne/ut_textures.h>
 
 #include "Graphics/prt.h"
-#include "Graphics/GeometryBuilder.h"
 #include "Graphics/CBTexDefinitions.h"
 
 namespace stone
@@ -47,18 +48,6 @@ void main() {
 	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
 
 	mediump vec3 vColor = vec3(0.0f);
-
-#if 0
-	//vColor = l_SH0 * iu_LightSH[0].rgb;
-	vColor += l_SH1 * iu_LightSH[1].rgb;
-	//vColor += l_SH2 * iu_LightSH[2].rgb;
-	//vColor += l_SH3 * iu_LightSH[3].rgb;
-	//vColor += l_SH4 * iu_LightSH[4].rgb;
-	//vColor += l_SH5 * iu_LightSH[5].rgb;
-	//vColor += l_SH6 * iu_LightSH[6].rgb;
-	//vColor += l_SH7 * iu_LightSH[7].rgb;
-	vColor += l_SH8 * iu_LightSH[8].rgb;
-#else
 	vColor = l_SH0 * iu_LightSH[0].rgb;
 	vColor += l_SH1 * iu_LightSH[1].rgb;
 	vColor += l_SH2 * iu_LightSH[2].rgb;
@@ -68,7 +57,6 @@ void main() {
 	vColor += l_SH6 * iu_LightSH[6].rgb;
 	vColor += l_SH7 * iu_LightSH[7].rgb;
 	vColor += l_SH8 * iu_LightSH[8].rgb;
-#endif
 
 	v_VertexColor = vec4(vColor, 0.0f);
 	gl_Position = iu_WVP * pos_W;
@@ -76,6 +64,7 @@ void main() {
 )";
 
 static const_cstr s_FragmentShader = R"(#version 300 es
+
 layout (location = 0) out mediump vec4 o_Color;
 
 in mediump vec4 v_VertexColor;
@@ -121,7 +110,7 @@ void main()
 
 ShadowedPRT::ShadowedPRT()
 	: m_CameraMotion(
-			floral::camera_view_t { floral::vec3f(3.0f, 2.0f, 0.0f), floral::vec3f(-3.0f, -2.0f, 0.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
+			floral::camera_view_t { floral::vec3f(3.0f, 3.0f, 0.0f), floral::vec3f(-3.0f, -3.0f, 0.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
@@ -165,76 +154,125 @@ void ShadowedPRT::OnInitialize()
 		m_LightUB = newUB;
 	}
 
-	m_Vertices.init(2048u, &g_StreammingAllocator);
-	m_SHVertices.init(2048u, &g_StreammingAllocator);
-	m_Indices.init(8192u, &g_StreammingAllocator);
-
-	if (0)
 	{
-		floral::mat4x4f mIco = floral::construct_scaling3d(0.3f, 0.3f, 0.3f);
-		GenIcosphere_Tris_PNC(mIco, floral::vec4f(1.0f), m_Vertices, m_Indices);
-	}
-	else
-	{
-		floral::mat4x4f mBottom = floral::construct_translation3d(0.0f, -1.0f, 0.0f);
-		floral::mat4x4f mLeft = floral::construct_translation3d(0.0f, 0.0f, 1.5f)
-			* floral::construct_quaternion_euler(-90.0f, 0.0f, 0.0f).to_transform();
-		floral::mat4x4f mRight = floral::construct_translation3d(0.0f, 0.0f, -1.5f)
-			* floral::construct_quaternion_euler(90.0f, 0.0f, 0.0f).to_transform();
-		floral::mat4x4f mBack = floral::construct_translation3d(-1.0f, 0.0f, 0.0f)
-			* floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
+		m_Vertices.reserve(4096, &g_StreammingAllocator);
+		m_Indices.reserve(8192, &g_StreammingAllocator);
+		m_MnfVertices.reserve(4096, &g_StreammingAllocator);
+		m_MnfIndices.reserve(8192, &g_StreammingAllocator);
 
-		GenTesselated3DPlane_Tris_PNC(
-				mBottom,
-				2.0f, 3.0f, 0.3f, floral::vec4f(1.0f),
-				m_Vertices, m_Indices);
-		GenTesselated3DPlane_Tris_PNC(
-				mLeft,
-				2.0f, 2.0f, 0.3f, floral::vec4f(1.0f),
-				m_Vertices, m_Indices);
-		GenTesselated3DPlane_Tris_PNC(
-				mRight,
-				2.0f, 2.0f, 0.3f, floral::vec4f(1.0f),
-				m_Vertices, m_Indices);
-		GenTesselated3DPlane_Tris_PNC(
-				mBack,
-				2.0f, 3.0f, 0.3f, floral::vec4f(1.0f),
-				m_Vertices, m_Indices);
+		m_Vertices.resize(4096);
+		m_Indices.resize(8192);
+		m_MnfVertices.resize(4096);
+		m_MnfIndices.resize(8192);
 
-		floral::mat4x4f mB1Top = floral::construct_translation3d(0.0f, 0.4f, 0.0f)
-			* floral::construct_quaternion_euler(0.0f, 43.0f, 0.0f).to_transform();
-		floral::mat4x4f mB1Front = floral::construct_quaternion_euler(0.0f, 43.0f, 0.0f).to_transform()
-			* floral::construct_translation3d(0.35f, -0.3f, 0.0f)
-			* floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
-		floral::mat4x4f mB1Back = floral::construct_quaternion_euler(0.0f, 43.0f, 0.0f).to_transform()
-			* floral::construct_translation3d(-0.35f, -0.3f, 0.0f)
-			* floral::construct_quaternion_euler(0.0f, 0.0f, 90.0f).to_transform();
-		floral::mat4x4f mB1Left = floral::construct_quaternion_euler(0.0f, -47.0f, 0.0f).to_transform()
-			* floral::construct_translation3d(0.35f, -0.3f, 0.0f)
-			* floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f).to_transform();
-		floral::mat4x4f mB1Right = floral::construct_quaternion_euler(0.0f, -47.0f, 0.0f).to_transform()
-			* floral::construct_translation3d(-0.35f, -0.3f, 0.0f)
-			* floral::construct_quaternion_euler(0.0f, 0.0f, 90.0f).to_transform();
-		GenTesselated3DPlane_Tris_PNC(
-				mB1Top,
-				0.7f, 0.7f, 0.3f, floral::vec4f(1.0f),
-				m_Vertices, m_Indices);
-		GenTesselated3DPlane_Tris_PNC(
-				mB1Front,
-				1.4f, 0.7f, 0.3f, floral::vec4f(1.0f),
-				m_Vertices, m_Indices);
-		GenTesselated3DPlane_Tris_PNC(
-				mB1Back,
-				1.4f, 0.7f, 0.3f, floral::vec4f(1.0f),
-				m_Vertices, m_Indices);
-		GenTesselated3DPlane_Tris_PNC(
-				mB1Left,
-				1.4f, 0.7f, 0.3f, floral::vec4f(1.0f),
-				m_Vertices, m_Indices);
-		GenTesselated3DPlane_Tris_PNC(
-				mB1Right,
-				1.4f, 0.7f, 0.3f, floral::vec4f(1.0f),
-				m_Vertices, m_Indices);
+		u32 vtxCount = 0, idxCount = 0;
+		u32 mnfVtxCount = 0, mnfIdxCount = 0;
+
+		// bottom
+		{
+			floral::reset_generation_transforms_stack();
+			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_quadtes_unit_plane_3d(
+					vtxCount, sizeof(VertexPNCSH),
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal, 0.1f,
+					&m_Vertices[vtxCount], &m_Indices[idxCount],
+
+					mnfVtxCount, sizeof(VertexP), 0.05f,
+					(s32)floral::geo_vertex_format_e::position,
+					&m_MnfVertices[mnfVtxCount], &m_MnfIndices[mnfIdxCount]);
+
+			for (size i = vtxCount; i < vtxCount + genResult.vertices_generated; i++)
+			{
+				m_Vertices[i].Color = floral::vec4f(1.0f);
+			}
+
+			vtxCount += genResult.vertices_generated;
+			idxCount += genResult.indices_generated;
+			mnfVtxCount += genResult.manifold_vertices_generated;
+			mnfIdxCount += genResult.manifold_indices_generated;
+
+		}
+		// right
+		{
+			floral::reset_generation_transforms_stack();
+			floral::quaternionf q = floral::construct_quaternion_euler(90.0f, 0.0f, 0.0f);
+			floral::push_generation_transform(q.to_transform());
+			floral::push_generation_transform(floral::construct_translation3d(0.0f, 1.0f, -1.0f));
+
+			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_quadtes_unit_plane_3d(
+					vtxCount, sizeof(VertexPNCSH),
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal, 0.2f,
+					&m_Vertices[vtxCount], &m_Indices[idxCount],
+
+					mnfVtxCount, sizeof(VertexP), 0.05f,
+					(s32)floral::geo_vertex_format_e::position,
+					&m_MnfVertices[mnfVtxCount], &m_MnfIndices[mnfIdxCount]);
+
+			for (size i = vtxCount; i < vtxCount + genResult.vertices_generated; i++)
+			{
+				m_Vertices[i].Color = floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f);
+			}
+
+			vtxCount += genResult.vertices_generated;
+			idxCount += genResult.indices_generated;
+			mnfVtxCount += genResult.manifold_vertices_generated;
+			mnfIdxCount += genResult.manifold_indices_generated;
+		}
+		// back
+		{
+			floral::reset_generation_transforms_stack();
+			floral::quaternionf q = floral::construct_quaternion_euler(0.0f, 0.0f, -90.0f);
+			floral::push_generation_transform(q.to_transform());
+			floral::push_generation_transform(floral::construct_translation3d(-1.0f, 1.0f, 0.0f));
+
+			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_quadtes_unit_plane_3d(
+					vtxCount, sizeof(VertexPNCSH),
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal, 0.2f,
+					&m_Vertices[vtxCount], &m_Indices[idxCount],
+
+					mnfVtxCount, sizeof(VertexP), 0.05f,
+					(s32)floral::geo_vertex_format_e::position,
+					&m_MnfVertices[mnfVtxCount], &m_MnfIndices[mnfIdxCount]);
+
+			for (size i = vtxCount; i < vtxCount + genResult.vertices_generated; i++)
+			{
+				m_Vertices[i].Color = floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f);
+			}
+
+			vtxCount += genResult.vertices_generated;
+			idxCount += genResult.indices_generated;
+			mnfVtxCount += genResult.manifold_vertices_generated;
+			mnfIdxCount += genResult.manifold_indices_generated;
+		}
+		// sphere
+		{
+			floral::reset_generation_transforms_stack();
+			floral::push_generation_transform(floral::construct_scaling3d(0.4f, 0.4f, 0.4f));
+			floral::push_generation_transform(floral::construct_translation3d(0.0f, 0.4f, -0.4f));
+
+			floral::manifold_geo_generate_result_t genResult = floral::generate_manifold_icosphere_3d(
+					vtxCount, sizeof(VertexPNCSH),
+					floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+					&m_Vertices[vtxCount], &m_Indices[idxCount],
+
+					mnfVtxCount, sizeof(VertexP), 0.05f,
+					(s32)floral::geo_vertex_format_e::position,
+					&m_MnfVertices[mnfVtxCount], &m_MnfIndices[mnfIdxCount]);
+
+			for (size i = vtxCount; i < vtxCount + genResult.vertices_generated; i++)
+			{
+				m_Vertices[i].Color = floral::vec4f(1.0f);
+			}
+
+			vtxCount += genResult.vertices_generated;
+			idxCount += genResult.indices_generated;
+			mnfVtxCount += genResult.manifold_vertices_generated;
+			mnfIdxCount += genResult.manifold_indices_generated;
+		}
+
+		m_Vertices.resize(vtxCount);
+		m_Indices.resize(idxCount);
+		m_MnfVertices.resize(mnfVtxCount);
+		m_MnfIndices.resize(mnfIdxCount);
 	}
 
 	ComputePRT();
@@ -248,7 +286,7 @@ void ShadowedPRT::OnInitialize()
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 
 		insigne::vb_handle_t newVB = insigne::create_vb(desc);
-		insigne::update_vb(newVB, &m_SHVertices[0], m_SHVertices.get_size(), 0);
+		insigne::update_vb(newVB, &m_Vertices[0], m_Vertices.get_size(), 0);
 		m_VB = newVB;
 	}
 
@@ -396,6 +434,9 @@ void ShadowedPRT::OnUpdate(const f32 i_deltaMs)
 
 void ShadowedPRT::OnDebugUIUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("Interreflect PRT");
+	ImGui::Text("grace_probe and cornell box");
+	ImGui::End();
 }
 
 void ShadowedPRT::OnRender(const f32 i_deltaMs)
@@ -414,6 +455,7 @@ void ShadowedPRT::OnRender(const f32 i_deltaMs)
 	insigne::draw_surface<SurfacePT>(m_SSVB, m_SSIB, m_ToneMapMaterial);
 	IDebugUI::OnFrameRender(i_deltaMs);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
+
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
 }
@@ -423,15 +465,14 @@ void ShadowedPRT::OnCleanUp()
 }
 
 //----------------------------------------------
-
 void ShadowedPRT::ComputeLightSH()
 {
 	m_MemoryArena->free_all();
-	floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/grace_probe.cbtex");
+	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/grace_probe.cbtex");
 	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/Alexs_Apt_2k_lightprobe.cbtex");
 	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/ArboretumInBloom_lightprobe.cbtex");
 	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/CharlesRiver_lightprobe.cbtex");
-	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/uffizi_probe.cbtex");
+	floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/uffizi_probe.cbtex");
 	floral::file_stream dataStream;
 	dataStream.buffer = (p8)m_MemoryArena->allocate(texFile.file_size);
 	floral::read_all_file(texFile, dataStream);
@@ -464,88 +505,74 @@ void ShadowedPRT::ComputeLightSH()
 
 void ShadowedPRT::ComputePRT()
 {
-	s32 sqrtNSamples = 40;
+	s32 sqrtNSamples = 10;
 	s32 NSamples = sqrtNSamples * sqrtNSamples;
 	sh_sample* samples = m_MemoryArena->allocate_array<sh_sample>(NSamples);
 	sh_setup_spherical_samples(samples, sqrtNSamples);
 
 	highp_vec3_t coeffs[9];
 
-	for (u32 i = 0; i < m_Vertices.get_size(); i++)
-	
-	//for (u32 i = 306; i < m_Vertices.get_size(); i++)
+	for (size i = 0; i < m_Vertices.get_size(); i++)
 	{
-		u32 nonShadowSample = 0;
-		u32 shadowSample = 0;
 		memset(coeffs, 0, sizeof(coeffs));
+		u32 rayUpper = 0;
 		for (s32 j = 0; j < NSamples; j++)
 		{
 			const sh_sample& sample = samples[j];
+
 			highp_vec3_t normal = highp_vec3_t(m_Vertices[i].Normal.x, m_Vertices[i].Normal.y, m_Vertices[i].Normal.z);
 			f64 cosineTerm = floral::dot(normal, sample.vec);
-			if (cosineTerm > 0.0)
+			if (cosineTerm > 0.0f) // upper hemisphere
 			{
-				floral::ray3df sampleRay;
-				sampleRay.o = m_Vertices[i].Position;
-				sampleRay.d = floral::vec3f((f32)sample.vec.x, (f32)sample.vec.y, (f32)sample.vec.z);
-				bool isShadowed = false;
+				rayUpper++;
+				floral::ray3df ray;
+				ray.o = m_Vertices[i].Position;
+				ray.d = floral::vec3f((f32)sample.vec.x, (f32)sample.vec.y, (f32)sample.vec.z);
+				bool rayHitGeometry = false;
 
-				for (s32 idx = 0; idx < m_Indices.get_size(); idx += 3)
+				for (size idx = 0; idx < m_MnfIndices.get_size(); idx += 3)
 				{
-					u32 vIdx1 = m_Indices[idx];
-					u32 vIdx2 = m_Indices[idx + 1];
-					u32 vIdx3 = m_Indices[idx + 2];
-					if (vIdx1 == i || vIdx2 == i || vIdx3 == i)
-					{
-						continue;
-					}
+					u32 tIdx0 = m_MnfIndices[idx];
+					u32 tIdx1 = m_MnfIndices[idx + 1];
+					u32 tIdx2 = m_MnfIndices[idx + 2];
 
-					f32 t = 0.0f;
-					bool isHit = floral::ray_triangle_intersect(sampleRay,
-							m_Vertices[vIdx1].Position, m_Vertices[vIdx2].Position, m_Vertices[vIdx3].Position,
+					float t = 0.0f;
+					const bool isHit = ray_triangle_intersect(
+							ray,
+							m_MnfVertices[tIdx0].Position,
+							m_MnfVertices[tIdx1].Position,
+							m_MnfVertices[tIdx2].Position,
 							&t);
-					if (isHit && t >= -0.001f)
+
+					if (isHit && t > 0.001f)
 					{
-						isShadowed = true;
+						rayHitGeometry = true;
 						break;
 					}
 				}
 
-				if (!isShadowed)
+				if (!rayHitGeometry)
 				{
-					nonShadowSample++;
 					const floral::vec4f& vtxColor = m_Vertices[i].Color;
+					highp_vec3_t color(vtxColor.x, vtxColor.y, vtxColor.z); // highp computation
 					for (u32 k = 0; k < 9; k++)
 					{
-						highp_vec3_t color(vtxColor.x, vtxColor.y, vtxColor.z); // highp computation
 						f64 shCoeff = sample.coeff[k];
 						coeffs[k] += color * shCoeff * cosineTerm;
 					}
 				}
-				else
-				{
-					shadowSample++;
-				}
+
 			}
 		}
 
 		f64 weight = 4.0 * 3.141593;
 		f64 scale = weight / NSamples;
-		VertexPNCSH vtf;
-		vtf.Position = m_Vertices[i].Position;
-		vtf.Normal = m_Vertices[i].Normal;
-		vtf.Color = m_Vertices[i].Color;
+		VertexPNCSH& vtf = m_Vertices[i];
 		for (u32 j = 0; j < 9; j++)
 		{
 			coeffs[j] *= scale;
 			vtf.SH[j] = floral::vec3f((f32)coeffs[j].x, (f32)coeffs[j].y, (f32)coeffs[j].z);
 		}
-		m_SHVertices.push_back(vtf);
-		if (nonShadowSample == 0)
-		{
-			CLOVER_DEBUG("nani");
-		}
-		CLOVER_DEBUG("Done for vertex %d: %d - %d", i, nonShadowSample, shadowSample);
 	}
 }
 

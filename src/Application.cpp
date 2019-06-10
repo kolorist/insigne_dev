@@ -178,9 +178,9 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<GILightProbe>();
 	//_CreateTestSuite<SHTest>();
 	//_CreateTestSuite<UnshadowedPRT>();
-	_CreateTestSuite<ShapeGen>();
+	//_CreateTestSuite<ShapeGen>();
 	//_CreateTestSuite<ShadowedPRT>();
-	//_CreateTestSuite<InterreflectPRT>();
+	_CreateTestSuite<InterreflectPRT>();
 
 	if (m_CurrentTestSuite)
 	{
@@ -194,7 +194,6 @@ void Application::OnFrameStep(f32 i_deltaMs)
 {
 	if (m_Initialized)
 	{
-		//insigne::begin_frame(1e8);
 		insigne::begin_frame();
 		UpdateFrame(i_deltaMs);
 		RenderFrame(i_deltaMs);

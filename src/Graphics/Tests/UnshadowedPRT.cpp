@@ -477,7 +477,6 @@ void UnshadowedPRT::ComputePRT()
 		for (s32 j = 0; j < NSamples; j++)
 		{
 			const sh_sample& sample = samples[j];
-			//highp_vec3_t normal = highp_vec3_t(m_Vertices[i].Normal.x, m_Vertices[i].Normal.y, m_Vertices[i].Normal.z);
 			highp_vec3_t normal = highp_vec3_t(m_Vertices[i].Normal.x, m_Vertices[i].Normal.y, m_Vertices[i].Normal.z);
 			f64 cosineTerm = floral::dot(normal, sample.vec);
 			if (cosineTerm > 0.0)

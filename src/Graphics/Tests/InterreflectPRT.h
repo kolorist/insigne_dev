@@ -23,7 +23,8 @@ public:
 	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
-	void										PerformRaycastTest();
+	void										ComputeLightSH();
+	void										ComputePRT();
 
 private:
 	struct SceneData
@@ -32,11 +33,19 @@ private:
 		floral::mat4x4f							WVP;
 	};
 
+	struct SceneLight
+	{
+		floral::vec4f							LightSH[9];
+	};
+
 private:
-	floral::fixed_array<VertexPNC, LinearAllocator>		m_Vertices;
-	floral::fixed_array<u32, LinearAllocator>			m_Indices;
-	floral::fixed_array<GeoQuad, LinearAllocator>		m_Patches;
+	floral::fixed_array<VertexPNCSH, LinearAllocator>	m_Vertices;
+	floral::fixed_array<s32, LinearAllocator>			m_Indices;
+	floral::fixed_array<VertexP, LinearAllocator>		m_MnfVertices;
+	floral::fixed_array<s32, LinearAllocator>			m_MnfIndices;
+
 	SceneData									m_SceneData;
+	SceneLight									m_SceneLight;
 
 	insigne::vb_handle_t						m_VB;
 	insigne::ib_handle_t						m_IB;
@@ -44,6 +53,14 @@ private:
 	insigne::material_desc_t					m_Material;
 
 	insigne::ub_handle_t						m_UB;
+	insigne::ub_handle_t						m_LightUB;
+
+	insigne::framebuffer_handle_t				m_HDRBuffer;
+	insigne::vb_handle_t						m_SSVB;
+	insigne::ib_handle_t						m_SSIB;
+	insigne::shader_handle_t					m_ToneMapShader;
+	insigne::material_desc_t					m_ToneMapMaterial;
+
 private:
 	DebugDrawer									m_DebugDrawer;
 	FreeCamera									m_CameraMotion;

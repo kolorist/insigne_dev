@@ -59,6 +59,8 @@ file (GLOB_RECURSE file_list
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHTest.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/UnshadowedPRT.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/InterreflectPRT.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/ShadowedPRT.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/ShapeGen.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainTextureQuad.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CubeMapTexture.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/VectorMath.cpp"
