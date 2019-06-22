@@ -154,8 +154,8 @@ void Application::OnInitializeRenderer()
 	insigne::allocate_draw_command_buffers(6);
 
 	insigne::register_surface_type<SurfacePNC>();
-	insigne::register_surface_type<SurfacePNCSH>();
-	//insigne::register_surface_type<SurfacePNCC>();
+	//insigne::register_surface_type<SurfacePNCSH>();
+	//insigne::register_surface_type<SurfacePN>();
 	insigne::register_surface_type<SurfaceP>();
 	insigne::register_surface_type<SurfacePT>();
 	insigne::register_surface_type<DebugLine>();
@@ -180,7 +180,8 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<UnshadowedPRT>();
 	//_CreateTestSuite<ShapeGen>();
 	//_CreateTestSuite<ShadowedPRT>();
-	_CreateTestSuite<InterreflectPRT>();
+	//_CreateTestSuite<InterreflectPRT>();
+	_CreateTestSuite<FormFactorsValidating>();
 
 	if (m_CurrentTestSuite)
 	{

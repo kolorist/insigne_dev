@@ -1,53 +1,49 @@
 #include "FormFactorsValidating.h"
 
+#include <floral/comgeo/shapegen.h>
+
 #include <insigne/commons.h>
 #include <insigne/counters.h>
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
 #include <clover.h>
+
 #include <stdlib.h>
 #include <time.h>
-
-#include "Graphics/GeometryBuilder.h"
+#include <random>
 
 namespace stone {
 
-static const_cstr s_GeometryVS = R"(#version 300 es
+static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
 layout (location = 1) in highp vec3 l_Normal_L;
-layout (location = 2) in mediump vec4 l_Color0;
-layout (location = 3) in mediump vec4 l_Color1;
 
 layout(std140) uniform ub_Scene
 {
+	highp mat4 iu_XForm;
 	highp mat4 iu_WVP;
 };
 
-out mediump vec4 v_Color;
-out mediump vec3 v_Normal;
-
 void main() {
-	highp vec4 pos_W = vec4(l_Position_L, 1.0f);
-	v_Color = l_Color0;
-	v_Normal = l_Normal_L;
+	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
 	gl_Position = iu_WVP * pos_W;
 }
 )";
 
-static const_cstr s_GeometryFS = R"(#version 300 es
+static const_cstr s_FragmentShader = R"(#version 300 es
 layout (location = 0) out mediump vec4 o_Color;
-
-in mediump vec4 v_Color;
-in mediump vec3 v_Normal;
 
 void main()
 {
-	o_Color = v_Color;
+	o_Color = vec4(1.0f);
 }
 )";
 
 FormFactorsValidating::FormFactorsValidating()
+	: m_CameraMotion(
+			floral::camera_view_t { floral::vec3f(0.0f, 0.3f, 3.0f), floral::vec3f(0.0f, -0.3f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
+			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
 {
 	srand(time(0));
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
@@ -59,66 +55,32 @@ FormFactorsValidating::~FormFactorsValidating()
 
 void FormFactorsValidating::OnInitialize()
 {
-	m_GeoVertices.init(2048u, &g_StreammingAllocator);
-	m_GeoIndices.init(8192u, &g_StreammingAllocator);
-	m_GeoPatches.init(1024u, &g_StreammingAllocator);
-	m_SampleLines.init(1024u, &g_StreammingAllocator);
-
-	floral::mat4x4f mBottom = floral::construct_translation3d(0.0f, -0.5f, 0.0f);
-	GenQuadTesselated3DPlane_Tris_PNCC(
-			mBottom,
-			1.0f, 1.0f, 1.0f, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f),
-			m_GeoVertices, m_GeoIndices, m_GeoPatches);
-
-#if 1
-	// parallel test
-	floral::mat4x4f mTop = floral::construct_translation3d(0.0f, 0.5f, 0.0f)
-		* floral::construct_quaternion_euler(180.0f, 0.0f, 0.0f).to_transform();
-
-	GenQuadTesselated3DPlane_Tris_PNCC(
-			mTop,
-			1.0f, 1.0f, 1.0f, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f),
-			m_GeoVertices, m_GeoIndices, m_GeoPatches);
-#else
-	// perpendicular test
-	floral::mat4x4f mSide = floral::construct_translation3d(0.0f, 0.0f, 0.5f)
-		* floral::construct_quaternion_euler(-90.0f, 0.0f, 0.0f).to_transform();
-
-	GenQuadTesselated3DPlane_Tris_PNCC(
-			mSide,
-			1.0f, 1.0f, 1.0f, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f),
-			m_GeoVertices, m_GeoIndices, m_GeoPatches);
-#endif
-
-#if 0
-	CalculateFormFactors_Regular();
-#else
-	CalculateFormFactors_Stratified();
-#endif
-
 	{
-		for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
-			floral::vec4f rColor = m_GeoPatches[i].RadiosityColor;
-			rColor.w = 1.0f;
-			m_GeoVertices[i * 4].Color1 = rColor;
-			m_GeoVertices[i * 4 + 1].Color1 = rColor;
-			m_GeoVertices[i * 4 + 2].Color1 = rColor;
-			m_GeoVertices[i * 4 + 3].Color1 = rColor;
-		}
+		insigne::ubdesc_t desc;
+		desc.region_size = SIZE_KB(4);
+		desc.data = nullptr;
+		desc.data_size = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ub_handle_t newUB = insigne::create_ub(desc);
+
+		// camera
+		m_SceneData.WVP = m_CameraMotion.GetWVP();
+		m_SceneData.XForm = floral::mat4x4f(1.0f);
+
+		insigne::update_ub(newUB, &m_SceneData, sizeof(SceneData), 0);
+		m_UB = newUB;
 	}
 
-	// upload scene geometry
 	{
 		insigne::vbdesc_t desc;
 		desc.region_size = SIZE_KB(256);
-		desc.stride = sizeof(VertexPNCC);
+		desc.stride = sizeof(VertexPNC);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 
 		insigne::vb_handle_t newVB = insigne::create_vb(desc);
-
-		insigne::update_vb(newVB, &m_GeoVertices[0], m_GeoVertices.get_size(), 0);
 		m_VB = newVB;
 	}
 
@@ -130,51 +92,261 @@ void FormFactorsValidating::OnInitialize()
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 
 		insigne::ib_handle_t newIB = insigne::create_ib(desc);
-
-		insigne::update_ib(newIB, &m_GeoIndices[0], m_GeoIndices.get_size(), 0);
 		m_IB = newIB;
 	}
 
-	// camera
-	m_CamView.position = floral::vec3f(5.0f, 1.0f, -1.0f);
-	m_CamView.look_at = floral::vec3f(0.0f);
-	m_CamView.up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
-
-	m_CamProj.near_plane = 0.01f; m_CamProj.far_plane = 100.0f;
-	m_CamProj.fov = 60.0f;
-	m_CamProj.aspect_ratio = 16.0f / 9.0f;
-	m_WVP = floral::construct_perspective(m_CamProj) * construct_lookat_point(m_CamView);
-
-	// upload scene data
+	// parallel test
 	{
-		insigne::ubdesc_t desc;
-		desc.region_size = SIZE_KB(4);
-		desc.data = nullptr;
-		desc.data_size = 0;
-		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+		m_MemoryArena->free_all();
 
-		insigne::ub_handle_t newUB = insigne::create_ub(desc);
+		floral::fixed_array<VertexPNC, LinearAllocator> vertices;
+		floral::fixed_array<s32, LinearAllocator> indices;
+		vertices.reserve(32, m_MemoryArena); vertices.resize(32);
+		indices.reserve(64, m_MemoryArena); indices.resize(64);
 
-		SceneData sceneData;
-		sceneData.WVP = m_WVP;
+		size vtxCount = 0, idxCount = 0;
 
-		insigne::copy_update_ub(newUB, &sceneData, sizeof(SceneData), 0);
-		m_UB = newUB;
+		// bottom
+		floral::reset_generation_transforms_stack();
+		floral::push_generation_transform(floral::construct_scaling3d(0.5f, 0.5f, 0.5f));
+		floral::geo_generate_result_t bottomGen = floral::generate_unit_plane_3d(
+				vtxCount, sizeof(VertexPNC),
+				floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+				&vertices[vtxCount], &indices[idxCount]);
+
+		vtxCount += bottomGen.vertices_generated;
+		idxCount += bottomGen.indices_generated;
+
+#if 0
+		floral::quaternionf q = floral::construct_quaternion_euler(180.0f, 0.0f, 0.0f);
+		floral::push_generation_transform(q.to_transform());
+		floral::push_generation_transform(floral::construct_translation3d(0.0f, 1.0f, 0.0f));
+#else
+		floral::reset_generation_transforms_stack();
+		floral::quaternionf q = floral::construct_quaternion_euler(0.0f, 0.0f, 90.0f);
+		floral::push_generation_transform(q.to_transform());
+		floral::push_generation_transform(floral::construct_scaling3d(0.5f, 0.5f, 0.5f));
+		floral::push_generation_transform(floral::construct_translation3d(-0.5f, 0.5f, 0.0f));
+#endif
+		floral::geo_generate_result_t topGen = floral::generate_unit_plane_3d(
+				vtxCount, sizeof(VertexPNC),
+				floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+				&vertices[vtxCount], &indices[idxCount]);
+
+		vtxCount += topGen.vertices_generated;
+		idxCount += topGen.indices_generated;
+
+		vertices.resize(vtxCount);
+		indices.resize(idxCount);
+
+		insigne::copy_update_vb(m_VB, &vertices[0], vertices.get_size(), sizeof(VertexPNC), 0);
+		insigne::copy_update_ib(m_IB, &indices[0], indices.get_size(), 0);
+
+		std::random_device rd;
+		std::mt19937 gen(rd());
+		std::uniform_real_distribution<f32> dis(0.0f, 1.0f);
+		// generate sample for 2 patches (bottom)	
+		const s32 stratifiedFactor = 16;
+		const f32 gridSize = 1.0f / stratifiedFactor;
+
+		m_Patch1Samples.reserve(stratifiedFactor * stratifiedFactor, &g_StreammingAllocator);
+		m_Patch2Samples.reserve(stratifiedFactor * stratifiedFactor, &g_StreammingAllocator);
+		m_Rays.reserve(stratifiedFactor * stratifiedFactor, &g_StreammingAllocator);
+
+		if (0)
+		{
+			for (s32 i = 0; i < stratifiedFactor; i++)
+			{
+				for (s32 j = 0; j < stratifiedFactor; j++)
+				{
+					f32 minX = -0.5f + gridSize * i;
+					f32 maxX = -0.5f + gridSize * (i + 1);
+					f32 minZ = -0.5f + gridSize * j;
+					f32 maxZ = -0.5f + gridSize * (j + 1);
+
+					f32 x = minX + (maxX - minX) * dis(gen);
+					f32 z = minZ + (maxZ - minZ) * dis(gen);
+					m_Patch1Samples.push_back(floral::vec3f(x, 0.0f, z));
+					x = minX + (maxX - minX) * dis(gen);
+					z = minZ + (maxZ - minZ) * dis(gen);
+					m_Patch2Samples.push_back(floral::vec3f(x, 1.0f, z));
+				}
+			}
+
+			for (size i = 0; i < stratifiedFactor * stratifiedFactor; i++)
+			{
+				m_Rays.push_back(i);
+			}
+		}
+		else
+		{
+			for (s32 i = 0; i < stratifiedFactor; i++)
+			{
+				for (s32 j = 0; j < stratifiedFactor; j++)
+				{
+					f32 minX = -0.5f + gridSize * i;
+					f32 maxX = -0.5f + gridSize * (i + 1);
+					f32 minY = gridSize * i;
+					f32 maxY = gridSize * (i + 1);
+					f32 minZ = -0.5f + gridSize * j;
+					f32 maxZ = -0.5f + gridSize * (j + 1);
+
+					f32 x = minX + (maxX - minX) * dis(gen);
+					f32 z = minZ + (maxZ - minZ) * dis(gen);
+					m_Patch1Samples.push_back(floral::vec3f(x, 0.0f, z));
+					f32 y = minY + (maxY - minY) * dis(gen);
+					z = minZ + (maxZ - minZ) * dis(gen);
+					m_Patch2Samples.push_back(floral::vec3f(-0.5f, y, z));
+				}
+			}
+
+			for (size i = 0; i < stratifiedFactor * stratifiedFactor; i++)
+			{
+				m_Rays.push_back(i);
+			}
+		}
+
+		const floral::vec3f ni(0.0f, 1.0f, 0.0f);
+		const floral::vec3f nj(0.0f, -1.0f, 0.0f);
+#define METHOD 3
+#if (METHOD == 1)
+		const s32 raysCount = stratifiedFactor * stratifiedFactor;
+		for (s32 k = 0; k < 30; k++)
+		{
+			std::uniform_int_distribution<size> disInt(0, stratifiedFactor * stratifiedFactor - 1);
+			for (size i = 0; i < stratifiedFactor * stratifiedFactor; i++)
+			{
+				std::swap(m_Rays[i], m_Rays[disInt(gen)]);
+			}
+
+			f32 fij = 0.0f;
+			for (size i = 0; i < m_Rays.get_size(); i++)
+			{
+				floral::vec3f org(m_Patch1Samples[i]);			// i
+				floral::vec3f dst(m_Patch2Samples[m_Rays[i]]);	// j
+				floral::vec3f rij(dst - org);
+
+				f32 len = floral::length(rij);
+				f32 cosThetaJ = floral::dot(floral::normalize(rij), ni);
+				f32 cosThetaI = floral::dot(-floral::normalize(rij), nj);
+
+				f32 deltaF = cosThetaI * cosThetaJ / (3.141594f * len * len + 1.0f / raysCount);
+				if (deltaF > 0.0f)
+				{
+					fij += deltaF;
+				}
+			}
+			fij /= raysCount;
+			CLOVER_DEBUG("fij = %f", fij);
+		}
+#elif (METHOD == 2)
+		f32 fij = 0.0f;
+		const s32 raysCount = m_Patch1Samples.get_size() * m_Patch2Samples.get_size();
+		for (size i = 0; i < m_Patch1Samples.get_size(); i++)
+		{
+			floral::vec3f org(m_Patch1Samples[i]);
+			for (size j = 0; j < m_Patch2Samples.get_size(); j++)
+			{
+				floral::vec3f dst(m_Patch2Samples[j]);
+				floral::vec3f rij(dst - org);
+
+				f32 len = floral::length(rij);
+				f32 cosThetaJ = floral::dot(floral::normalize(rij), ni);
+				f32 cosThetaI = floral::dot(floral::normalize(rij), nj);
+
+				f32 deltaF = cosThetaI * cosThetaJ / (3.141594f * len * len + 1.0f / raysCount);
+				if (fabs(deltaF) > 0.0f)
+				{
+					fij += fabs(deltaF);
+				}
+			}
+		}
+		fij /= raysCount;
+		CLOVER_DEBUG("fij = %f", fij);
+#elif (METHOD == 3)
+		f64 fij = 0.0;
+		for (size i = 0; i < m_Patch1Samples.get_size(); i++)
+		{
+			floral::vec3f org(m_Patch1Samples[i]);
+			f64 df = 0.0;
+			f64 dg = 0.0;
+			for (size j = 0; j < m_Patch2Samples.get_size(); j++)
+			{
+				floral::vec3f dst(m_Patch2Samples[j]);
+				floral::vec3f rij(dst - org);
+
+				f32 len = floral::length(rij);
+				f32 cosThetaJ = floral::dot(floral::normalize(rij), ni);
+				f32 cosThetaI = -floral::dot(floral::normalize(rij), nj);
+
+				f64 gVis = cosThetaJ * cosThetaI / (3.141592 * len * len);
+
+				df += gVis;
+				dg += gVis;
+			}
+			f64 lambertG = 0.0;
+			{
+				const f64 one2Pi = 1.0 / (2.0 * 3.141592);
+#if 0
+				floral::vec3f p2Vertices[] = {
+					floral::vec3f(0.5f, 1.0f, 0.5f),
+					floral::vec3f(0.5f, 1.0f, -0.5f),
+					floral::vec3f(-0.5f, 1.0f, -0.5f),
+					floral::vec3f(-0.5f, 1.0f, 0.5f)
+				};
+#else
+				floral::vec3f p2Vertices[] = {
+					floral::vec3f(-0.5f, 0.0f, 0.5f),
+					floral::vec3f(-0.5f, 0.0f, -0.5f),
+					floral::vec3f(-0.5f, 1.0f, -0.5f),
+					floral::vec3f(-0.5f, 1.0f, 0.5f)
+				};
+#endif
+				floral::vec3f rs[4];
+				f32 gammas[4];
+				for (size i = 0; i < 4; i++)
+				{
+					rs[i] = floral::normalize(p2Vertices[i] - org);
+				}
+
+				gammas[0] = acosf(floral::dot(rs[0], rs[1]));
+				gammas[1] = acosf(floral::dot(rs[1], rs[2]));
+				gammas[2] = acosf(floral::dot(rs[2], rs[3]));
+				gammas[3] = acosf(floral::dot(rs[3], rs[0]));
+
+				floral::vec3f vs[4];
+				vs[0] = gammas[0] * floral::normalize(floral::cross(rs[0], rs[1]));
+				vs[1] = gammas[1] * floral::normalize(floral::cross(rs[1], rs[2]));
+				vs[2] = gammas[2] * floral::normalize(floral::cross(rs[2], rs[3]));
+				vs[3] = gammas[3] * floral::normalize(floral::cross(rs[3], rs[0]));
+
+				lambertG = one2Pi * (
+						floral::dot(floral::vec3f(0.0f, 1.0f, 0.0f), vs[0])
+						+ floral::dot(floral::vec3f(0.0f, 1.0f, 0.0f), vs[1])
+						+ floral::dot(floral::vec3f(0.0f, 1.0f, 0.0f), vs[2])
+						+ floral::dot(floral::vec3f(0.0f, 1.0f, 0.0f), vs[3]));
+			}
+			fij +=  1.0 / m_Patch1Samples.get_size() * (df / dg) * lambertG;
+		}
+		CLOVER_DEBUG("fij = %f", fij);
+#endif
 	}
 
-	// scene shaders
 	{
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
 		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
 
-		strcpy(desc.vs, s_GeometryVS);
-		strcpy(desc.fs, s_GeometryFS);
+		strcpy(desc.vs, s_VertexShader);
+		strcpy(desc.fs, s_FragmentShader);
+		desc.vs_path = floral::path("/scene/sample_vs");
+		desc.fs_path = floral::path("/scene/sample_fs");
 
 		m_Shader = insigne::create_shader(desc);
 		insigne::infuse_material(m_Shader, m_Material);
 
+		// static uniform data
 		{
-			u32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Scene");
+			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Scene");
 			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
 		}
 	}
@@ -182,21 +354,75 @@ void FormFactorsValidating::OnInitialize()
 	m_DebugDrawer.Initialize();
 }
 
+void FormFactorsValidating::OnDebugUIUpdate(const f32 i_deltaMs)
+{
+}
+
 void FormFactorsValidating::OnUpdate(const f32 i_deltaMs)
 {
+	m_CameraMotion.OnUpdate(i_deltaMs);
+
 	m_DebugDrawer.BeginFrame();
-	for (u32 i = 0; i < 16; i++)
+
+	// ground grid cover [-2.0..2.0]
+	floral::vec4f gridColor(0.3f, 0.4f, 0.5f, 1.0f);
+	for (s32 i = -2; i < 3; i++)
 	{
-		m_DebugDrawer.DrawLine3D(m_SampleLines[2 * i], m_SampleLines[2 * i + 1], floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+		for (s32 j = -2; j < 3; j++)
+		{
+			floral::vec3f startX(1.0f * i, 0.0f, 1.0f * j);
+			floral::vec3f startZ(1.0f * j, 0.0f, 1.0f * i);
+			floral::vec3f endX(1.0f * i, 0.0f, -1.0f * j);
+			floral::vec3f endZ(-1.0f * j, 0.0f, 1.0f * i);
+			m_DebugDrawer.DrawLine3D(startX, endX, gridColor);
+			m_DebugDrawer.DrawLine3D(startZ, endZ, gridColor);
+		}
 	}
+
+	// coordinate unit vectors
+	m_DebugDrawer.DrawLine3D(floral::vec3f(0.1f, 0.0f, 0.1f), floral::vec3f(0.5f, 0.0f, 0.1f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawLine3D(floral::vec3f(0.1f, 0.0f, 0.1f), floral::vec3f(0.1f, 0.5f, 0.1f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawLine3D(floral::vec3f(0.1f, 0.0f, 0.1f), floral::vec3f(0.1f, 0.0f, 0.5f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+
+	if (0)
+	{
+		for (size i = 0; i < m_Patch1Samples.get_size(); i++)
+		{
+			floral::vec3f org(m_Patch1Samples[i]);
+			floral::vec3f dst(org.x, 0.3f, org.z);
+			m_DebugDrawer.DrawLine3D(org, dst, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+		}
+
+		for (size i = 0; i < m_Patch2Samples.get_size(); i++)
+		{
+			floral::vec3f org(m_Patch2Samples[i]);
+			floral::vec3f dst(org.x, 0.7, org.z);
+			m_DebugDrawer.DrawLine3D(org, dst, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+		}
+	}
+	else
+	{
+		for (size i = 0; i < m_Rays.get_size(); i++)
+		{
+			floral::vec3f org(m_Patch1Samples[i]);
+			floral::vec3f dst(m_Patch2Samples[m_Rays[i]]);
+			m_DebugDrawer.DrawLine3D(org, dst, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+		}
+	}
+	
 	m_DebugDrawer.EndFrame();
 }
 
 void FormFactorsValidating::OnRender(const f32 i_deltaMs)
 {
+	// camera
+	m_SceneData.WVP = m_CameraMotion.GetWVP();
+	insigne::update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
+
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-	m_DebugDrawer.Render(m_WVP);
-	insigne::draw_surface<SurfacePNCC>(m_VB, m_IB, m_Material);
+	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
+	m_DebugDrawer.Render(m_SceneData.WVP);
+	IDebugUI::OnFrameRender(i_deltaMs);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
@@ -206,6 +432,7 @@ void FormFactorsValidating::OnCleanUp()
 {
 }
 
+#if 0
 // ---------------------------------------------
 void FormFactorsValidating::CalculateFormFactors_Regular()
 {
@@ -396,5 +623,7 @@ void FormFactorsValidating::CalculateFormFactors_Stratified()
 		CLOVER_DEBUG("Ray-cast form factor progress: %4.2f %%", (f32)i / (f32)m_GeoPatches.get_size() * 100.0f);
 	}
 }
+#endif
+
 
 }

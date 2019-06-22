@@ -471,10 +471,10 @@ void InterreflectPRT::ComputeLightSH()
 {
 	m_MemoryArena->free_all();
 	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/grace_probe.cbtex");
-	floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/Alexs_Apt_2k_lightprobe.cbtex");
+	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/Alexs_Apt_2k_lightprobe.cbtex");
 	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/ArboretumInBloom_lightprobe.cbtex");
 	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/CharlesRiver_lightprobe.cbtex");
-	//floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/uffizi_probe.cbtex");
+	floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/uffizi_probe.cbtex");
 	floral::file_stream dataStream;
 	dataStream.buffer = (p8)m_MemoryArena->allocate(texFile.file_size);
 	floral::read_all_file(texFile, dataStream);

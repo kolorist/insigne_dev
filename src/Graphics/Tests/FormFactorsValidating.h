@@ -3,53 +3,55 @@
 #include <floral.h>
 
 #include "ITestSuite.h"
-
+#include "Graphics/IDebugUI.h"
 #include "Memory/MemorySystem.h"
+#include "Graphics/FreeCamera.h"
 #include "Graphics/DebugDrawer.h"
 #include "Graphics/SurfaceDefinitions.h"
 
 namespace stone {
 
-class FormFactorsValidating : public ITestSuite {
-	public:
-		FormFactorsValidating();
-		~FormFactorsValidating();
+class FormFactorsValidating : public ITestSuite, public IDebugUI
+{
+public:
+	FormFactorsValidating();
+	~FormFactorsValidating();
 
-		void									OnInitialize() override;
-		void									OnUpdate(const f32 i_deltaMs) override;
-		void									OnRender(const f32 i_deltaMs) override;
-		void									OnCleanUp() override;
+	void									OnInitialize() override;
+	void									OnUpdate(const f32 i_deltaMs) override;
+	void									OnDebugUIUpdate(const f32 i_deltaMs) override;
+	void									OnRender(const f32 i_deltaMs) override;
+	void									OnCleanUp() override;
 
-		ICameraMotion*							GetCameraMotion() override { return nullptr; }
+	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
-	private:
-		void									CalculateFormFactors_Regular();
-		void									CalculateFormFactors_Stratified();	// aka 'Jittered' Sampling
+private:
+	void									CalculateFormFactors_Regular();
+	void									CalculateFormFactors_Stratified();	// aka 'Jittered' Sampling
 
-	private:
-		struct SceneData {
-			floral::mat4x4f						WVP;
-		};
+private:
+	struct SceneData {
+		floral::mat4x4f							XForm;
+		floral::mat4x4f							WVP;
+	};
 
-	private:
-		DebugDrawer								m_DebugDrawer;
+private:
+	floral::fixed_array<floral::vec3f, LinearAllocator> m_Patch1Samples;
+	floral::fixed_array<floral::vec3f, LinearAllocator> m_Patch2Samples;
+	floral::fixed_array<size, LinearAllocator> m_Rays;
 
-		floral::fixed_array<VertexPNCC, LinearAllocator>	m_GeoVertices;
-		floral::fixed_array<u32, LinearAllocator>		m_GeoIndices;
-		floral::fixed_array<GeoQuad, LinearAllocator>	m_GeoPatches;
-		floral::fixed_array<floral::vec3f, LinearAllocator>	m_SampleLines;
+	SceneData									m_SceneData;
 
-		insigne::vb_handle_t					m_VB;
-		insigne::ib_handle_t					m_IB;
-		insigne::ub_handle_t					m_UB;
-		insigne::shader_handle_t				m_Shader;
-		insigne::material_desc_t				m_Material;
+	insigne::vb_handle_t					m_VB;
+	insigne::ib_handle_t					m_IB;
+	insigne::ub_handle_t					m_UB;
+	insigne::shader_handle_t				m_Shader;
+	insigne::material_desc_t				m_Material;
 
-		floral::camera_view_t					m_CamView;
-		floral::camera_persp_t					m_CamProj;
-		floral::mat4x4f							m_WVP;
-
-		LinearArena*							m_MemoryArena;
+private:
+	DebugDrawer								m_DebugDrawer;
+	LinearArena*							m_MemoryArena;
+	FreeCamera									m_CameraMotion;
 };
 
 }
