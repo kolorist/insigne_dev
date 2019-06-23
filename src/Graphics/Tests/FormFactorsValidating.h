@@ -26,8 +26,8 @@ public:
 	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
-	void									CalculateFormFactors_Regular();
-	void									CalculateFormFactors_Stratified();	// aka 'Jittered' Sampling
+	//const bool									IsRayHitGeometry();
+	void										CalculateFormFactors();
 
 private:
 	struct SceneData {
@@ -35,10 +35,19 @@ private:
 		floral::mat4x4f							WVP;
 	};
 
+	struct Patch
+	{
+		floral::vec3f							Vertex[4];
+		floral::vec3f							Normal;
+		floral::vec3f							Color;
+		floral::vec2<u32>						PixelCoord[4];
+	};
+
 private:
-	floral::fixed_array<floral::vec3f, LinearAllocator> m_Patch1Samples;
-	floral::fixed_array<floral::vec3f, LinearAllocator> m_Patch2Samples;
-	floral::fixed_array<size, LinearAllocator> m_Rays;
+	floral::fixed_array<Vertex3DPT, LinearAllocator>	m_RenderVertexData;
+	floral::fixed_array<s32, LinearAllocator>		m_RenderIndexData;
+	floral::fixed_array<Patch, LinearAllocator>		m_Patches;
+	f32**										m_FF;
 
 	SceneData									m_SceneData;
 

@@ -153,7 +153,8 @@ void Application::OnInitializeRenderer()
 	insigne::initialize_driver();
 	insigne::allocate_draw_command_buffers(6);
 
-	insigne::register_surface_type<SurfacePNC>();
+	insigne::register_surface_type<Surface3DPT>();
+	//insigne::register_surface_type<SurfacePNC>();
 	//insigne::register_surface_type<SurfacePNCSH>();
 	//insigne::register_surface_type<SurfacePN>();
 	insigne::register_surface_type<SurfaceP>();

@@ -13,11 +13,12 @@
 #include <time.h>
 #include <random>
 
+#include "Graphics/PlyLoader.h"
+
 namespace stone {
 
 static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
-layout (location = 1) in highp vec3 l_Normal_L;
 
 layout(std140) uniform ub_Scene
 {
@@ -75,7 +76,7 @@ void FormFactorsValidating::OnInitialize()
 	{
 		insigne::vbdesc_t desc;
 		desc.region_size = SIZE_KB(256);
-		desc.stride = sizeof(VertexPNC);
+		desc.stride = sizeof(Vertex3DPT);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -95,241 +96,96 @@ void FormFactorsValidating::OnInitialize()
 		m_IB = newIB;
 	}
 
-	// parallel test
+
 	{
-		m_MemoryArena->free_all();
+		PlyData<LinearArena> plyData = LoadFromPly(floral::path("gfx/envi/models/demo/cornel_box_triangles.ply"),
+				m_MemoryArena);
+		CLOVER_DEBUG("Render mesh loaded");
 
-		floral::fixed_array<VertexPNC, LinearAllocator> vertices;
-		floral::fixed_array<s32, LinearAllocator> indices;
-		vertices.reserve(32, m_MemoryArena); vertices.resize(32);
-		indices.reserve(64, m_MemoryArena); indices.resize(64);
+		size vtxCount = plyData.Position.get_size();
+		size idxCount = plyData.Indices.get_size();
 
-		size vtxCount = 0, idxCount = 0;
+		CLOVER_DEBUG("Vertex count: %zd", vtxCount);
+		CLOVER_DEBUG("Index count: %zd", idxCount);
 
-		// bottom
-		floral::reset_generation_transforms_stack();
-		floral::push_generation_transform(floral::construct_scaling3d(0.5f, 0.5f, 0.5f));
-		floral::geo_generate_result_t bottomGen = floral::generate_unit_plane_3d(
-				vtxCount, sizeof(VertexPNC),
-				floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
-				&vertices[vtxCount], &indices[idxCount]);
+		m_RenderVertexData.reserve(vtxCount, &g_StreammingAllocator);
+		m_RenderIndexData.reserve(idxCount, &g_StreammingAllocator);
 
-		vtxCount += bottomGen.vertices_generated;
-		idxCount += bottomGen.indices_generated;
-
-#if 0
-		floral::quaternionf q = floral::construct_quaternion_euler(180.0f, 0.0f, 0.0f);
-		floral::push_generation_transform(q.to_transform());
-		floral::push_generation_transform(floral::construct_translation3d(0.0f, 1.0f, 0.0f));
-#else
-		floral::reset_generation_transforms_stack();
-		floral::quaternionf q = floral::construct_quaternion_euler(0.0f, 0.0f, 90.0f);
-		floral::push_generation_transform(q.to_transform());
-		floral::push_generation_transform(floral::construct_scaling3d(0.5f, 0.5f, 0.5f));
-		floral::push_generation_transform(floral::construct_translation3d(-0.5f, 0.5f, 0.0f));
-#endif
-		floral::geo_generate_result_t topGen = floral::generate_unit_plane_3d(
-				vtxCount, sizeof(VertexPNC),
-				floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
-				&vertices[vtxCount], &indices[idxCount]);
-
-		vtxCount += topGen.vertices_generated;
-		idxCount += topGen.indices_generated;
-
-		vertices.resize(vtxCount);
-		indices.resize(idxCount);
-
-		insigne::copy_update_vb(m_VB, &vertices[0], vertices.get_size(), sizeof(VertexPNC), 0);
-		insigne::copy_update_ib(m_IB, &indices[0], indices.get_size(), 0);
-
-		std::random_device rd;
-		std::mt19937 gen(rd());
-		std::uniform_real_distribution<f32> dis(0.0f, 1.0f);
-		// generate sample for 2 patches (bottom)	
-		const s32 stratifiedFactor = 16;
-		const f32 gridSize = 1.0f / stratifiedFactor;
-
-		m_Patch1Samples.reserve(stratifiedFactor * stratifiedFactor, &g_StreammingAllocator);
-		m_Patch2Samples.reserve(stratifiedFactor * stratifiedFactor, &g_StreammingAllocator);
-		m_Rays.reserve(stratifiedFactor * stratifiedFactor, &g_StreammingAllocator);
-
-		if (0)
+		for (size i = 0; i < vtxCount; i++)
 		{
-			for (s32 i = 0; i < stratifiedFactor; i++)
-			{
-				for (s32 j = 0; j < stratifiedFactor; j++)
-				{
-					f32 minX = -0.5f + gridSize * i;
-					f32 maxX = -0.5f + gridSize * (i + 1);
-					f32 minZ = -0.5f + gridSize * j;
-					f32 maxZ = -0.5f + gridSize * (j + 1);
-
-					f32 x = minX + (maxX - minX) * dis(gen);
-					f32 z = minZ + (maxZ - minZ) * dis(gen);
-					m_Patch1Samples.push_back(floral::vec3f(x, 0.0f, z));
-					x = minX + (maxX - minX) * dis(gen);
-					z = minZ + (maxZ - minZ) * dis(gen);
-					m_Patch2Samples.push_back(floral::vec3f(x, 1.0f, z));
-				}
-			}
-
-			for (size i = 0; i < stratifiedFactor * stratifiedFactor; i++)
-			{
-				m_Rays.push_back(i);
-			}
-		}
-		else
-		{
-			for (s32 i = 0; i < stratifiedFactor; i++)
-			{
-				for (s32 j = 0; j < stratifiedFactor; j++)
-				{
-					f32 minX = -0.5f + gridSize * i;
-					f32 maxX = -0.5f + gridSize * (i + 1);
-					f32 minY = gridSize * i;
-					f32 maxY = gridSize * (i + 1);
-					f32 minZ = -0.5f + gridSize * j;
-					f32 maxZ = -0.5f + gridSize * (j + 1);
-
-					f32 x = minX + (maxX - minX) * dis(gen);
-					f32 z = minZ + (maxZ - minZ) * dis(gen);
-					m_Patch1Samples.push_back(floral::vec3f(x, 0.0f, z));
-					f32 y = minY + (maxY - minY) * dis(gen);
-					z = minZ + (maxZ - minZ) * dis(gen);
-					m_Patch2Samples.push_back(floral::vec3f(-0.5f, y, z));
-				}
-			}
-
-			for (size i = 0; i < stratifiedFactor * stratifiedFactor; i++)
-			{
-				m_Rays.push_back(i);
-			}
+			Vertex3DPT vtx;
+			vtx.Position = plyData.Position[i];
+			vtx.TexCoord = plyData.TexCoord[i];
+			m_RenderVertexData.push_back(vtx);
 		}
 
-		const floral::vec3f ni(0.0f, 1.0f, 0.0f);
-		const floral::vec3f nj(0.0f, -1.0f, 0.0f);
-#define METHOD 3
-#if (METHOD == 1)
-		const s32 raysCount = stratifiedFactor * stratifiedFactor;
-		for (s32 k = 0; k < 30; k++)
+		for (size i = 0; i < idxCount; i++)
 		{
-			std::uniform_int_distribution<size> disInt(0, stratifiedFactor * stratifiedFactor - 1);
-			for (size i = 0; i < stratifiedFactor * stratifiedFactor; i++)
-			{
-				std::swap(m_Rays[i], m_Rays[disInt(gen)]);
-			}
-
-			f32 fij = 0.0f;
-			for (size i = 0; i < m_Rays.get_size(); i++)
-			{
-				floral::vec3f org(m_Patch1Samples[i]);			// i
-				floral::vec3f dst(m_Patch2Samples[m_Rays[i]]);	// j
-				floral::vec3f rij(dst - org);
-
-				f32 len = floral::length(rij);
-				f32 cosThetaJ = floral::dot(floral::normalize(rij), ni);
-				f32 cosThetaI = floral::dot(-floral::normalize(rij), nj);
-
-				f32 deltaF = cosThetaI * cosThetaJ / (3.141594f * len * len + 1.0f / raysCount);
-				if (deltaF > 0.0f)
-				{
-					fij += deltaF;
-				}
-			}
-			fij /= raysCount;
-			CLOVER_DEBUG("fij = %f", fij);
+			m_RenderIndexData.push_back(plyData.Indices[i]);
 		}
-#elif (METHOD == 2)
-		f32 fij = 0.0f;
-		const s32 raysCount = m_Patch1Samples.get_size() * m_Patch2Samples.get_size();
-		for (size i = 0; i < m_Patch1Samples.get_size(); i++)
+
+		insigne::copy_update_vb(m_VB, &m_RenderVertexData[0], vtxCount, sizeof(Vertex3DPT), 0);
+		insigne::copy_update_ib(m_IB, &m_RenderIndexData[0], idxCount, 0);
+	}
+
+	{
+		PlyData<LinearArena> plyData = LoadFFPatchesFromPly(floral::path("gfx/envi/models/demo/cornel_box_patches.ply"),
+				m_MemoryArena);
+		CLOVER_DEBUG("GI mesh loaded");
+
+		size vtxCount = plyData.Position.get_size();
+		size idxCount = plyData.Indices.get_size();
+		size patchCount = idxCount / 4;
+
+		CLOVER_DEBUG("Vertex count: %zd", vtxCount);
+		CLOVER_DEBUG("Index count: %zd - %zd patches", idxCount, idxCount / 4);
+
+		m_Patches.reserve(idxCount / 4, &g_StreammingAllocator);
+
+		const s32 k_giLightmapSize = 256;
+
+		for (size i = 0; i < idxCount; i += 4)
 		{
-			floral::vec3f org(m_Patch1Samples[i]);
-			for (size j = 0; j < m_Patch2Samples.get_size(); j++)
-			{
-				floral::vec3f dst(m_Patch2Samples[j]);
-				floral::vec3f rij(dst - org);
+			s32 vtxIdx[4];
+			vtxIdx[0] = plyData.Indices[i];
+			vtxIdx[1] = plyData.Indices[i + 1];
+			vtxIdx[2] = plyData.Indices[i + 2];
+			vtxIdx[3] = plyData.Indices[i + 3];
 
-				f32 len = floral::length(rij);
-				f32 cosThetaJ = floral::dot(floral::normalize(rij), ni);
-				f32 cosThetaI = floral::dot(floral::normalize(rij), nj);
+			Patch patch;
+			patch.Vertex[0] = plyData.Position[vtxIdx[0]];
+			patch.Vertex[1] = plyData.Position[vtxIdx[1]];
+			patch.Vertex[2] = plyData.Position[vtxIdx[2]];
+			patch.Vertex[3] = plyData.Position[vtxIdx[3]];
 
-				f32 deltaF = cosThetaI * cosThetaJ / (3.141594f * len * len + 1.0f / raysCount);
-				if (fabs(deltaF) > 0.0f)
-				{
-					fij += fabs(deltaF);
-				}
-			}
+			patch.Normal = plyData.Normal[vtxIdx[0]];
+
+			patch.Color = plyData.Color[vtxIdx[0]];
+
+			patch.PixelCoord[0] =
+				floral::vec2<u32>((u32)(plyData.TexCoord[vtxIdx[0]].x * k_giLightmapSize),
+						(u32)(plyData.TexCoord[vtxIdx[0]].y * k_giLightmapSize));
+			patch.PixelCoord[1] =
+				floral::vec2<u32>((u32)(plyData.TexCoord[vtxIdx[1]].x * k_giLightmapSize),
+						(u32)(plyData.TexCoord[vtxIdx[1]].y * k_giLightmapSize));
+			patch.PixelCoord[2] =
+				floral::vec2<u32>((u32)(plyData.TexCoord[vtxIdx[2]].x * k_giLightmapSize),
+						(u32)(plyData.TexCoord[vtxIdx[2]].y * k_giLightmapSize));
+			patch.PixelCoord[3] =
+				floral::vec2<u32>((u32)(plyData.TexCoord[vtxIdx[3]].x * k_giLightmapSize),
+						(u32)(plyData.TexCoord[vtxIdx[3]].y * k_giLightmapSize));
+
+			m_Patches.push_back(patch);
 		}
-		fij /= raysCount;
-		CLOVER_DEBUG("fij = %f", fij);
-#elif (METHOD == 3)
-		f64 fij = 0.0;
-		for (size i = 0; i < m_Patch1Samples.get_size(); i++)
+
+		m_FF = g_StreammingAllocator.allocate_array<f32*>(patchCount);
+		for (size i = 0; i < patchCount; i++)
 		{
-			floral::vec3f org(m_Patch1Samples[i]);
-			f64 df = 0.0;
-			f64 dg = 0.0;
-			for (size j = 0; j < m_Patch2Samples.get_size(); j++)
-			{
-				floral::vec3f dst(m_Patch2Samples[j]);
-				floral::vec3f rij(dst - org);
-
-				f32 len = floral::length(rij);
-				f32 cosThetaJ = floral::dot(floral::normalize(rij), ni);
-				f32 cosThetaI = -floral::dot(floral::normalize(rij), nj);
-
-				f64 gVis = cosThetaJ * cosThetaI / (3.141592 * len * len);
-
-				df += gVis;
-				dg += gVis;
-			}
-			f64 lambertG = 0.0;
-			{
-				const f64 one2Pi = 1.0 / (2.0 * 3.141592);
-#if 0
-				floral::vec3f p2Vertices[] = {
-					floral::vec3f(0.5f, 1.0f, 0.5f),
-					floral::vec3f(0.5f, 1.0f, -0.5f),
-					floral::vec3f(-0.5f, 1.0f, -0.5f),
-					floral::vec3f(-0.5f, 1.0f, 0.5f)
-				};
-#else
-				floral::vec3f p2Vertices[] = {
-					floral::vec3f(-0.5f, 0.0f, 0.5f),
-					floral::vec3f(-0.5f, 0.0f, -0.5f),
-					floral::vec3f(-0.5f, 1.0f, -0.5f),
-					floral::vec3f(-0.5f, 1.0f, 0.5f)
-				};
-#endif
-				floral::vec3f rs[4];
-				f32 gammas[4];
-				for (size i = 0; i < 4; i++)
-				{
-					rs[i] = floral::normalize(p2Vertices[i] - org);
-				}
-
-				gammas[0] = acosf(floral::dot(rs[0], rs[1]));
-				gammas[1] = acosf(floral::dot(rs[1], rs[2]));
-				gammas[2] = acosf(floral::dot(rs[2], rs[3]));
-				gammas[3] = acosf(floral::dot(rs[3], rs[0]));
-
-				floral::vec3f vs[4];
-				vs[0] = gammas[0] * floral::normalize(floral::cross(rs[0], rs[1]));
-				vs[1] = gammas[1] * floral::normalize(floral::cross(rs[1], rs[2]));
-				vs[2] = gammas[2] * floral::normalize(floral::cross(rs[2], rs[3]));
-				vs[3] = gammas[3] * floral::normalize(floral::cross(rs[3], rs[0]));
-
-				lambertG = one2Pi * (
-						floral::dot(floral::vec3f(0.0f, 1.0f, 0.0f), vs[0])
-						+ floral::dot(floral::vec3f(0.0f, 1.0f, 0.0f), vs[1])
-						+ floral::dot(floral::vec3f(0.0f, 1.0f, 0.0f), vs[2])
-						+ floral::dot(floral::vec3f(0.0f, 1.0f, 0.0f), vs[3]));
-			}
-			fij +=  1.0 / m_Patch1Samples.get_size() * (df / dg) * lambertG;
+			m_FF[i] = g_StreammingAllocator.allocate_array<f32>(patchCount);
+			memset(m_FF[i], 0, patchCount * sizeof(f32));
 		}
-		CLOVER_DEBUG("fij = %f", fij);
-#endif
+
+		CalculateFormFactors();
 	}
 
 	{
@@ -384,32 +240,6 @@ void FormFactorsValidating::OnUpdate(const f32 i_deltaMs)
 	m_DebugDrawer.DrawLine3D(floral::vec3f(0.1f, 0.0f, 0.1f), floral::vec3f(0.1f, 0.5f, 0.1f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 	m_DebugDrawer.DrawLine3D(floral::vec3f(0.1f, 0.0f, 0.1f), floral::vec3f(0.1f, 0.0f, 0.5f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
 
-	if (0)
-	{
-		for (size i = 0; i < m_Patch1Samples.get_size(); i++)
-		{
-			floral::vec3f org(m_Patch1Samples[i]);
-			floral::vec3f dst(org.x, 0.3f, org.z);
-			m_DebugDrawer.DrawLine3D(org, dst, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-		}
-
-		for (size i = 0; i < m_Patch2Samples.get_size(); i++)
-		{
-			floral::vec3f org(m_Patch2Samples[i]);
-			floral::vec3f dst(org.x, 0.7, org.z);
-			m_DebugDrawer.DrawLine3D(org, dst, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
-		}
-	}
-	else
-	{
-		for (size i = 0; i < m_Rays.get_size(); i++)
-		{
-			floral::vec3f org(m_Patch1Samples[i]);
-			floral::vec3f dst(m_Patch2Samples[m_Rays[i]]);
-			m_DebugDrawer.DrawLine3D(org, dst, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
-		}
-	}
-	
 	m_DebugDrawer.EndFrame();
 }
 
@@ -420,7 +250,7 @@ void FormFactorsValidating::OnRender(const f32 i_deltaMs)
 	insigne::update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
 
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-	insigne::draw_surface<SurfacePNC>(m_VB, m_IB, m_Material);
+	insigne::draw_surface<Surface3DPT>(m_VB, m_IB, m_Material);
 	m_DebugDrawer.Render(m_SceneData.WVP);
 	IDebugUI::OnFrameRender(i_deltaMs);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
@@ -432,198 +262,113 @@ void FormFactorsValidating::OnCleanUp()
 {
 }
 
-#if 0
-// ---------------------------------------------
-void FormFactorsValidating::CalculateFormFactors_Regular()
+//----------------------------------------------
+
+#define PId2     1.570796326794896619f   /* pi / 2 */
+#define PIt2inv  0.159154943091895346f   /* 1 / (2 * pi) */
+
+const f32 compute_accurate_point2patch_form_factor(
+	const floral::vec3f i_quad[], const floral::vec3f& i_point, const floral::vec3f& i_pointNormal)
 {
-	// pre-allocate links
-	for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
-		GeoQuad& qi = m_GeoPatches[i];
-		qi.PatchLinks.init(m_GeoPatches.get_size(), &g_StreammingAllocator);
-		qi.FormFactors.init(m_GeoPatches.get_size(), &g_StreammingAllocator);
-	}
+	floral::vec3f PA = i_quad[0] - i_point;
+	floral::vec3f PB = i_quad[1] - i_point;
+	floral::vec3f PC = i_quad[2] - i_point;
+	floral::vec3f PD = i_quad[3] - i_point;
 
-	// ray-cast form factors
-	for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
-		GeoQuad& qi = m_GeoPatches[i];
-		for (u32 j = 0; j < m_GeoPatches.get_size(); j++) {
-			if (i == j) continue;
+	floral::vec3f gAB = floral::cross(PA, PB);
+	floral::vec3f gBC = floral::cross(PB, PC);
+	floral::vec3f gCD = floral::cross(PC, PD);
+	floral::vec3f gDA = floral::cross(PD, PA);
 
-			GeoQuad& qj = m_GeoPatches[j];
-			floral::vec3f patchCenter = (qi.Vertices[0] + qi.Vertices[1] + qi.Vertices[2] + qi.Vertices[3]) / 4.0f;
-			floral::vec3f v0 = qj.Vertices[1] - qj.Vertices[0];
-			floral::vec3f v1 = qj.Vertices[3] - qj.Vertices[0];
-			f32 stepI = floral::length(v0) / 4.0f;
-			f32 stepJ = floral::length(v1) / 4.0f;
-			v0 = floral::normalize(v0);
-			v1 = floral::normalize(v1);
-			f32 ff = 0.0f;
-			bool hasUpperHemiRay = false;
-			for (u32 ri = 0; ri < 4; ri++) {
-				for (u32 rj = 0; rj < 4; rj++) {
-					floral::vec3f v = qj.Vertices[0] + v0 * (stepI * ri * 0.5f) + v1 * (stepJ * rj * 0.5f);
-					floral::vec3f d1 = floral::normalize(v - patchCenter);
-					floral::vec3f d2 = -d1;
-					f32 dist = floral::length(v - patchCenter);
+	f32 NdotGAB = floral::dot(i_pointNormal, gAB);
+	f32 NdotGBC = floral::dot(i_pointNormal, gBC);
+	f32 NdotGCD = floral::dot(i_pointNormal, gCD);
+	f32 NdotGDA = floral::dot(i_pointNormal, gDA);
 
-					if (floral::dot(d1, qi.Normal) > 0.0f)
-					{
-						hasUpperHemiRay = true;
-						floral::ray3df r;
-						r.o = patchCenter;
-						r.d = d1;
-						bool hit = false;
-						for (u32 k = 0; k < m_GeoPatches.get_size(); k++)
-						{
-							if (k == i || k == j) continue;
-							GeoQuad& qk = m_GeoPatches[k];
-							f32 t = 0.0f;
-							const bool rh = floral::ray_quad_intersect(r,
-									qk.Vertices[0], qk.Vertices[1], qk.Vertices[2], qk.Vertices[3], &t);
-							if (rh && t >= 0.0f && t <= dist)
-							{
-								hit = true;
-								break;
-							}
-						}
+	f32 sum = 0.0f;
 
-						f32 cosTheta1 = floral::dot(qi.Normal, d1);
-						f32 cosTheta2 = floral::dot(d2, qj.Normal);
-						if (!hit && cosTheta1 * cosTheta2 >= 0.0f) {
-							ff += cosTheta1 * cosTheta2 / (3.14f * dist * dist + stepI * stepJ);
-						}
-					}
-				}
-			}
-			if (hasUpperHemiRay) {
-				ff = ff * stepI * stepJ;
-				qi.PatchLinks.push_back(j);
-				qi.FormFactors.push_back(ff);
-			}
+	if (fabs(NdotGAB) > 0.0f)
+	{
+		f32 lenGAB = floral::length(gAB);
+		if (lenGAB > 0.0f)
+		{
+			f32 gammaAB = PId2 - atanf(floral::dot(PA, PB) / lenGAB);
+			sum += NdotGAB * gammaAB / lenGAB;
 		}
-		CLOVER_DEBUG("Ray-cast form factor progress: %4.2f %%", (f32)i / (f32)m_GeoPatches.get_size() * 100.0f);
 	}
+
+	if (fabs(NdotGBC) > 0.0f)
+	{
+		f32 lenGBC = floral::length(gBC);
+		if (lenGBC > 0.0f)
+		{
+			f32 gammaBC = PId2 - atanf(floral::dot(PB, PC) / lenGBC);
+			sum += NdotGBC * gammaBC / lenGBC;
+		}
+	}
+
+	if (fabs(NdotGCD) > 0.0f)
+	{
+		f32 lenGCD = floral::length(gCD);
+		if (lenGCD > 0.0f)
+		{
+			f32 gammaCD = PId2 - atanf(floral::dot(PC, PD) / lenGCD);
+			sum += NdotGCD * gammaCD / lenGCD;
+		}
+	}
+
+	if (fabs(NdotGDA) > 0.0f)
+	{
+		f32 lenGDA = floral::length(gDA);
+		if (lenGDA > 0.0f)
+		{
+			f32 gammaDA = PId2 - atanf(floral::dot(PD, PA) / lenGDA);
+			sum += NdotGDA * gammaDA / lenGDA;
+		}
+	}
+
+	sum *= PIt2inv;
+	return sum;
 }
 
-void GenerateStratifiedSamples(floral::inplace_array<floral::vec2f, 16u>& o_samples)
+const floral::vec3f get_random_point_on_quad(const floral::vec3f i_quad[])
 {
-	// range: [0.0f .. 1.0f]
-	f32 gridSize = 1.0f / 4.0f;
-	for (u32 i = 0; i < 4; i++)
-	{
-		f32 minX = gridSize * i;
-		f32 maxX = minX + gridSize;
-		for (u32 j = 0; j < 4; j++)
-		{
-			f32 minY = gridSize * j;
-			f32 maxY = minY + gridSize;
-			f32 rfx = (f32)rand() / (f32)RAND_MAX;
-			f32 rfy = (f32)rand() / (f32)RAND_MAX;
-			floral::vec2f p(minX + gridSize * rfx, minY + gridSize * rfy);
-			o_samples.push_back(p);
-		}
-	}
+	static std::random_device s_rd;
+	static std::mt19937 s_gen(s_rd());
+	static std::uniform_real_distribution<f32> s_dis(0.0f, 1.0f);
 
-	// shuffle
-	for (u32 i = 0; i < o_samples.get_size(); i++)
-	{
-		for (u32 j = 0; j < o_samples.get_size(); j++)
-		{
-			floral::vec2f tmp = o_samples[i];
-			o_samples[i] = o_samples[j];
-			o_samples[j] = tmp;
-		}
-	}
+	floral::vec3f u = i_quad[1] - i_quad[0];
+	floral::vec3f v = i_quad[3] - i_quad[0];
+	floral::vec3f p = i_quad[0] + u * s_dis(s_gen) + v * s_dis(s_gen);
+	return p;
 }
 
-void FormFactorsValidating::CalculateFormFactors_Stratified()
+void FormFactorsValidating::CalculateFormFactors()
 {
-	// pre-allocate links
-	for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
-		GeoQuad& qi = m_GeoPatches[i];
-		qi.PatchLinks.init(m_GeoPatches.get_size(), &g_StreammingAllocator);
-		qi.FormFactors.init(m_GeoPatches.get_size(), &g_StreammingAllocator);
-	}
-
-	// ray-cast form factors
-	for (u32 i = 0; i < m_GeoPatches.get_size(); i++) {
-		GeoQuad& qi = m_GeoPatches[i];
-		floral::vec3f vi0 = qi.Vertices[1] - qi.Vertices[0];
-		floral::vec3f vi1 = qi.Vertices[3] - qi.Vertices[0];
-
-		for (u32 j = 0; j < m_GeoPatches.get_size(); j++) {
-			if (i == j) continue;
-
-			GeoQuad& qj = m_GeoPatches[j];
-			floral::inplace_array<floral::vec2f, 16u> pISamples;
-			floral::inplace_array<floral::vec2f, 16u> pJSamples;
-
-			GenerateStratifiedSamples(pISamples);
-			GenerateStratifiedSamples(pJSamples);
-
-			floral::vec3f vj0 = qj.Vertices[1] - qj.Vertices[0];
-			floral::vec3f vj1 = qj.Vertices[3] - qj.Vertices[0];
-
-			f32 area = floral::length(vj0) * floral::length(vj1);
-
+	size patchCount = m_Patches.get_size();
+	const s32 k_sampleCount = 16;
+	for (size i = 0; i < patchCount; i++)
+	{
+		for (size j = i + 1; j < patchCount; j++)
+		{
 			f32 ff = 0.0f;
-			bool hasUpperHemiRay = false;
-			for (u32 r = 0; r < 16; r++)
+			for (s32 k = 0; k < k_sampleCount; k++)
 			{
-				floral::vec3f vi = qi.Vertices[0] + vi0 * pISamples[r].x + vi1 * pISamples[r].y;
-				floral::vec3f vj = qj.Vertices[0] + vj0 * pJSamples[r].x + vj1 * pJSamples[r].y;
-
-				m_SampleLines.push_back(vi);
-				m_SampleLines.push_back(vj);
-
-				floral::vec3f d1 = floral::normalize(vj - vi);
-				floral::vec3f d2 = -d1;
-				f32 dist = floral::length(vi - vj);
-
-				if (floral::dot(d1, qi.Normal) > 0.0f)
+				floral::vec3f pi = get_random_point_on_quad(m_Patches[i].Vertex);
+				f32 df = 0.0f, dg = 0.0f;
+				for (s32 l = 0; l < k_sampleCount; l++)
 				{
-					hasUpperHemiRay = true;
-					floral::ray3df r;
-					r.o = vj;
-					r.d = d1;
-					bool hit = false;
-					for (u32 k = 0; k < m_GeoPatches.get_size(); k++)
-					{
-						if (k == i || k == j) continue;
-						GeoQuad& qk = m_GeoPatches[k];
-						f32 t = 0.0f;
-						const bool rh = floral::ray_quad_intersect(r,
-								qk.Vertices[0], qk.Vertices[1], qk.Vertices[2], qk.Vertices[3], &t);
-						if (rh && t >= 0.0f && t <= dist)
-						{
-							hit = true;
-							break;
-						}
-					}
-
-					if (!hit)
-					{
-						f32 cosTheta1 = floral::dot(qi.Normal, d1);
-						f32 cosTheta2 = floral::dot(d2, qj.Normal);
-						//f32 deltaF = cosTheta1 * cosTheta2 / (3.14f * dist * dist + area / 16.0f);
-						f32 deltaF = cosTheta1 * cosTheta2 / (3.14f * dist * dist);
-						if (deltaF > 0)
-						{
-							ff += deltaF;
-						}
-					}
+					floral::vec3f pj = get_random_point_on_quad(m_Patches[j].Vertex);
 				}
+
+				f32 gVisJ = compute_accurate_point2patch_form_factor(m_Patches[j].Vertex, pi, m_Patches[i].Normal);
+				ff += (1.0f / k_sampleCount) * gVisJ;
 			}
-			if (hasUpperHemiRay) {
-				ff = ff * area / 16.0f;
-				qi.PatchLinks.push_back(j);
-				qi.FormFactors.push_back(ff);
-			}
+
+			m_FF[i][j] = ff;
+			m_FF[j][i] = ff;
 		}
-		CLOVER_DEBUG("Ray-cast form factor progress: %4.2f %%", (f32)i / (f32)m_GeoPatches.get_size() * 100.0f);
 	}
 }
-#endif
-
 
 }

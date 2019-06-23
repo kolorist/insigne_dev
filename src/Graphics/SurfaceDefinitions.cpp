@@ -3,6 +3,7 @@
 namespace stone {
 
 u32 SurfaceP::index = 0;
+u32 Surface3DPT::index = 0;
 u32 SurfacePC::index = 0;
 u32 SurfacePT::index = 0;
 u32 DebugLine::index = 0;
