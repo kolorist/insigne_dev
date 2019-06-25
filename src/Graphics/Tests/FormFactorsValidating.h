@@ -26,7 +26,7 @@ public:
 	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
-	//const bool									IsRayHitGeometry();
+	const bool									IsSegmentHitGeometry(const floral::vec3f& i_pi, const floral::vec3f& i_pj);
 	void										CalculateFormFactors();
 
 private:

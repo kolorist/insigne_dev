@@ -343,10 +343,38 @@ const floral::vec3f get_random_point_on_quad(const floral::vec3f i_quad[])
 	return p;
 }
 
+const bool FormFactorsValidating::IsSegmentHitGeometry(const floral::vec3f& i_pi, const floral::vec3f& i_pj)
+{
+	f32 dist = floral::length(i_pj - i_pi);
+
+	floral::ray3df r;
+	r.o = i_pi;
+	r.d = floral::normalize(i_pj - i_pi);
+
+	for (size i = 0; i < m_RenderIndexData.get_size(); i += 3)
+	{
+		size vIdx0 = m_RenderIndexData[i];
+		size vIdx1 = m_RenderIndexData[i + 1];
+		size vIdx2 = m_RenderIndexData[i + 2];
+
+		floral::vec3f p0 = m_RenderVertexData[vIdx0].Position;
+		floral::vec3f p1 = m_RenderVertexData[vIdx1].Position;
+		floral::vec3f p2 = m_RenderVertexData[vIdx2].Position;
+
+		f32 t = 0.0f;
+		const bool rh = floral::ray_triangle_intersect(r, p0, p1, p2, &t);
+		if (rh && t >= 0.0f && t <= dist)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 void FormFactorsValidating::CalculateFormFactors()
 {
 	size patchCount = m_Patches.get_size();
-	const s32 k_sampleCount = 16;
+	const s32 k_sampleCount = 4;
 	for (size i = 0; i < patchCount; i++)
 	{
 		for (size j = i + 1; j < patchCount; j++)
@@ -358,12 +386,41 @@ void FormFactorsValidating::CalculateFormFactors()
 				f32 df = 0.0f, dg = 0.0f;
 				for (s32 l = 0; l < k_sampleCount; l++)
 				{
-					floral::vec3f pj = get_random_point_on_quad(m_Patches[j].Vertex);
+					f32 r = 0.0f;
+					floral::vec3f pj, pij;
+					while (r <= 0.001f)
+					{
+						pj = get_random_point_on_quad(m_Patches[j].Vertex);
+						pij = pj - pi;
+						r = floral::length(pij);
+					}
+
+					floral::vec3f nij = floral::normalize(pij);
+					floral::vec3f nji = -nij;
+					f32 vis = IsSegmentHitGeometry(pi, pj) ? 0.0f : 1.0f;
+					f32 gVis = floral::dot(nij, m_Patches[i].Normal) * floral::dot(nji, m_Patches[j].Normal) / (3.141592f * r * r);
+					if (gVis > 0.0f)
+					{
+						df += gVis * vis;
+						dg += gVis;
+					}
+					FLORAL_ASSERT(df >= 0.0f);
+					FLORAL_ASSERT(dg >= 0.0f);
 				}
 
-				f32 gVisJ = compute_accurate_point2patch_form_factor(m_Patches[j].Vertex, pi, m_Patches[i].Normal);
-				ff += (1.0f / k_sampleCount) * gVisJ;
+				if (df > 0.0f)
+				{
+					f32 gVisJ = compute_accurate_point2patch_form_factor(m_Patches[j].Vertex, pi, m_Patches[i].Normal);
+					//FLORAL_ASSERT(gVisJ >= 0.0f);
+					if (dg > 0.0f)
+					{
+						ff += (df / dg) *  (1.0f / k_sampleCount) * gVisJ;
+					}
+				}
 			}
+
+			FLORAL_ASSERT(ff <= 0.0f);
+			CLOVER_DEBUG("F[%zd; %zd] = %f", i, j, ff);
 
 			m_FF[i][j] = ff;
 			m_FF[j][i] = ff;
