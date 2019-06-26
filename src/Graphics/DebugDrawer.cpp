@@ -121,6 +121,16 @@ void DebugDrawer::DrawAABB3D(const floral::aabb3f& i_aabb, const floral::vec4f& 
 	m_DebugIndices[m_CurrentBufferIdx].push_back(currentIdx + 7);
 }
 
+void DebugDrawer::DrawQuad3D(const floral::vec3f& i_p0, const floral::vec3f& i_p1,
+		const floral::vec3f& i_p2, const floral::vec3f& i_p3,
+		const floral::vec4f& i_color)
+{
+	DrawLine3D(i_p0, i_p1, i_color);
+	DrawLine3D(i_p1, i_p2, i_color);
+	DrawLine3D(i_p2, i_p3, i_color);
+	DrawLine3D(i_p3, i_p0, i_color);
+}
+
 void DebugDrawer::DrawIcosahedron3D(const floral::vec3f& i_origin, const f32 i_radius, const floral::vec4f& i_color)
 {
 	static const floral::vec3f s_icosahedronVertices[12] = {

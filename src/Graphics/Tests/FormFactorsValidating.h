@@ -58,6 +58,12 @@ private:
 	insigne::material_desc_t				m_Material;
 
 private:
+	bool										m_DrawScene;
+	bool										m_DrawFFPatches;
+	s32											m_SrcPatchIdx;
+	s32											m_DstPatchIdx;
+
+private:
 	DebugDrawer								m_DebugDrawer;
 	LinearArena*							m_MemoryArena;
 	FreeCamera									m_CameraMotion;

@@ -22,6 +22,7 @@ class DebugDrawer {
 		void									DrawPolygon3D(const floral::fixed_array<floral::vec3f, TAllocator>& i_polySoup, const floral::vec4f& i_color);
 		void									DrawLine3D(const floral::vec3f& i_x0, const floral::vec3f& i_x1, const floral::vec4f& i_color);
 		void									DrawAABB3D(const floral::aabb3f& i_aabb, const floral::vec4f& i_color);
+		void									DrawQuad3D(const floral::vec3f& i_p0, const floral::vec3f& i_p1, const floral::vec3f& i_p2, const floral::vec3f& i_p3, const floral::vec4f& i_color);
 		//void									DrawOBB3D(const floral::obb3f& i_obb);
 		void									DrawIcosahedron3D(const floral::vec3f& i_origin, const f32 i_radius, const floral::vec4f& i_color);
 		void									DrawIcosphere3D(const floral::vec3f& i_origin, const f32 i_radius, const floral::vec4f& i_color);

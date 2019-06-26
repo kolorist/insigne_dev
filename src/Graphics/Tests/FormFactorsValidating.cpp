@@ -43,8 +43,12 @@ void main()
 
 FormFactorsValidating::FormFactorsValidating()
 	: m_CameraMotion(
-			floral::camera_view_t { floral::vec3f(0.0f, 0.3f, 3.0f), floral::vec3f(0.0f, -0.3f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
+			floral::camera_view_t { floral::vec3f(-0.3f, 1.0f, -3.0f), floral::vec3f(0.3f, -1.0f, 3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
+	, m_DrawScene(true)
+	, m_DrawFFPatches(false)
+	, m_SrcPatchIdx(0)
+	, m_DstPatchIdx(0)
 {
 	srand(time(0));
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
@@ -212,6 +216,26 @@ void FormFactorsValidating::OnInitialize()
 
 void FormFactorsValidating::OnDebugUIUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("FormFactor Controller");
+	if (ImGui::CollapsingHeader("FF Debug"))
+	{
+		ImGui::Checkbox("Draw Scene", &m_DrawScene);
+		ImGui::Checkbox("Draw FF Patches", &m_DrawFFPatches);
+		if (m_DrawFFPatches)
+		{
+			ImGui::InputInt("Source patch", &m_SrcPatchIdx);
+			ImGui::InputInt("Destination patch", &m_DstPatchIdx);
+			if (m_SrcPatchIdx >= 0 && m_DstPatchIdx >= 0 && m_SrcPatchIdx < m_Patches.get_size() && m_DstPatchIdx < m_Patches.get_size())
+			{
+				ImGui::Text("FF[%d, %d] = %f", m_SrcPatchIdx, m_DstPatchIdx, m_FF[m_SrcPatchIdx][m_DstPatchIdx]);
+			}
+			else
+			{
+				ImGui::Text("Invalid !!!");
+			}
+		}
+	}
+	ImGui::End();
 }
 
 void FormFactorsValidating::OnUpdate(const f32 i_deltaMs)
@@ -240,6 +264,22 @@ void FormFactorsValidating::OnUpdate(const f32 i_deltaMs)
 	m_DebugDrawer.DrawLine3D(floral::vec3f(0.1f, 0.0f, 0.1f), floral::vec3f(0.1f, 0.5f, 0.1f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 	m_DebugDrawer.DrawLine3D(floral::vec3f(0.1f, 0.0f, 0.1f), floral::vec3f(0.1f, 0.0f, 0.5f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
 
+	// -----------------------------------------
+	// debug draw
+	if (m_DrawFFPatches)
+	{
+		if (m_SrcPatchIdx >= 0 && m_DstPatchIdx >= 0 && m_SrcPatchIdx < m_Patches.get_size() && m_DstPatchIdx < m_Patches.get_size())
+		{
+			const Patch& srcPatch = m_Patches[m_SrcPatchIdx];
+			const Patch& dstPatch = m_Patches[m_DstPatchIdx];
+			m_DebugDrawer.DrawQuad3D(srcPatch.Vertex[0], srcPatch.Vertex[1], srcPatch.Vertex[2], srcPatch.Vertex[3],
+					floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+			m_DebugDrawer.DrawQuad3D(dstPatch.Vertex[0], dstPatch.Vertex[1], dstPatch.Vertex[2], dstPatch.Vertex[3],
+					floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+		}
+	}
+	// -----------------------------------------
+
 	m_DebugDrawer.EndFrame();
 }
 
@@ -250,7 +290,10 @@ void FormFactorsValidating::OnRender(const f32 i_deltaMs)
 	insigne::update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
 
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-	insigne::draw_surface<Surface3DPT>(m_VB, m_IB, m_Material);
+	if (m_DrawScene)
+	{
+		insigne::draw_surface<Surface3DPT>(m_VB, m_IB, m_Material);
+	}
 	m_DebugDrawer.Render(m_SceneData.WVP);
 	IDebugUI::OnFrameRender(i_deltaMs);
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
@@ -363,7 +406,7 @@ const bool FormFactorsValidating::IsSegmentHitGeometry(const floral::vec3f& i_pi
 
 		f32 t = 0.0f;
 		const bool rh = floral::ray_triangle_intersect(r, p0, p1, p2, &t);
-		if (rh && t >= 0.0f && t <= dist)
+		if (rh && t >= 0.001f && t <= (dist - 0.001f))
 		{
 			return true;
 		}
@@ -374,10 +417,12 @@ const bool FormFactorsValidating::IsSegmentHitGeometry(const floral::vec3f& i_pi
 void FormFactorsValidating::CalculateFormFactors()
 {
 	size patchCount = m_Patches.get_size();
-	const s32 k_sampleCount = 4;
-	for (size i = 0; i < patchCount; i++)
+	const s32 k_sampleCount = 16;
+	//for (size i = 0; i < patchCount; i++)
+	size i = 17;
 	{
-		for (size j = i + 1; j < patchCount; j++)
+		//for (size j = i + 1; j < patchCount; j++)
+		size j = 485;
 		{
 			f32 ff = 0.0f;
 			for (s32 k = 0; k < k_sampleCount; k++)
@@ -419,7 +464,7 @@ void FormFactorsValidating::CalculateFormFactors()
 				}
 			}
 
-			FLORAL_ASSERT(ff <= 0.0f);
+			//FLORAL_ASSERT(ff <= 0.0f);
 			CLOVER_DEBUG("F[%zd; %zd] = %f", i, j, ff);
 
 			m_FF[i][j] = ff;
