@@ -28,6 +28,8 @@ public:
 private:
 	const bool									IsSegmentHitGeometry(const floral::vec3f& i_pi, const floral::vec3f& i_pj);
 	void										CalculateFormFactors();
+	void										CalculateRadiosity();
+	void										UpdateLightmap();
 
 private:
 	struct SceneData {
@@ -40,6 +42,7 @@ private:
 		floral::vec3f							Vertex[4];
 		floral::vec3f							Normal;
 		floral::vec3f							Color;
+		floral::vec3f							RadiosityColor;
 		floral::vec2<u32>						PixelCoord[4];
 	};
 
@@ -48,6 +51,7 @@ private:
 	floral::fixed_array<s32, LinearAllocator>		m_RenderIndexData;
 	floral::fixed_array<Patch, LinearAllocator>		m_Patches;
 	f32**										m_FF;
+	floral::vec3f*								m_LightMapData;
 
 	SceneData									m_SceneData;
 
@@ -56,6 +60,7 @@ private:
 	insigne::ub_handle_t					m_UB;
 	insigne::shader_handle_t				m_Shader;
 	insigne::material_desc_t				m_Material;
+	insigne::texture_handle_t					m_LightMapTexture;
 
 private:
 	bool										m_DrawScene;

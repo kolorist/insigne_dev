@@ -7,6 +7,7 @@
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
+#include <insigne/ut_textures.h>
 #include <clover.h>
 
 #include <stdlib.h>
@@ -14,11 +15,13 @@
 #include <random>
 
 #include "Graphics/PlyLoader.h"
+#include "Graphics/stb_image_write.h"
 
 namespace stone {
 
 static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
+layout (location = 1) in highp vec2 l_TexCoord;
 
 layout(std140) uniform ub_Scene
 {
@@ -26,8 +29,11 @@ layout(std140) uniform ub_Scene
 	highp mat4 iu_WVP;
 };
 
+out highp vec2 v_Texcoord;
+
 void main() {
 	highp vec4 pos_W = iu_XForm * vec4(l_Position_L, 1.0f);
+	v_Texcoord = l_TexCoord;
 	gl_Position = iu_WVP * pos_W;
 }
 )";
@@ -35,9 +41,13 @@ void main() {
 static const_cstr s_FragmentShader = R"(#version 300 es
 layout (location = 0) out mediump vec4 o_Color;
 
+uniform mediump sampler2D u_LightMapTex;
+
+in highp vec2 v_Texcoord;
+
 void main()
 {
-	o_Color = vec4(1.0f);
+	o_Color = vec4(texture(u_LightMapTex, v_Texcoord).rgb, 1.0f);
 }
 )";
 
@@ -102,7 +112,7 @@ void FormFactorsValidating::OnInitialize()
 
 
 	{
-		PlyData<LinearArena> plyData = LoadFromPly(floral::path("gfx/envi/models/demo/cornel_box_triangles.ply"),
+		PlyData<LinearArena> plyData = LoadFromPly(floral::path("gfx/envi/models/demo/cornel_box_triangles_pp.ply"),
 				m_MemoryArena);
 		CLOVER_DEBUG("Render mesh loaded");
 
@@ -133,7 +143,7 @@ void FormFactorsValidating::OnInitialize()
 	}
 
 	{
-		PlyData<LinearArena> plyData = LoadFFPatchesFromPly(floral::path("gfx/envi/models/demo/cornel_box_patches.ply"),
+		PlyData<LinearArena> plyData = LoadFFPatchesFromPly(floral::path("gfx/envi/models/demo/cornel_box_patches_pp.ply"),
 				m_MemoryArena);
 		CLOVER_DEBUG("GI mesh loaded");
 
@@ -146,7 +156,7 @@ void FormFactorsValidating::OnInitialize()
 
 		m_Patches.reserve(idxCount / 4, &g_StreammingAllocator);
 
-		const s32 k_giLightmapSize = 256;
+		const s32 k_giLightmapSize = 512;
 
 		for (size i = 0; i < idxCount; i += 4)
 		{
@@ -165,19 +175,20 @@ void FormFactorsValidating::OnInitialize()
 			patch.Normal = plyData.Normal[vtxIdx[0]];
 
 			patch.Color = plyData.Color[vtxIdx[0]];
+			patch.RadiosityColor = floral::vec3f(0.0f);
 
 			patch.PixelCoord[0] =
-				floral::vec2<u32>((u32)(plyData.TexCoord[vtxIdx[0]].x * k_giLightmapSize),
-						(u32)(plyData.TexCoord[vtxIdx[0]].y * k_giLightmapSize));
+				floral::vec2<u32>((u32)round(plyData.TexCoord[vtxIdx[0]].x * k_giLightmapSize),
+						(u32)round(plyData.TexCoord[vtxIdx[0]].y * k_giLightmapSize));
 			patch.PixelCoord[1] =
-				floral::vec2<u32>((u32)(plyData.TexCoord[vtxIdx[1]].x * k_giLightmapSize),
-						(u32)(plyData.TexCoord[vtxIdx[1]].y * k_giLightmapSize));
+				floral::vec2<u32>((u32)round(plyData.TexCoord[vtxIdx[1]].x * k_giLightmapSize),
+						(u32)round(plyData.TexCoord[vtxIdx[1]].y * k_giLightmapSize));
 			patch.PixelCoord[2] =
-				floral::vec2<u32>((u32)(plyData.TexCoord[vtxIdx[2]].x * k_giLightmapSize),
-						(u32)(plyData.TexCoord[vtxIdx[2]].y * k_giLightmapSize));
+				floral::vec2<u32>((u32)round(plyData.TexCoord[vtxIdx[2]].x * k_giLightmapSize),
+						(u32)round(plyData.TexCoord[vtxIdx[2]].y * k_giLightmapSize));
 			patch.PixelCoord[3] =
-				floral::vec2<u32>((u32)(plyData.TexCoord[vtxIdx[3]].x * k_giLightmapSize),
-						(u32)(plyData.TexCoord[vtxIdx[3]].y * k_giLightmapSize));
+				floral::vec2<u32>((u32)round(plyData.TexCoord[vtxIdx[3]].x * k_giLightmapSize),
+						(u32)round(plyData.TexCoord[vtxIdx[3]].y * k_giLightmapSize));
 
 			m_Patches.push_back(patch);
 		}
@@ -190,11 +201,31 @@ void FormFactorsValidating::OnInitialize()
 		}
 
 		CalculateFormFactors();
+		m_LightMapData = g_StreammingAllocator.allocate_array<floral::vec3f>(k_giLightmapSize * k_giLightmapSize);
+		CalculateRadiosity();
+		stbi_write_hdr("out2.hdr", k_giLightmapSize, k_giLightmapSize, 3, (f32*)m_LightMapData);
+	}
+
+	// upload radiosity texture
+	{
+		insigne::texture_desc_t texDesc;
+		texDesc.width = 512;
+		texDesc.height = 512;
+		texDesc.format = insigne::texture_format_e::hdr_rgb;
+		texDesc.min_filter = insigne::filtering_e::nearest;
+		texDesc.mag_filter = insigne::filtering_e::nearest;
+		texDesc.dimension = insigne::texture_dimension_e::tex_2d;
+		texDesc.has_mipmap = false;
+		const size dataSize = insigne::prepare_texture_desc(texDesc);
+		p8 pData = (p8)texDesc.data;
+		memcpy(pData, (p8)m_LightMapData, dataSize);
+		m_LightMapTexture = insigne::create_texture(texDesc);
 	}
 
 	{
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
 		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_LightMapTex", insigne::param_data_type_e::param_sampler2d));
 
 		strcpy(desc.vs, s_VertexShader);
 		strcpy(desc.fs, s_FragmentShader);
@@ -208,6 +239,11 @@ void FormFactorsValidating::OnInitialize()
 		{
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_Scene");
 			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
+		}
+
+		{
+			s32 texSlot = insigne::get_material_texture_slot(m_Material, "u_LightMapTex");
+			m_Material.textures[texSlot].value = m_LightMapTexture;
 		}
 	}
 
@@ -268,6 +304,24 @@ void FormFactorsValidating::OnUpdate(const f32 i_deltaMs)
 	// debug draw
 	if (m_DrawFFPatches)
 	{
+#if 0
+		floral::vec3f vertices[] = {
+			floral::vec3f(-1.0f, 1.0f, -0.6f),
+			floral::vec3f(-1.0f, 1.0f, -0.4f),
+			floral::vec3f(-1.0f, 0.8f, -0.4f),
+			floral::vec3f(-1.0f, 0.8f, -0.6f)
+		};
+		floral::vec3f pi(-0.291400462f, 0.000196003763f, -0.236530572f);
+		floral::vec3f n(0.410295993f, 0.0f, -0.911952019f);
+		floral::vec3f pin = pi + n;
+
+		m_DebugDrawer.DrawQuad3D(vertices[0], vertices[1], vertices[2], vertices[3], floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+		m_DebugDrawer.DrawLine3D(pi, vertices[0], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+		m_DebugDrawer.DrawLine3D(pi, vertices[1], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+		m_DebugDrawer.DrawLine3D(pi, vertices[2], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+		m_DebugDrawer.DrawLine3D(pi, vertices[3], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+		m_DebugDrawer.DrawLine3D(pi, pin, floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+#else
 		if (m_SrcPatchIdx >= 0 && m_DstPatchIdx >= 0 && m_SrcPatchIdx < m_Patches.get_size() && m_DstPatchIdx < m_Patches.get_size())
 		{
 			const Patch& srcPatch = m_Patches[m_SrcPatchIdx];
@@ -277,6 +331,7 @@ void FormFactorsValidating::OnUpdate(const f32 i_deltaMs)
 			m_DebugDrawer.DrawQuad3D(dstPatch.Vertex[0], dstPatch.Vertex[1], dstPatch.Vertex[2], dstPatch.Vertex[3],
 					floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 		}
+#endif
 	}
 	// -----------------------------------------
 
@@ -406,9 +461,12 @@ const bool FormFactorsValidating::IsSegmentHitGeometry(const floral::vec3f& i_pi
 
 		f32 t = 0.0f;
 		const bool rh = floral::ray_triangle_intersect(r, p0, p1, p2, &t);
-		if (rh && t >= 0.001f && t <= (dist - 0.001f))
+		if (rh)
 		{
-			return true;
+			if (t >= 0.001f && fabs(t - dist) > 0.001f)
+			{
+				return true;
+			}
 		}
 	}
 	return false;
@@ -417,12 +475,12 @@ const bool FormFactorsValidating::IsSegmentHitGeometry(const floral::vec3f& i_pi
 void FormFactorsValidating::CalculateFormFactors()
 {
 	size patchCount = m_Patches.get_size();
-	const s32 k_sampleCount = 16;
-	//for (size i = 0; i < patchCount; i++)
-	size i = 17;
+	const s32 k_sampleCount = 8;
+	for (size i = 0; i < patchCount; i++)
+	//size i = 10;
 	{
-		//for (size j = i + 1; j < patchCount; j++)
-		size j = 485;
+		for (size j = i + 1; j < patchCount; j++)
+		//size j = 337;
 		{
 			f32 ff = 0.0f;
 			for (s32 k = 0; k < k_sampleCount; k++)
@@ -456,7 +514,6 @@ void FormFactorsValidating::CalculateFormFactors()
 				if (df > 0.0f)
 				{
 					f32 gVisJ = compute_accurate_point2patch_form_factor(m_Patches[j].Vertex, pi, m_Patches[i].Normal);
-					//FLORAL_ASSERT(gVisJ >= 0.0f);
 					if (dg > 0.0f)
 					{
 						ff += (df / dg) *  (1.0f / k_sampleCount) * gVisJ;
@@ -464,11 +521,51 @@ void FormFactorsValidating::CalculateFormFactors()
 				}
 			}
 
-			//FLORAL_ASSERT(ff <= 0.0f);
-			CLOVER_DEBUG("F[%zd; %zd] = %f", i, j, ff);
+			if (ff > 0.0f)
+			{
+				CLOVER_ERROR("F[%zd; %zd] = %f", i, j, ff);
+				ff = 0.0f;
+			}
 
-			m_FF[i][j] = ff;
-			m_FF[j][i] = ff;
+			m_FF[i][j] = fabs(ff);
+			m_FF[j][i] = fabs(ff);
+		}
+	}
+}
+
+void FormFactorsValidating::CalculateRadiosity()
+{
+	for (size i = 0; i < m_Patches.get_size(); i++)
+	{
+		Patch& pi = m_Patches[i];
+		for (size j = i + 1; j < m_Patches.get_size(); j++)
+		{
+			if (m_FF[i][j] > 0.0f)
+			{
+				Patch& pj = m_Patches[j];
+				pi.RadiosityColor += m_FF[i][j] * pj.Color;
+				pj.RadiosityColor += m_FF[i][j] * pi.Color;
+			}
+		}
+		
+		// poorman's software rasterizer :(
+		ssize minX = 9999, minY = 9999;
+		ssize maxX = -9999, maxY = -9999;
+		for (size i = 0; i < 4; i++) 
+		{
+			if (pi.PixelCoord[i].x < minX) minX = pi.PixelCoord[i].x;
+			if (pi.PixelCoord[i].x > maxX) maxX = pi.PixelCoord[i].x;
+			if (pi.PixelCoord[i].y < minY) minY = pi.PixelCoord[i].y;
+			if (pi.PixelCoord[i].y > maxY) maxY = pi.PixelCoord[i].y;
+		}
+
+		for (size i = minX; i < maxX; i++)
+		{
+			for (size j = minY; j < maxY; j++)
+			{
+				size pixelIdx = j * 512 + i;
+				m_LightMapData[pixelIdx] = pi.RadiosityColor;
+			}
 		}
 	}
 }
