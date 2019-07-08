@@ -31,6 +31,7 @@
 #include "Graphics/Tests/ShapeGen.h"
 #include "Graphics/Tests/ShadowedPRT.h"
 #include "Graphics/Tests/InterreflectPRT.h"
+#include "Graphics/Tests/AccurateFormFactor.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -182,7 +183,8 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<ShapeGen>();
 	//_CreateTestSuite<ShadowedPRT>();
 	//_CreateTestSuite<InterreflectPRT>();
-	_CreateTestSuite<FormFactorsValidating>();
+	//_CreateTestSuite<FormFactorsValidating>();
+	_CreateTestSuite<AccurateFormFactor>();
 
 	if (m_CurrentTestSuite)
 	{

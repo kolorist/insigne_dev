@@ -57,8 +57,10 @@ FormFactorsValidating::FormFactorsValidating()
 			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
 	, m_DrawScene(true)
 	, m_DrawFFPatches(false)
-	, m_SrcPatchIdx(0)
-	, m_DstPatchIdx(0)
+	, m_DrawFFRays(false)
+	, m_SrcPatchIdx(290)
+	, m_DstPatchIdx(298)
+	, m_FFRayIdx(0)
 {
 	srand(time(0));
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
@@ -155,8 +157,18 @@ void FormFactorsValidating::OnInitialize()
 		CLOVER_DEBUG("Index count: %zd - %zd patches", idxCount, idxCount / 4);
 
 		m_Patches.reserve(idxCount / 4, &g_StreammingAllocator);
+		m_LightMapVertex.reserve(vtxCount, &g_StreammingAllocator);
+		m_LightMapIndex.reserve(idxCount, &g_StreammingAllocator);
 
 		const s32 k_giLightmapSize = 512;
+
+		for (size i = 0; i < vtxCount; i++)
+		{
+			PixelVertex pxVertex;
+			pxVertex.Coord.x = (s32)round(plyData.TexCoord[i].x * k_giLightmapSize);
+			pxVertex.Coord.y = (s32)round(plyData.TexCoord[i].y * k_giLightmapSize);
+			m_LightMapVertex.push_back(pxVertex);
+		}
 
 		for (size i = 0; i < idxCount; i += 4)
 		{
@@ -177,20 +189,16 @@ void FormFactorsValidating::OnInitialize()
 			patch.Color = plyData.Color[vtxIdx[0]];
 			patch.RadiosityColor = floral::vec3f(0.0f);
 
-			patch.PixelCoord[0] =
-				floral::vec2<u32>((u32)round(plyData.TexCoord[vtxIdx[0]].x * k_giLightmapSize),
-						(u32)round(plyData.TexCoord[vtxIdx[0]].y * k_giLightmapSize));
-			patch.PixelCoord[1] =
-				floral::vec2<u32>((u32)round(plyData.TexCoord[vtxIdx[1]].x * k_giLightmapSize),
-						(u32)round(plyData.TexCoord[vtxIdx[1]].y * k_giLightmapSize));
-			patch.PixelCoord[2] =
-				floral::vec2<u32>((u32)round(plyData.TexCoord[vtxIdx[2]].x * k_giLightmapSize),
-						(u32)round(plyData.TexCoord[vtxIdx[2]].y * k_giLightmapSize));
-			patch.PixelCoord[3] =
-				floral::vec2<u32>((u32)round(plyData.TexCoord[vtxIdx[3]].x * k_giLightmapSize),
-						(u32)round(plyData.TexCoord[vtxIdx[3]].y * k_giLightmapSize));
-
 			m_Patches.push_back(patch);
+			size pid = m_Patches.get_size() - 1;
+			m_LightMapVertex[vtxIdx[0]].PatchIdx.push_back(pid);
+			m_LightMapVertex[vtxIdx[1]].PatchIdx.push_back(pid);
+			m_LightMapVertex[vtxIdx[2]].PatchIdx.push_back(pid);
+			m_LightMapVertex[vtxIdx[3]].PatchIdx.push_back(pid);
+			m_LightMapIndex.push_back(vtxIdx[0]);
+			m_LightMapIndex.push_back(vtxIdx[1]);
+			m_LightMapIndex.push_back(vtxIdx[2]);
+			m_LightMapIndex.push_back(vtxIdx[3]);
 		}
 
 		m_FF = g_StreammingAllocator.allocate_array<f32*>(patchCount);
@@ -212,8 +220,8 @@ void FormFactorsValidating::OnInitialize()
 		texDesc.width = 512;
 		texDesc.height = 512;
 		texDesc.format = insigne::texture_format_e::hdr_rgb;
-		texDesc.min_filter = insigne::filtering_e::nearest;
-		texDesc.mag_filter = insigne::filtering_e::nearest;
+		texDesc.min_filter = insigne::filtering_e::linear;
+		texDesc.mag_filter = insigne::filtering_e::linear;
 		texDesc.dimension = insigne::texture_dimension_e::tex_2d;
 		texDesc.has_mipmap = false;
 		const size dataSize = insigne::prepare_texture_desc(texDesc);
@@ -270,6 +278,23 @@ void FormFactorsValidating::OnDebugUIUpdate(const f32 i_deltaMs)
 				ImGui::Text("Invalid !!!");
 			}
 		}
+
+		ImGui::Checkbox("Draw FF Rays", &m_DrawFFRays);
+		if (m_DrawFFRays)
+		{
+			ImGui::InputInt("Ray index", &m_FFRayIdx);
+			if (m_FFRayIdx >= 0 && m_FFRayIdx < m_DebugFFRays.get_size())
+			{
+				const FFRay& ffRay = m_DebugFFRays[m_FFRayIdx];
+				ImGui::Text("Vis: %f", ffRay.Vis);
+				ImGui::Text("GVis: %f", ffRay.GVis);
+				ImGui::Text("GVisJ(I): %f", ffRay.GVisJ);
+			}
+			else
+			{
+				ImGui::Text("Invalid !!!");
+			}
+		}
 	}
 	ImGui::End();
 }
@@ -304,24 +329,6 @@ void FormFactorsValidating::OnUpdate(const f32 i_deltaMs)
 	// debug draw
 	if (m_DrawFFPatches)
 	{
-#if 0
-		floral::vec3f vertices[] = {
-			floral::vec3f(-1.0f, 1.0f, -0.6f),
-			floral::vec3f(-1.0f, 1.0f, -0.4f),
-			floral::vec3f(-1.0f, 0.8f, -0.4f),
-			floral::vec3f(-1.0f, 0.8f, -0.6f)
-		};
-		floral::vec3f pi(-0.291400462f, 0.000196003763f, -0.236530572f);
-		floral::vec3f n(0.410295993f, 0.0f, -0.911952019f);
-		floral::vec3f pin = pi + n;
-
-		m_DebugDrawer.DrawQuad3D(vertices[0], vertices[1], vertices[2], vertices[3], floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-		m_DebugDrawer.DrawLine3D(pi, vertices[0], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
-		m_DebugDrawer.DrawLine3D(pi, vertices[1], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
-		m_DebugDrawer.DrawLine3D(pi, vertices[2], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
-		m_DebugDrawer.DrawLine3D(pi, vertices[3], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
-		m_DebugDrawer.DrawLine3D(pi, pin, floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
-#else
 		if (m_SrcPatchIdx >= 0 && m_DstPatchIdx >= 0 && m_SrcPatchIdx < m_Patches.get_size() && m_DstPatchIdx < m_Patches.get_size())
 		{
 			const Patch& srcPatch = m_Patches[m_SrcPatchIdx];
@@ -331,7 +338,22 @@ void FormFactorsValidating::OnUpdate(const f32 i_deltaMs)
 			m_DebugDrawer.DrawQuad3D(dstPatch.Vertex[0], dstPatch.Vertex[1], dstPatch.Vertex[2], dstPatch.Vertex[3],
 					floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 		}
-#endif
+	}
+
+	if (m_DrawFFRays)
+	{
+		if (m_FFRayIdx >= 0 && m_FFRayIdx < m_DebugFFRays.get_size())
+		{
+			const FFRay& ffRay = m_DebugFFRays[m_FFRayIdx];
+			m_DebugDrawer.DrawLine3D(ffRay.From, ffRay.To, floral::vec4f(1.0f, 0.0f, 1.0f, 1.0f));
+			const Patch& srcPatch = m_Patches[ffRay.FromPatch];
+			const Patch& dstPatch = m_Patches[ffRay.ToPatch];
+			m_DebugDrawer.DrawLine3D(ffRay.From, dstPatch.Vertex[0], floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+			m_DebugDrawer.DrawLine3D(ffRay.From, dstPatch.Vertex[1], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+			m_DebugDrawer.DrawLine3D(ffRay.From, dstPatch.Vertex[2], floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+			m_DebugDrawer.DrawLine3D(ffRay.From, dstPatch.Vertex[3], floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f));
+			m_DebugDrawer.DrawLine3D(ffRay.From, ffRay.From + srcPatch.Normal * 0.1f, floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+		}
 	}
 	// -----------------------------------------
 
@@ -476,11 +498,18 @@ void FormFactorsValidating::CalculateFormFactors()
 {
 	size patchCount = m_Patches.get_size();
 	const s32 k_sampleCount = 8;
-	for (size i = 0; i < patchCount; i++)
+
+	m_DebugFFRays.reserve(k_sampleCount * k_sampleCount, &g_StreammingAllocator);
+
+	//for (size i = 0; i < patchCount; i++)
 	//size i = 10;
+	size iarr[] = {
+		290
+	};
+	for (size i : iarr)
 	{
-		for (size j = i + 1; j < patchCount; j++)
-		//size j = 337;
+		//for (size j = i + 1; j < patchCount; j++)
+		size j = 298;
 		{
 			f32 ff = 0.0f;
 			for (s32 k = 0; k < k_sampleCount; k++)
@@ -489,6 +518,10 @@ void FormFactorsValidating::CalculateFormFactors()
 				f32 df = 0.0f, dg = 0.0f;
 				for (s32 l = 0; l < k_sampleCount; l++)
 				{
+					FFRay newRay;
+					newRay.FromPatch = i;
+					newRay.ToPatch = j;
+
 					f32 r = 0.0f;
 					floral::vec3f pj, pij;
 					while (r <= 0.001f)
@@ -498,10 +531,17 @@ void FormFactorsValidating::CalculateFormFactors()
 						r = floral::length(pij);
 					}
 
+					newRay.From = pi;
+					newRay.To = pj;
+
 					floral::vec3f nij = floral::normalize(pij);
 					floral::vec3f nji = -nij;
 					f32 vis = IsSegmentHitGeometry(pi, pj) ? 0.0f : 1.0f;
 					f32 gVis = floral::dot(nij, m_Patches[i].Normal) * floral::dot(nji, m_Patches[j].Normal) / (3.141592f * r * r);
+
+					newRay.Vis = vis;
+					newRay.GVis = gVis;
+
 					if (gVis > 0.0f)
 					{
 						df += gVis * vis;
@@ -509,11 +549,18 @@ void FormFactorsValidating::CalculateFormFactors()
 					}
 					FLORAL_ASSERT(df >= 0.0f);
 					FLORAL_ASSERT(dg >= 0.0f);
+
+					m_DebugFFRays.push_back(newRay);
 				}
 
 				if (df > 0.0f)
 				{
 					f32 gVisJ = compute_accurate_point2patch_form_factor(m_Patches[j].Vertex, pi, m_Patches[i].Normal);
+					for (ssize idx = m_DebugFFRays.get_size() - 8; idx < m_DebugFFRays.get_size(); idx++)
+					{
+						m_DebugFFRays[idx].GVisJ = gVisJ;
+					}
+
 					if (dg > 0.0f)
 					{
 						ff += (df / dg) *  (1.0f / k_sampleCount) * gVisJ;
@@ -533,6 +580,47 @@ void FormFactorsValidating::CalculateFormFactors()
 	}
 }
 
+floral::vec3f FormFactorsValidating::BilinearInterpolate(PixelVertex i_vtx[], floral::vec2<s32> i_pos)
+{
+	floral::vec2<s32> dia = i_vtx[2].Coord - i_vtx[0].Coord;
+	FLORAL_ASSERT(dia.x != 0);
+	FLORAL_ASSERT(dia.y != 0);
+
+	ssize disp = -1;
+	if (dia.x > 0)
+	{
+		disp = dia.y > 0 ? 0 : 3;
+	}
+	else
+	{
+		disp = dia.y > 0 ? 1 : 2;
+	}
+
+	ssize idx[4];
+	idx[0] = disp % 4;
+	idx[1] = (disp + 1) % 4;
+	idx[2] = (disp + 2) % 4;
+	idx[3] = (disp + 3) % 4;
+
+	f32 t0 = 1.0f - (i_pos.x - i_vtx[idx[0]].Coord.x) / fabs(dia.x);
+	f32 t1 = 1.0f - (i_pos.y - i_vtx[idx[0]].Coord.y) / fabs(dia.y);
+	
+	FLORAL_ASSERT(t0 >= 0.0f);
+	FLORAL_ASSERT(t1 >= 0.0f);
+
+	floral::vec3f c03 = t0 * i_vtx[idx[0]].Color + (1.0f - t0) * i_vtx[idx[3]].Color;
+	floral::vec3f c12 = t0 * i_vtx[idx[1]].Color + (1.0f - t0) * i_vtx[idx[2]].Color;
+	floral::vec3f c = t1 * c03 + (1.0f - t1) * c12;
+	return c;
+}
+
+floral::vec3f FormFactorsValidating::TestInterpolate(PixelVertex i_vtx[], floral::vec2<s32> i_pos, const s32 i_pid)
+{
+	static f32 step = 1.0f; // / m_Patches.get_size();
+	f32 cc = step * i_pid;
+	return floral::vec3f(cc);
+}
+
 void FormFactorsValidating::CalculateRadiosity()
 {
 	for (size i = 0; i < m_Patches.get_size(); i++)
@@ -548,26 +636,61 @@ void FormFactorsValidating::CalculateRadiosity()
 			}
 		}
 		
-		// poorman's software rasterizer :(
-		ssize minX = 9999, minY = 9999;
-		ssize maxX = -9999, maxY = -9999;
-		for (size i = 0; i < 4; i++) 
+	}
+
+	// poorman's software rasterizer :(
+	for (size i = 0; i < m_LightMapVertex.get_size(); i++)
+	{
+		PixelVertex& pVtx = m_LightMapVertex[i];
+		floral::vec3f color;
+		for (size j = 0; j < pVtx.PatchIdx.get_size(); j++)
 		{
-			if (pi.PixelCoord[i].x < minX) minX = pi.PixelCoord[i].x;
-			if (pi.PixelCoord[i].x > maxX) maxX = pi.PixelCoord[i].x;
-			if (pi.PixelCoord[i].y < minY) minY = pi.PixelCoord[i].y;
-			if (pi.PixelCoord[i].y > maxY) maxY = pi.PixelCoord[i].y;
+			color += m_Patches[pVtx.PatchIdx[j]].RadiosityColor;
+		}
+		color /= pVtx.PatchIdx.get_size();
+		pVtx.Color = color;
+	}
+
+	CLOVER_DEBUG("Begin rasterizing");
+
+	//for (size i = 0; i < m_LightMapIndex.get_size(); i += 4)
+	for (size i = 292 * 4; i < 295 * 4; i += 4)
+	{
+		s32 vtxIdx[4];
+		vtxIdx[0] = m_LightMapIndex[i];
+		vtxIdx[1] = m_LightMapIndex[i + 1];
+		vtxIdx[2] = m_LightMapIndex[i + 2];
+		vtxIdx[3] = m_LightMapIndex[i + 3];
+
+		PixelVertex pv[4];
+		pv[0] = m_LightMapVertex[vtxIdx[0]];
+		pv[1] = m_LightMapVertex[vtxIdx[1]];
+		pv[2] = m_LightMapVertex[vtxIdx[2]];
+		pv[3] = m_LightMapVertex[vtxIdx[3]];
+
+		s32 minX = 9999, minY = 9999;
+		s32 maxX = -9999, maxY = -9999;
+
+		for (size j = 0; j < 4; j++)
+		{
+			if (pv[j].Coord.x < minX) minX = pv[j].Coord.x;
+			if (pv[j].Coord.x > maxX) maxX = pv[j].Coord.x;
+			if (pv[j].Coord.y < minY) minY = pv[j].Coord.y;
+			if (pv[j].Coord.y > maxY) maxY = pv[j].Coord.y;
 		}
 
-		for (size i = minX; i < maxX; i++)
+		for (s32 u = minX; u < maxX; u++)
 		{
-			for (size j = minY; j < maxY; j++)
+			for (s32 v = minY; v < maxY; v++)
 			{
-				size pixelIdx = j * 512 + i;
-				m_LightMapData[pixelIdx] = pi.RadiosityColor;
+				size pixelIdx = v * 512 + u;
+				//floral::vec3f c = BilinearInterpolate(pv, floral::vec2<s32>(u, v));
+				floral::vec3f c = TestInterpolate(pv, floral::vec2<s32>(u, v), i / 4 - 290);
+				m_LightMapData[pixelIdx] = c;
 			}
 		}
 	}
+
 }
 
 }

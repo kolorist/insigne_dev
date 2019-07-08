@@ -13,6 +13,36 @@ namespace stone {
 
 class FormFactorsValidating : public ITestSuite, public IDebugUI
 {
+private:
+	struct SceneData
+	{
+		floral::mat4x4f							XForm;
+		floral::mat4x4f							WVP;
+	};
+
+	struct Patch
+	{
+		floral::vec3f							Vertex[4];
+		floral::vec3f							Normal;
+		floral::vec3f							Color;
+		floral::vec3f							RadiosityColor;
+		//floral::vec2<u32>						PixelCoord[4];
+	};
+
+	struct PixelVertex
+	{
+		floral::vec2<s32>						Coord;
+		floral::vec3f							Color;
+		floral::inplace_array<size, 4u>			PatchIdx;
+	};
+
+	struct FFRay
+	{
+		floral::vec3f							From, To;
+		ssize									FromPatch, ToPatch;
+		f32										Vis, GVis, GVisJ;
+	};
+
 public:
 	FormFactorsValidating();
 	~FormFactorsValidating();
@@ -31,23 +61,13 @@ private:
 	void										CalculateRadiosity();
 	void										UpdateLightmap();
 
-private:
-	struct SceneData {
-		floral::mat4x4f							XForm;
-		floral::mat4x4f							WVP;
-	};
-
-	struct Patch
-	{
-		floral::vec3f							Vertex[4];
-		floral::vec3f							Normal;
-		floral::vec3f							Color;
-		floral::vec3f							RadiosityColor;
-		floral::vec2<u32>						PixelCoord[4];
-	};
+	floral::vec3f								BilinearInterpolate(PixelVertex i_vtx[], floral::vec2<s32> i_pos);
+	floral::vec3f								TestInterpolate(PixelVertex i_vtx[], floral::vec2<s32> i_pos, const s32 i_pid);
 
 private:
 	floral::fixed_array<Vertex3DPT, LinearAllocator>	m_RenderVertexData;
+	floral::fixed_array<PixelVertex, LinearAllocator>	m_LightMapVertex;
+	floral::fixed_array<s32, LinearAllocator>			m_LightMapIndex;
 	floral::fixed_array<s32, LinearAllocator>		m_RenderIndexData;
 	floral::fixed_array<Patch, LinearAllocator>		m_Patches;
 	f32**										m_FF;
@@ -65,8 +85,11 @@ private:
 private:
 	bool										m_DrawScene;
 	bool										m_DrawFFPatches;
+	bool										m_DrawFFRays;
 	s32											m_SrcPatchIdx;
 	s32											m_DstPatchIdx;
+	s32											m_FFRayIdx;
+	floral::fixed_array<FFRay, LinearAllocator>	m_DebugFFRays;
 
 private:
 	DebugDrawer								m_DebugDrawer;
