@@ -16,6 +16,11 @@ namespace stone
 #define PId2     1.570796326794896619f   /* pi / 2 */
 #define PIt2inv  0.159154943091895346f   /* 1 / (2 * pi) */
 
+/*
+ * returns
+ *  - positive IF i_quad vertices are declared in clockwise order
+ *  - negative IF i_quad vertices are declared in counter-clockwise order
+ */
 static const f32 compute_accurate_point2patch_form_factor(
 	const floral::vec3f i_quad[], const floral::vec3f& i_point, const floral::vec3f& i_pointNormal)
 {
@@ -86,6 +91,7 @@ AccurateFormFactor::AccurateFormFactor()
 	: m_CameraMotion(
 			floral::camera_view_t { floral::vec3f(3.0f, 3.0f, -3.0f), floral::vec3f(-3.0f, -3.0f, 3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
+	, m_SrcPatchRY(0.0f)
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 }
@@ -121,6 +127,8 @@ void AccurateFormFactor::OnInitialize()
 	m_SrcPatch.Vertex[3] = floral::vec3f(-0.5f, 0.5f, 0.0f) * k_scale;
 	m_SrcPatch.Normal = floral::vec3f(0.0f, 0.0f, 1.0f);
 
+	m_OrgSrcPatch = m_SrcPatch;
+
 	m_DstPatch.Vertex[0] = floral::vec3f(0.0f, 0.5f, 0.5f) * k_scale + floral::vec3f(1.0f, 0.0f, 0.0f);
 	m_DstPatch.Vertex[1] = floral::vec3f(0.0f, -0.5f, 0.5f) * k_scale + floral::vec3f(1.0f, 0.0f, 0.0f);
 	m_DstPatch.Vertex[2] = floral::vec3f(0.0f, -0.5f, -0.5f) * k_scale + floral::vec3f(1.0f, 0.0f, 0.0f);
@@ -138,14 +146,14 @@ void AccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 	m_CameraMotion.OnUpdate(i_deltaMs);
 
 	floral::quaternionf q =
-		floral::construct_quaternion_euler(floral::vec3f(0.0f, i_deltaMs / 10.0f, 0.0f));
+		floral::construct_quaternion_euler(floral::vec3f(0.0f, m_SrcPatchRY, 0.0f));
 	floral::mat4x4f m = q.to_transform();
 
-	m_SrcPatch.Vertex[0] = floral::apply_point_transform(m_SrcPatch.Vertex[0], m);
-	m_SrcPatch.Vertex[1] = floral::apply_point_transform(m_SrcPatch.Vertex[1], m);
-	m_SrcPatch.Vertex[2] = floral::apply_point_transform(m_SrcPatch.Vertex[2], m);
-	m_SrcPatch.Vertex[3] = floral::apply_point_transform(m_SrcPatch.Vertex[3], m);
-	m_SrcPatch.Normal = floral::apply_vector_transform(m_SrcPatch.Normal, m);
+	m_SrcPatch.Vertex[0] = floral::apply_point_transform(m_OrgSrcPatch.Vertex[0], m);
+	m_SrcPatch.Vertex[1] = floral::apply_point_transform(m_OrgSrcPatch.Vertex[1], m);
+	m_SrcPatch.Vertex[2] = floral::apply_point_transform(m_OrgSrcPatch.Vertex[2], m);
+	m_SrcPatch.Vertex[3] = floral::apply_point_transform(m_OrgSrcPatch.Vertex[3], m);
+	m_SrcPatch.Normal = floral::apply_vector_transform(m_OrgSrcPatch.Normal, m);
 
 	m_DebugDrawer.BeginFrame();
 
@@ -173,6 +181,14 @@ void AccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 			m_SrcPatch.Vertex[2], m_SrcPatch.Vertex[3], floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
 	m_DebugDrawer.DrawQuad3D(m_DstPatch.Vertex[0], m_DstPatch.Vertex[1],
 			m_DstPatch.Vertex[2], m_DstPatch.Vertex[3], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawLine3D(floral::vec3f(0.0f, 0.0f, 0.0f), m_SrcPatch.Normal * 0.3f, floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+
+	// gvisJ calculation draw
+	floral::vec3f dstP = (m_DstPatch.Vertex[0] + m_DstPatch.Vertex[2]) / 2.0f;
+	m_DebugDrawer.DrawLine3D(dstP, m_SrcPatch.Vertex[0], floral::vec4f(0.2f, 0.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawLine3D(dstP, m_SrcPatch.Vertex[1], floral::vec4f(0.4f, 0.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawLine3D(dstP, m_SrcPatch.Vertex[2], floral::vec4f(0.8f, 0.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawLine3D(dstP, m_SrcPatch.Vertex[3], floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
 
 	m_DebugDrawer.EndFrame();
 }
@@ -181,15 +197,23 @@ void AccurateFormFactor::OnDebugUIUpdate(const f32 i_deltaMs)
 {
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 
-	ImGui::Begin("AccurateFormFactor Controller");
-	ImGui::Text("Screen resolution: %d x %d",
-			commonCtx->window_width,
-			commonCtx->window_height);
+	static f32 gvisValues[180] = { 0 };
+	static ssize valOffset = 0;
 
+	ImGui::Begin("AccurateFormFactor Controller");
+
+	floral::vec3f dstP = (m_DstPatch.Vertex[0] + m_DstPatch.Vertex[2]) / 2.0f;
 	f32 gVisJ = compute_accurate_point2patch_form_factor(
-			m_DstPatch.Vertex, floral::vec3f(0.0f, 0.0f, 0.0f), m_SrcPatch.Normal);
+			m_SrcPatch.Vertex, dstP, m_DstPatch.Normal);
+
+	if (ImGui::DragFloat("SrcPath rotationY", &m_SrcPatchRY, 1.0f, 0.0f, 360.0f))
+	{
+		gvisValues[valOffset] = gVisJ;
+		valOffset = (valOffset + 1) % 90;
+	}
 
 	ImGui::Text("GVisJ: %f", gVisJ);
+	ImGui::PlotLines("Plotted GVisJ", gvisValues, 90, valOffset, nullptr, FLT_MAX, FLT_MAX, ImVec2(0, 80));
 
 	//ImGui::ShowDemoWindow();
 

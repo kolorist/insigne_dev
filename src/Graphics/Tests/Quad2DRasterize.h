@@ -12,24 +12,11 @@
 
 namespace stone {
 
-class AccurateFormFactor : public ITestSuite, public IDebugUI
+class Quad2DRasterize : public ITestSuite, public IDebugUI
 {
-private:
-	struct SceneData
-	{
-		floral::mat4x4f							XForm;
-		floral::mat4x4f							WVP;
-	};
-
-	struct Patch
-	{
-		floral::vec3f							Vertex[4];
-		floral::vec3f							Normal;
-	};
-
 public:
-	AccurateFormFactor();
-	~AccurateFormFactor();
+	Quad2DRasterize();
+	~Quad2DRasterize();
 
 	void										OnInitialize() override;
 	void										OnUpdate(const f32 i_deltaMs) override;
@@ -37,21 +24,19 @@ public:
 	void										OnRender(const f32 i_deltaMs) override;
 	void										OnCleanUp() override;
 
-	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
+	ICameraMotion*								GetCameraMotion() override { return nullptr; }
 
 private:
 	insigne::ub_handle_t						m_UB;
-	Patch										m_OrgSrcPatch;
-	Patch										m_SrcPatch;
-	Patch										m_DstPatch;
-	f32											m_SrcPatchRY;
+	insigne::vb_handle_t						m_VB;
+	insigne::ib_handle_t						m_IB;
+	insigne::material_desc_t					m_Material;
 
-	SceneData									m_SceneData;
+	insigne::shader_handle_t					m_Shader;
+	insigne::texture_handle_t					m_Texture;
 
 private:
-	DebugDrawer									m_DebugDrawer;
 	LinearArena*								m_MemoryArena;
-	FreeCamera									m_CameraMotion;
 };
 
 }

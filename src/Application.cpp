@@ -32,6 +32,7 @@
 #include "Graphics/Tests/ShadowedPRT.h"
 #include "Graphics/Tests/InterreflectPRT.h"
 #include "Graphics/Tests/AccurateFormFactor.h"
+#include "Graphics/Tests/Quad2DRasterize.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -184,7 +185,8 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<ShadowedPRT>();
 	//_CreateTestSuite<InterreflectPRT>();
 	//_CreateTestSuite<FormFactorsValidating>();
-	_CreateTestSuite<AccurateFormFactor>();
+	//_CreateTestSuite<AccurateFormFactor>();
+	_CreateTestSuite<Quad2DRasterize>();
 
 	if (m_CurrentTestSuite)
 	{
