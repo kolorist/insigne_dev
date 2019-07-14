@@ -387,7 +387,7 @@ void FormFactorsValidating::OnCleanUp()
 #define PId2     1.570796326794896619f   /* pi / 2 */
 #define PIt2inv  0.159154943091895346f   /* 1 / (2 * pi) */
 
-const f32 compute_accurate_point2patch_form_factor(
+static const f32 compute_accurate_point2patch_form_factor(
 	const floral::vec3f i_quad[], const floral::vec3f& i_point, const floral::vec3f& i_pointNormal)
 {
 	floral::vec3f PA = i_quad[0] - i_point;

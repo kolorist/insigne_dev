@@ -33,7 +33,7 @@ public:
 	void										OnRender(const f32 i_deltaMs) override;
 	void										OnCleanUp() override;
 
-	ICameraMotion*								GetCameraMotion() override { return nullptr; }
+	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
 	insigne::ub_handle_t						m_UB;

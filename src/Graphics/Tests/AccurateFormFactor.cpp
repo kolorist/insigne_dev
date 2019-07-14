@@ -11,9 +11,80 @@
 namespace stone
 {
 
+//----------------------------------------------
+
+#define PId2     1.570796326794896619f   /* pi / 2 */
+#define PIt2inv  0.159154943091895346f   /* 1 / (2 * pi) */
+
+static const f32 compute_accurate_point2patch_form_factor(
+	const floral::vec3f i_quad[], const floral::vec3f& i_point, const floral::vec3f& i_pointNormal)
+{
+	floral::vec3f PA = i_quad[0] - i_point;
+	floral::vec3f PB = i_quad[1] - i_point;
+	floral::vec3f PC = i_quad[2] - i_point;
+	floral::vec3f PD = i_quad[3] - i_point;
+
+	floral::vec3f gAB = floral::cross(PA, PB);
+	floral::vec3f gBC = floral::cross(PB, PC);
+	floral::vec3f gCD = floral::cross(PC, PD);
+	floral::vec3f gDA = floral::cross(PD, PA);
+
+	f32 NdotGAB = floral::dot(i_pointNormal, gAB);
+	f32 NdotGBC = floral::dot(i_pointNormal, gBC);
+	f32 NdotGCD = floral::dot(i_pointNormal, gCD);
+	f32 NdotGDA = floral::dot(i_pointNormal, gDA);
+
+	f32 sum = 0.0f;
+
+	if (fabs(NdotGAB) > 0.0f)
+	{
+		f32 lenGAB = floral::length(gAB);
+		if (lenGAB > 0.0f)
+		{
+			f32 gammaAB = PId2 - atanf(floral::dot(PA, PB) / lenGAB);
+			sum += NdotGAB * gammaAB / lenGAB;
+		}
+	}
+
+	if (fabs(NdotGBC) > 0.0f)
+	{
+		f32 lenGBC = floral::length(gBC);
+		if (lenGBC > 0.0f)
+		{
+			f32 gammaBC = PId2 - atanf(floral::dot(PB, PC) / lenGBC);
+			sum += NdotGBC * gammaBC / lenGBC;
+		}
+	}
+
+	if (fabs(NdotGCD) > 0.0f)
+	{
+		f32 lenGCD = floral::length(gCD);
+		if (lenGCD > 0.0f)
+		{
+			f32 gammaCD = PId2 - atanf(floral::dot(PC, PD) / lenGCD);
+			sum += NdotGCD * gammaCD / lenGCD;
+		}
+	}
+
+	if (fabs(NdotGDA) > 0.0f)
+	{
+		f32 lenGDA = floral::length(gDA);
+		if (lenGDA > 0.0f)
+		{
+			f32 gammaDA = PId2 - atanf(floral::dot(PD, PA) / lenGDA);
+			sum += NdotGDA * gammaDA / lenGDA;
+		}
+	}
+
+	sum *= PIt2inv;
+	return sum;
+}
+
+//----------------------------------------------
+
 AccurateFormFactor::AccurateFormFactor()
 	: m_CameraMotion(
-			floral::camera_view_t { floral::vec3f(3.0f, 3.0f, 3.0f), floral::vec3f(-3.0f, -3.0f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
+			floral::camera_view_t { floral::vec3f(3.0f, 3.0f, -3.0f), floral::vec3f(-3.0f, -3.0f, 3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
 {
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
@@ -41,12 +112,40 @@ void AccurateFormFactor::OnInitialize()
 		insigne::update_ub(newUB, &m_SceneData, sizeof(SceneData), 0);
 		m_UB = newUB;
 	}
+
+	const f32 k_scale = 0.4f;
+
+	m_SrcPatch.Vertex[0] = floral::vec3f(0.5f, 0.5f, 0.0f) * k_scale;
+	m_SrcPatch.Vertex[1] = floral::vec3f(0.5f, -0.5f, 0.0f) * k_scale;
+	m_SrcPatch.Vertex[2] = floral::vec3f(-0.5f, -0.5f, 0.0f) * k_scale;
+	m_SrcPatch.Vertex[3] = floral::vec3f(-0.5f, 0.5f, 0.0f) * k_scale;
+	m_SrcPatch.Normal = floral::vec3f(0.0f, 0.0f, 1.0f);
+
+	m_DstPatch.Vertex[0] = floral::vec3f(0.0f, 0.5f, 0.5f) * k_scale + floral::vec3f(1.0f, 0.0f, 0.0f);
+	m_DstPatch.Vertex[1] = floral::vec3f(0.0f, -0.5f, 0.5f) * k_scale + floral::vec3f(1.0f, 0.0f, 0.0f);
+	m_DstPatch.Vertex[2] = floral::vec3f(0.0f, -0.5f, -0.5f) * k_scale + floral::vec3f(1.0f, 0.0f, 0.0f);
+	m_DstPatch.Vertex[3] = floral::vec3f(0.0f, 0.5f, -0.5f) * k_scale + floral::vec3f(1.0f, 0.0f, 0.0f);
+	m_DstPatch.Normal = floral::vec3f(-1.0f, 0.0f, 0.0f);
+
 	m_DebugDrawer.Initialize();
 }
 
 void AccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 {
+	static f32 s_elapsedTime = 0.0f;
+	s_elapsedTime += i_deltaMs;
+
 	m_CameraMotion.OnUpdate(i_deltaMs);
+
+	floral::quaternionf q =
+		floral::construct_quaternion_euler(floral::vec3f(0.0f, i_deltaMs / 10.0f, 0.0f));
+	floral::mat4x4f m = q.to_transform();
+
+	m_SrcPatch.Vertex[0] = floral::apply_point_transform(m_SrcPatch.Vertex[0], m);
+	m_SrcPatch.Vertex[1] = floral::apply_point_transform(m_SrcPatch.Vertex[1], m);
+	m_SrcPatch.Vertex[2] = floral::apply_point_transform(m_SrcPatch.Vertex[2], m);
+	m_SrcPatch.Vertex[3] = floral::apply_point_transform(m_SrcPatch.Vertex[3], m);
+	m_SrcPatch.Normal = floral::apply_vector_transform(m_SrcPatch.Normal, m);
 
 	m_DebugDrawer.BeginFrame();
 
@@ -70,6 +169,11 @@ void AccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 	m_DebugDrawer.DrawLine3D(floral::vec3f(0.1f, 0.0f, 0.1f), floral::vec3f(0.1f, 0.5f, 0.1f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 	m_DebugDrawer.DrawLine3D(floral::vec3f(0.1f, 0.0f, 0.1f), floral::vec3f(0.1f, 0.0f, 0.5f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
 
+	m_DebugDrawer.DrawQuad3D(m_SrcPatch.Vertex[0], m_SrcPatch.Vertex[1],
+			m_SrcPatch.Vertex[2], m_SrcPatch.Vertex[3], floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	m_DebugDrawer.DrawQuad3D(m_DstPatch.Vertex[0], m_DstPatch.Vertex[1],
+			m_DstPatch.Vertex[2], m_DstPatch.Vertex[3], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+
 	m_DebugDrawer.EndFrame();
 }
 
@@ -82,10 +186,13 @@ void AccurateFormFactor::OnDebugUIUpdate(const f32 i_deltaMs)
 			commonCtx->window_width,
 			commonCtx->window_height);
 
-	if (ImGui::Button("Test Clover Log"))
-	{
-		CLOVER_DEBUG("test test test");
-	}
+	f32 gVisJ = compute_accurate_point2patch_form_factor(
+			m_DstPatch.Vertex, floral::vec3f(0.0f, 0.0f, 0.0f), m_SrcPatch.Normal);
+
+	ImGui::Text("GVisJ: %f", gVisJ);
+
+	//ImGui::ShowDemoWindow();
+
 	ImGui::End();
 }
 
