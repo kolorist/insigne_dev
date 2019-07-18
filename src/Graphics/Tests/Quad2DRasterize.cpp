@@ -1,4 +1,7 @@
 #include "Quad2DRasterize.h"
+
+#include <floral/io/nativeio.h>
+
 #include <calyx/context.h>
 
 #include <clover.h>
@@ -78,7 +81,7 @@ const bool IsTopOrLeftEdge(const floral::vec2i& a, const floral::vec2i& b)
 	return IsTopEdge(a, b) || IsLeftEdge(a, b);
 }
 
-void RasterizeTriangle2D(SimpleVertex i_tri[], const s32 i_du, const s32 i_dv, p8 o_toBuffer)
+void RasterizeTriangle2D(SimpleVertex i_tri[], const s32 i_du, const s32 i_dv, f32* o_toBuffer)
 {
 	// triangle bounding box
 	s32 minX = Min3i(i_tri[0].Position.x, i_tri[1].Position.x, i_tri[2].Position.x);
@@ -115,9 +118,9 @@ void RasterizeTriangle2D(SimpleVertex i_tri[], const s32 i_du, const s32 i_dv, p
 				f32 b2 = 1.0f - b0 - b1;
 				floral::vec3f c = b0 * i_tri[0].Color + b1 * i_tri[1].Color + b2 * i_tri[2].Color;
 				ssize pid = (p.y * i_du + p.x) * 3;
-				o_toBuffer[pid] = c.x * 255;
-				o_toBuffer[pid + 1] = c.y * 255;
-				o_toBuffer[pid + 2] = c.z * 255;
+				o_toBuffer[pid] = c.x;
+				o_toBuffer[pid + 1] = c.y;
+				o_toBuffer[pid + 2] = c.z;
 			}
 		}
 	}
@@ -205,32 +208,174 @@ void Quad2DRasterize::OnInitialize()
 		insigne::texture_desc_t texDesc;
 		texDesc.width = bufferDim;
 		texDesc.height = bufferDim;
-		texDesc.format = insigne::texture_format_e::rgb;
-		texDesc.min_filter = insigne::filtering_e::nearest;
-		texDesc.mag_filter = insigne::filtering_e::nearest;
+		texDesc.format = insigne::texture_format_e::hdr_rgb;
+		texDesc.min_filter = insigne::filtering_e::linear;
+		texDesc.mag_filter = insigne::filtering_e::linear;
 		texDesc.dimension = insigne::texture_dimension_e::tex_2d;
 		texDesc.has_mipmap = false;
 		const size dataSize = insigne::prepare_texture_desc(texDesc);
-		p8 pData = (p8)texDesc.data;
+		f32* pData = (f32*)texDesc.data;
 
 		memset(pData, 0, dataSize);
 
-		SimpleVertex tq[6];
-		tq[0].Position = floral::vec2i(26, 47);
-		tq[0].Color = floral::vec3f(1.0f, 0.0f, 0.0f);
-		tq[1].Position = floral::vec2i(10, 10);
-		tq[1].Color = floral::vec3f(0.0f, 1.0f, 0.0f);
-		tq[2].Position = floral::vec2i(50, 13);
-		tq[2].Color = floral::vec3f(0.0f, 0.0f, 1.0f);
+		floral::file_info rf = floral::open_file("patches.dat");
+		floral::file_stream is;
+		is.buffer = (p8)m_MemoryArena->allocate(rf.file_size);
+		floral::read_all_file(rf, is);
 
-		tq[3].Position = floral::vec2i(50, 13);
-		tq[3].Color = floral::vec3f(0.0f, 0.0f, 1.0f);
-		tq[4].Position = floral::vec2i(55, 63);
-		tq[4].Color = floral::vec3f(1.0f, 0.0f, 1.0f);
-		tq[5].Position = floral::vec2i(26, 47);
-		tq[5].Color = floral::vec3f(1.0f, 0.0f, 0.0f);
-		RasterizeTriangle2D(&tq[0], bufferDim, bufferDim, pData);
-		RasterizeTriangle2D(&tq[3], bufferDim, bufferDim, pData);
+		ssize verticesCount = 0;
+		is.read(&verticesCount);
+		floral::fixed_array<floral::vec2i, LinearArena> texVtx;
+		texVtx.reserve(verticesCount, m_MemoryArena);
+		for (ssize i = 0; i < verticesCount; i++)
+		{
+			floral::vec2i pv;
+			is.read(&pv);
+			texVtx.push_back(pv);
+		}
+		ssize indicesCount = 0;
+		is.read(&indicesCount);
+		floral::fixed_array<s32, LinearArena> texIdx;
+		texIdx.reserve(indicesCount, m_MemoryArena);
+		floral::fixed_array<floral::vec3f, LinearArena> patchColor;
+		patchColor.reserve(indicesCount / 4, m_MemoryArena);
+		for (ssize i = 0; i < indicesCount; i += 4)
+		{
+			s32 idx[4];
+			is.read(&idx[0]);
+			is.read(&idx[1]);
+			is.read(&idx[2]);
+			is.read(&idx[3]);
+			floral::vec3f c;
+			is.read(&c);
+
+			texIdx.push_back(idx[0]);
+			texIdx.push_back(idx[1]);
+			texIdx.push_back(idx[2]);
+			texIdx.push_back(idx[3]);
+			patchColor.push_back(c);
+		}
+		floral::close_file(rf);
+
+		// index correction
+		for (ssize i = 0; i < indicesCount; i++)
+		{
+			s32 idx = texIdx[i];
+			floral::vec2i tp = texVtx[idx];
+			const size firstIdx = texVtx.find(tp);
+			if (firstIdx != idx)
+			{
+				texIdx[i] = firstIdx;
+			}
+		}
+
+		ssize arr[] = {
+			184 * 4, 185 * 4, 186 * 4,
+			140 * 4, 141 * 4, 142 * 4
+		};
+		for (ssize i = 0; i < indicesCount; i += 4)
+		//for (ssize i : arr)
+		{
+			s32 idx[4];
+			idx[0] = texIdx[i];
+			idx[1] = texIdx[i + 1];
+			idx[2] = texIdx[i + 2];
+			idx[3] = texIdx[i + 3];
+
+			floral::vec3f color[4];
+			{
+				ssize c = 0;
+				for (ssize j = 0; j < indicesCount; j++)
+				{
+					if (idx[0] == texIdx[j])
+					{
+						ssize pidx = j / 4;
+						color[0] += patchColor[pidx];
+						c++;
+					}
+				}
+				FLORAL_ASSERT(c <= 4);
+				color[0] /= c;
+			}
+			{
+				ssize c = 0;
+				for (ssize j = 0; j < indicesCount; j++)
+				{
+					if (idx[1] == texIdx[j])
+					{
+						ssize pidx = j / 4;
+						color[1] += patchColor[pidx];
+						c++;
+					}
+				}
+				FLORAL_ASSERT(c <= 4);
+				color[1] /= c;
+			}
+			{
+				ssize c = 0;
+				for (ssize j = 0; j < indicesCount; j++)
+				{
+					if (idx[2] == texIdx[j])
+					{
+						ssize pidx = j / 4;
+						color[2] += patchColor[pidx];
+						c++;
+					}
+				}
+				FLORAL_ASSERT(c <= 4);
+				color[2] /= c;
+			}
+			{
+				ssize c = 0;
+				for (ssize j = 0; j < indicesCount; j++)
+				{
+					if (idx[3] == texIdx[j])
+					{
+						ssize pidx = j / 4;
+						color[3] += patchColor[pidx];
+						c++;
+					}
+				}
+				FLORAL_ASSERT(c <= 4);
+				color[3] /= c;
+			}
+
+			SimpleVertex vtx[6];
+			vtx[0].Position = texVtx[idx[2]];
+			vtx[1].Position = texVtx[idx[1]];
+			vtx[2].Position = texVtx[idx[0]];
+			vtx[3].Position = texVtx[idx[0]];
+			vtx[4].Position = texVtx[idx[3]];
+			vtx[5].Position = texVtx[idx[2]];
+
+#define MODE 0
+#if MODE == 0
+			vtx[0].Color = color[2];
+			vtx[1].Color = color[1];
+			vtx[2].Color = color[0];
+			vtx[3].Color = color[0];
+			vtx[4].Color = color[3];
+			vtx[5].Color = color[2];
+#elif MODE == 1
+			floral::vec3f col = patchColor[i / 4];
+			vtx[0].Color = col;
+			vtx[1].Color = col;
+			vtx[2].Color = col;
+			vtx[3].Color = col;
+			vtx[4].Color = col;
+			vtx[5].Color = col;
+#elif MODE == 2
+			floral::vec3f col(i / 4, i / 4, i / 4);
+			vtx[0].Color = col;
+			vtx[1].Color = col;
+			vtx[2].Color = col;
+			vtx[3].Color = col;
+			vtx[4].Color = col;
+			vtx[5].Color = col;
+#endif
+			RasterizeTriangle2D(&vtx[0], bufferDim, bufferDim, pData);
+			RasterizeTriangle2D(&vtx[3], bufferDim, bufferDim, pData);
+		}
 
 		m_Texture = insigne::create_texture(texDesc);
 	}

@@ -1,6 +1,7 @@
 #include "FormFactorsValidating.h"
 
 #include <floral/comgeo/shapegen.h>
+#include <floral/io/nativeio.h>
 
 #include <insigne/commons.h>
 #include <insigne/counters.h>
@@ -501,15 +502,15 @@ void FormFactorsValidating::CalculateFormFactors()
 
 	m_DebugFFRays.reserve(k_sampleCount * k_sampleCount, &g_StreammingAllocator);
 
-	//for (size i = 0; i < patchCount; i++)
 	//size i = 10;
 	size iarr[] = {
 		290
 	};
-	for (size i : iarr)
+	for (size i = 0; i < patchCount; i++)
+	//for (size i : iarr)
 	{
-		//for (size j = i + 1; j < patchCount; j++)
-		size j = 298;
+		for (size j = i + 1; j < patchCount; j++)
+		//size j = 298;
 		{
 			f32 ff = 0.0f;
 			for (s32 k = 0; k < k_sampleCount; k++)
@@ -550,7 +551,7 @@ void FormFactorsValidating::CalculateFormFactors()
 					FLORAL_ASSERT(df >= 0.0f);
 					FLORAL_ASSERT(dg >= 0.0f);
 
-					m_DebugFFRays.push_back(newRay);
+					//m_DebugFFRays.push_back(newRay);
 				}
 
 				if (df > 0.0f)
@@ -651,10 +652,43 @@ void FormFactorsValidating::CalculateRadiosity()
 		pVtx.Color = color;
 	}
 
+	// output to file
+	{
+		floral::file_info wf = floral::open_output_file("patches.dat");
+		floral::output_file_stream os;
+		floral::map_output_file(wf, os);
+
+		os.write(m_LightMapVertex.get_size());
+		for (ssize i = 0; i < m_LightMapVertex.get_size(); i++)
+		{
+			PixelVertex& pVtx = m_LightMapVertex[i];
+			os.write(pVtx.Coord);
+		}
+
+		os.write(m_LightMapIndex.get_size());
+		for (ssize i = 0; i < m_LightMapIndex.get_size(); i += 4)
+		{
+			s32 idx0 = m_LightMapIndex[i];
+			s32 idx1 = m_LightMapIndex[i + 1];
+			s32 idx2 = m_LightMapIndex[i + 2];
+			s32 idx3 = m_LightMapIndex[i + 3];
+			os.write(idx0);
+			os.write(idx1);
+			os.write(idx2);
+			os.write(idx3);
+			s32 pidx = idx0 / 4;
+			floral::vec3f color = m_Patches[i / 4].RadiosityColor;
+			os.write(color);
+		}
+
+		floral::close_file(wf);
+	}
+
+
 	CLOVER_DEBUG("Begin rasterizing");
 
-	//for (size i = 0; i < m_LightMapIndex.get_size(); i += 4)
-	for (size i = 292 * 4; i < 295 * 4; i += 4)
+	for (size i = 0; i < m_LightMapIndex.get_size(); i += 4)
+	//for (size i = 292 * 4; i < 295 * 4; i += 4)
 	{
 		s32 vtxIdx[4];
 		vtxIdx[0] = m_LightMapIndex[i];
@@ -685,7 +719,8 @@ void FormFactorsValidating::CalculateRadiosity()
 			{
 				size pixelIdx = v * 512 + u;
 				//floral::vec3f c = BilinearInterpolate(pv, floral::vec2<s32>(u, v));
-				floral::vec3f c = TestInterpolate(pv, floral::vec2<s32>(u, v), i / 4 - 290);
+				//floral::vec3f c = TestInterpolate(pv, floral::vec2<s32>(u, v), i / 4 - 290);
+				floral::vec3f c = m_Patches[i / 4].RadiosityColor;
 				m_LightMapData[pixelIdx] = c;
 			}
 		}
