@@ -33,6 +33,7 @@
 #include "Graphics/Tests/InterreflectPRT.h"
 #include "Graphics/Tests/AccurateFormFactor.h"
 #include "Graphics/Tests/Quad2DRasterize.h"
+#include "Graphics/Tests/GPUQuad2DRasterize.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -156,6 +157,7 @@ void Application::OnInitializeRenderer()
 	insigne::allocate_draw_command_buffers(6);
 
 	insigne::register_surface_type<Surface3DPT>();
+	insigne::register_surface_type<SurfacePC>();
 	//insigne::register_surface_type<SurfacePNC>();
 	//insigne::register_surface_type<SurfacePNCSH>();
 	//insigne::register_surface_type<SurfacePN>();
@@ -187,6 +189,7 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<FormFactorsValidating>();
 	//_CreateTestSuite<AccurateFormFactor>();
 	_CreateTestSuite<Quad2DRasterize>();
+	//_CreateTestSuite<GPUQuad2DRasterize>();
 
 	if (m_CurrentTestSuite)
 	{

@@ -218,6 +218,25 @@ void Quad2DRasterize::OnInitialize()
 
 		memset(pData, 0, dataSize);
 
+#if 0
+		SimpleVertex vtx[6];
+		vtx[0].Position = floral::vec2i(0, 0);
+		vtx[1].Position = floral::vec2i(512, 0);
+		vtx[2].Position = floral::vec2i(512, 512);
+		vtx[3].Position = floral::vec2i(512, 512);
+		vtx[4].Position = floral::vec2i(0, 512);
+		vtx[5].Position = floral::vec2i(0, 0);
+
+		vtx[0].Color = floral::vec3f(0.0f, 0.0f, 0.0f);
+		vtx[1].Color = floral::vec3f(0.0f, 0.0f, 0.0f);
+		vtx[2].Color = floral::vec3f(1.0f, 0.0f, 0.0f);
+		vtx[3].Color = floral::vec3f(1.0f, 0.0f, 0.0f);
+		vtx[4].Color = floral::vec3f(0.0f, 0.0f, 0.0f);
+		vtx[5].Color = floral::vec3f(0.0f, 0.0f, 0.0f);
+
+		RasterizeTriangle2D(&vtx[0], bufferDim, bufferDim, pData);
+		RasterizeTriangle2D(&vtx[3], bufferDim, bufferDim, pData);
+#else
 		floral::file_info rf = floral::open_file("patches.dat");
 		floral::file_stream is;
 		is.buffer = (p8)m_MemoryArena->allocate(rf.file_size);
@@ -269,12 +288,7 @@ void Quad2DRasterize::OnInitialize()
 			}
 		}
 
-		ssize arr[] = {
-			184 * 4, 185 * 4, 186 * 4,
-			140 * 4, 141 * 4, 142 * 4
-		};
 		for (ssize i = 0; i < indicesCount; i += 4)
-		//for (ssize i : arr)
 		{
 			s32 idx[4];
 			idx[0] = texIdx[i];
@@ -348,34 +362,17 @@ void Quad2DRasterize::OnInitialize()
 			vtx[4].Position = texVtx[idx[3]];
 			vtx[5].Position = texVtx[idx[2]];
 
-#define MODE 0
-#if MODE == 0
 			vtx[0].Color = color[2];
 			vtx[1].Color = color[1];
 			vtx[2].Color = color[0];
 			vtx[3].Color = color[0];
 			vtx[4].Color = color[3];
 			vtx[5].Color = color[2];
-#elif MODE == 1
-			floral::vec3f col = patchColor[i / 4];
-			vtx[0].Color = col;
-			vtx[1].Color = col;
-			vtx[2].Color = col;
-			vtx[3].Color = col;
-			vtx[4].Color = col;
-			vtx[5].Color = col;
-#elif MODE == 2
-			floral::vec3f col(i / 4, i / 4, i / 4);
-			vtx[0].Color = col;
-			vtx[1].Color = col;
-			vtx[2].Color = col;
-			vtx[3].Color = col;
-			vtx[4].Color = col;
-			vtx[5].Color = col;
-#endif
+
 			RasterizeTriangle2D(&vtx[0], bufferDim, bufferDim, pData);
 			RasterizeTriangle2D(&vtx[3], bufferDim, bufferDim, pData);
 		}
+#endif
 
 		m_Texture = insigne::create_texture(texDesc);
 	}

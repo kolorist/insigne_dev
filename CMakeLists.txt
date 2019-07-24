@@ -75,6 +75,7 @@ file (GLOB_RECURSE file_list
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHMath.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/AccurateFormFactor.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/Quad2DRasterize.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GPUQuad2DRasterize.cpp"
 
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GlobalIllumination.cpp"
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GIShader.cpp"
