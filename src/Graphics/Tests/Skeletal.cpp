@@ -1,4 +1,4 @@
-#include "AccurateFormFactor.h"
+#include "Skeletal.h"
 #include <calyx/context.h>
 
 #include <clover.h>
@@ -11,7 +11,7 @@
 namespace stone
 {
 
-AccurateFormFactor::AccurateFormFactor()
+Skeletal::Skeletal()
 	: m_CameraMotion(
 			floral::camera_view_t { floral::vec3f(3.0f, 3.0f, 3.0f), floral::vec3f(-3.0f, -3.0f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 			floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
@@ -19,11 +19,11 @@ AccurateFormFactor::AccurateFormFactor()
 	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 }
 
-AccurateFormFactor::~AccurateFormFactor()
+Skeletal::~Skeletal()
 {
 }
 
-void AccurateFormFactor::OnInitialize()
+void Skeletal::OnInitialize()
 {
 	{
 		insigne::ubdesc_t desc;
@@ -44,7 +44,7 @@ void AccurateFormFactor::OnInitialize()
 	m_DebugDrawer.Initialize();
 }
 
-void AccurateFormFactor::OnUpdate(const f32 i_deltaMs)
+void Skeletal::OnUpdate(const f32 i_deltaMs)
 {
 	m_CameraMotion.OnUpdate(i_deltaMs);
 
@@ -73,11 +73,11 @@ void AccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 	m_DebugDrawer.EndFrame();
 }
 
-void AccurateFormFactor::OnDebugUIUpdate(const f32 i_deltaMs)
+void Skeletal::OnDebugUIUpdate(const f32 i_deltaMs)
 {
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 
-	ImGui::Begin("AccurateFormFactor Controller");
+	ImGui::Begin("Skeletal Controller");
 	ImGui::Text("Screen resolution: %d x %d",
 			commonCtx->window_width,
 			commonCtx->window_height);
@@ -89,7 +89,7 @@ void AccurateFormFactor::OnDebugUIUpdate(const f32 i_deltaMs)
 	ImGui::End();
 }
 
-void AccurateFormFactor::OnRender(const f32 i_deltaMs)
+void Skeletal::OnRender(const f32 i_deltaMs)
 {
 	// camera
 	m_SceneData.WVP = m_CameraMotion.GetWVP();
@@ -105,7 +105,7 @@ void AccurateFormFactor::OnRender(const f32 i_deltaMs)
 	insigne::dispatch_render_pass();
 }
 
-void AccurateFormFactor::OnCleanUp()
+void Skeletal::OnCleanUp()
 {
 }
 

@@ -2,9 +2,11 @@
 
 #include <floral.h>
 
-namespace stone {
-	
-struct ControllerCallbacks {
+namespace stone
+{
+
+struct ControllerCallbacks
+{
 	floral::simple_callback<void>				OnInitializePlatform;
 	floral::simple_callback<void>				OnInitializeRenderer;
 	floral::simple_callback<void>				OnInitializeGame;
@@ -14,7 +16,7 @@ struct ControllerCallbacks {
 	floral::simple_callback<void>				OnDisplayChanged;
 	//--------------------------------------
 	floral::simple_callback<void, f32>			OnFrameStep;
-	floral::simple_callback<void, int>			OnCleanUp;
+	floral::simple_callback<void>				OnCleanUp;
 	// -------------------------------------
 	floral::simple_callback<void, c8>			CharacterInput;
 	floral::simple_callback<void, u32, u32>		KeyInput;

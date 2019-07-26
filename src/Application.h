@@ -28,7 +28,7 @@ class Application {
 		void									OnInitializeRenderer();
 		void									OnInitializeGame();
 		void									OnFrameStep(f32 i_deltaMs);
-		void									OnCleanUp(int i_param);
+		void									OnCleanUp();
 
 		// user interactions
 		void									OnCharacterInput(c8 i_character);

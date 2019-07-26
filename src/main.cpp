@@ -15,14 +15,15 @@
 #include "System/Controller.h"
 #include "Application.h"
 
-namespace stone {
-
+namespace stone
+{
 static Controller*								s_Controller;
 static Application*								s_Application;
-
 }
 
-namespace calyx {
+namespace calyx
+{
+//----------------------------------------------
 
 std::atomic_bool								s_logicResumed(false);
 
@@ -34,9 +35,11 @@ bool											s_gpuReady = false;;
 bool											s_logicActive = false;
 bool											s_rendererInited = false;
 bool											s_gameInited = false;
+bool											s_gameStopped = false;
 
 //----------------------------------------------
-void FlushLogicThread()
+/* called by calyx from input thread */
+static void FlushLogicThread()
 {
 	LOG_TOPIC("game");
 	CLOVER_VERBOSE("Flushing LogicThread (update)...");
@@ -47,7 +50,9 @@ void FlushLogicThread()
 	CLOVER_VERBOSE("LogicThread (update) flushed");
 }
 
-void TryWakeLogicThread()
+//----------------------------------------------
+/* called by calyx from input thread */
+static void TryWakeLogicThread()
 {
 	floral::lock_guard guard(s_inputResumedMtx);
 	LOG_TOPIC("game");
@@ -63,6 +68,8 @@ void TryWakeLogicThread()
 		CLOVER_VERBOSE("LogicThread already awakes");
 	}
 }
+
+//----------------------------------------------
 
 void UpdateLogicThreadFlags()
 {
@@ -219,6 +226,17 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 						break;
 					}
 
+					case calyx::lifecycle_event_type_e::stop:
+					{
+						CLOVER_VERBOSE("<stop> event received");
+						s_Controller->IOEvents.OnCleanUp();
+						s_gpuReady = false;
+						s_logicActive = false;
+						s_gameStopped = true;
+						UpdateLogicThreadFlags();
+						break;
+					}
+
 					default:
 						break;
 				}
@@ -238,9 +256,11 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 }
 
 //----------------------------------------------
-
+/* called from input thread */
 void setup_surface(context_attribs* io_commonCtx)
 {
+	// no need to protect these as they are assigned from the very beginning,
+	// before the universe is created
 	io_commonCtx->window_title = "demo";
 	io_commonCtx->window_width = 1280;
 	io_commonCtx->window_height = 720;
@@ -248,16 +268,22 @@ void setup_surface(context_attribs* io_commonCtx)
 	io_commonCtx->window_offset_top = 50;
 }
 
+//----------------------------------------------
+/* called from input thread */
 void try_wake_mainthread()
 {
 	TryWakeLogicThread();
 }
 
+//----------------------------------------------
+/* called from input thread */
 void flush_mainthread()
 {
 	FlushLogicThread();
 }
 
+//----------------------------------------------
+/* called from main thread (logic thread) */
 void initialize()
 {
 	using namespace stone;
@@ -272,22 +298,32 @@ void initialize()
 	s_Controller->IOEvents.OnInitializePlatform();
 }
 
+//----------------------------------------------
+/* called from main thread (logic thread) */
 void run(event_buffer_t* i_evtBuffer)
 {
 	using namespace stone;
 	using namespace calyx;
 
-	while (true) // TODO: exiting event
+	LOG_TOPIC("game");
+	CLOVER_VERBOSE("Entering game loop...");
+
+	while (!s_gameStopped)
 	{
 		CheckAndPauseLogicThread();
 		UpdateLogic(i_evtBuffer);
 	}
+
+	CLOVER_VERBOSE("Game loop finished");
 }
 
+//----------------------------------------------
+/* called from main thread (logic thread) */
 void clean_up()
 {
 	using namespace stone;
-	s_Controller->IOEvents.OnCleanUp(1);
+	LOG_TOPIC("game");
+	CLOVER_VERBOSE("Cleaning up Game's system...");
 }
 
 }

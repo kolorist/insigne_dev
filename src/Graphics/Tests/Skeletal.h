@@ -12,7 +12,7 @@
 
 namespace stone {
 
-class AccurateFormFactor : public ITestSuite, public IDebugUI
+class Skeletal : public ITestSuite, public IDebugUI
 {
 private:
 	struct SceneData
@@ -24,8 +24,8 @@ private:
 	SceneData									m_SceneData;
 
 public:
-	AccurateFormFactor();
-	~AccurateFormFactor();
+	Skeletal();
+	~Skeletal();
 
 	void										OnInitialize() override;
 	void										OnUpdate(const f32 i_deltaMs) override;

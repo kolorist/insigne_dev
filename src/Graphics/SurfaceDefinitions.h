@@ -17,7 +17,8 @@
  * - we have to disable unused attribute binding points because some of GPUs will perform funny without it
  */
 
-namespace stone {
+namespace stone
+{
 
 struct GeoQuad {
 	floral::vec3f								Vertices[4];
@@ -54,7 +55,7 @@ struct SurfaceP {
 
 		// vertex attributes
 		detail::enable_vertex_attrib(0);
-		detail::describe_vertex_data(0, 3, data_type_e::elem_signed_float, false, sizeof(VertexP), (const voidptr)0);
+		detail::describe_vertex_data(0, 3, data_type_e::elem_signed_float, false, sizeof(VertexP), (const voidptr)(aptr)0);
 	}
 };
 
@@ -313,7 +314,7 @@ struct SurfacePNCSH {
 
 		for (u32 i = 0; i < 9; i++)
 		{
-			detail::describe_vertex_data(3 + i, 3, data_type_e::elem_signed_float, false, sizeof(VertexPNCSH), (const voidptr)(40 + 12 * i));
+			detail::describe_vertex_data(3 + i, 3, data_type_e::elem_signed_float, false, sizeof(VertexPNCSH), (const voidptr)(aptr)(40 + 12 * i));
 		}
 	}
 };

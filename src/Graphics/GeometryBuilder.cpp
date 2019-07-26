@@ -25,9 +25,7 @@ void GenTessellated3DPlane_Tris(const floral::mat4x4f& i_xform, const f32 i_base
 		TemporalVertices* o_vertices, TemporalIndices* o_indices)
 {
 	const f32 minX = -i_baseSize;
-	const f32 maxX = i_baseSize;
 	const f32 minZ = -i_baseSize;
-	const f32 maxZ = i_baseSize;
 
 	const f32 gridStep = i_baseSize * 2.0f / i_gridsCount;
 
@@ -185,9 +183,7 @@ void GenTessellated3DPlane_TrisStrip(const floral::mat4x4f& i_xform, const f32 i
 		TemporalVertices* o_vertices, TemporalIndices* o_indices)
 {
 	const f32 minX = -i_baseSize;
-	const f32 maxX = i_baseSize;
 	const f32 minZ = -i_baseSize;
-	const f32 maxZ = i_baseSize;
 
 	const f32 gridStep = i_baseSize * 2.0f / i_gridsCount;
 

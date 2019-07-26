@@ -34,6 +34,7 @@
 #include "Graphics/Tests/AccurateFormFactor.h"
 #include "Graphics/Tests/Quad2DRasterize.h"
 #include "Graphics/Tests/GPUQuad2DRasterize.h"
+#include "Graphics/Tests/Skeletal.h"
 #if 0
 #include "Graphics/Tests/FormFactorsBaking.h"
 #include "Graphics/Tests/PlainTextureQuad.h"
@@ -60,13 +61,12 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.OnInitializeGame.bind<Application, &Application::OnInitializeGame>(this);
 	i_controller->IOEvents.OnPause.bind<Application, &Application::OnPause>(this);
 	i_controller->IOEvents.OnResume.bind<Application, &Application::OnResume>(this);
+
 	i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
+	i_controller->IOEvents.OnCleanUp.bind<Application, &Application::OnCleanUp>(this);
 	/*
 	i_controller->IOEvents.OnFocusChanged.bind<Application, &Application::OnFocusChanged>(this);
 	i_controller->IOEvents.OnDisplayChanged.bind<Application, &Application::OnDisplayChanged>(this);
-
-	i_controller->IOEvents.OnCleanUp.bind<Application, &Application::OnCleanUp>(this);
-
 	*/
 	//i_controller->IOEvents.CharacterInput.bind<Application, &Application::OnCharacterInput>(this);
 	i_controller->IOEvents.KeyInput.bind<Application, &Application::OnKeyInput>(this);
@@ -157,6 +157,7 @@ void Application::OnInitializeRenderer()
 	insigne::allocate_draw_command_buffers(6);
 
 	insigne::register_surface_type<Surface3DPT>();
+	insigne::unregister_surface_type<Surface3DPT>();
 	insigne::register_surface_type<SurfacePC>();
 	//insigne::register_surface_type<SurfacePNC>();
 	//insigne::register_surface_type<SurfacePNCSH>();
@@ -188,8 +189,9 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<InterreflectPRT>();
 	//_CreateTestSuite<FormFactorsValidating>();
 	//_CreateTestSuite<AccurateFormFactor>();
-	_CreateTestSuite<Quad2DRasterize>();
+	//_CreateTestSuite<Quad2DRasterize>();
 	//_CreateTestSuite<GPUQuad2DRasterize>();
+	_CreateTestSuite<Skeletal>();
 
 	if (m_CurrentTestSuite)
 	{
@@ -210,10 +212,13 @@ void Application::OnFrameStep(f32 i_deltaMs)
 	}
 }
 
-void Application::OnCleanUp(int i_param)
+void Application::OnCleanUp()
 {
 	if (m_CurrentTestSuite)
+	{
 		m_CurrentTestSuite->OnCleanUp();
+	}
+	insigne::clean_up_and_stop_render_thread();
 }
 
 // -----------------------------------------
