@@ -188,10 +188,10 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<ShadowedPRT>();
 	//_CreateTestSuite<InterreflectPRT>();
 	//_CreateTestSuite<FormFactorsValidating>();
-	//_CreateTestSuite<AccurateFormFactor>();
+	_CreateTestSuite<AccurateFormFactor>();
 	//_CreateTestSuite<Quad2DRasterize>();
 	//_CreateTestSuite<GPUQuad2DRasterize>();
-	_CreateTestSuite<Skeletal>();
+	//_CreateTestSuite<Skeletal>();
 
 	if (m_CurrentTestSuite)
 	{
