@@ -136,16 +136,21 @@ void Application::OnInitializePlatform()
 	LOG_TOPIC("app");
 	CLOVER_VERBOSE("Initialize platform settings");
 	// insigne settings
-	insigne::g_settings.frame_shader_allocator_size_mb = 4u;
-	insigne::g_settings.frame_buffers_allocator_size_mb = 16u;
-	insigne::g_settings.frame_textures_allocator_size_mb = 16u;
-	insigne::g_settings.frame_render_allocator_size_mb = 4u;
-	insigne::g_settings.frame_draw_allocator_size_mb = 4u;
+	insigne::g_settings.frame_shader_allocator_size_mb = 4;
+	insigne::g_settings.frame_buffers_allocator_size_mb = 16;
+	insigne::g_settings.frame_textures_allocator_size_mb = 16;
+	insigne::g_settings.frame_render_allocator_size_mb = 4;
+	insigne::g_settings.frame_draw_allocator_size_mb = 4;
+
+	insigne::g_settings.draw_cmdbuff_arena_size_mb = 1;
+	insigne::g_settings.post_draw_cmdbuff_arena_size_mb = 1;
 
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 
 	insigne::g_settings.native_res_x = commonCtx->window_width;
 	insigne::g_settings.native_res_y = commonCtx->window_height;
+
+	insigne::organize_memory();
 }
 
 void Application::OnInitializeRenderer()
@@ -154,14 +159,15 @@ void Application::OnInitializeRenderer()
 	CLOVER_VERBOSE("Initialize renderer settings");
 	// graphics init
 	insigne::initialize_driver();
-	insigne::allocate_draw_command_buffers(6);
+	insigne::allocate_draw_command_buffers(5);
+	insigne::allocate_post_draw_command_buffers(2);
 
 	insigne::register_surface_type<SurfacePC>();
 	insigne::register_surface_type<SurfaceP>();
 	insigne::register_surface_type<SurfacePT>();
 
-	insigne::register_surface_type<DebugLine>();
-	insigne::register_surface_type<ImGuiSurface>();
+	insigne::register_post_surface_type<DebugLine>();
+	insigne::register_post_surface_type<ImGuiSurface>();
 
 	insigne::initialize_render_thread();
 	insigne::wait_for_initialization();
