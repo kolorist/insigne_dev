@@ -1,15 +1,16 @@
 #include "SurfaceDefinitions.h"
 
-namespace stone {
+namespace stone
+{
 
-u32 SurfaceP::index = 0;
-u32 Surface3DPT::index = 0;
-u32 SurfacePC::index = 0;
-u32 SurfacePT::index = 0;
-u32 DebugLine::index = 0;
-u32 SurfacePNC::index = 0;
-u32 SurfacePNCSH::index = 0;
-u32 SurfacePNCC::index = 0;
-u32 ImGuiSurface::index = 0;
+ssize SurfaceP::index = -1;
+ssize Surface3DPT::index = -1;
+ssize SurfacePC::index = -1;
+ssize SurfacePT::index = -1;
+ssize DebugLine::index = -1;
+ssize SurfacePNC::index = -1;
+ssize SurfacePNCSH::index = -1;
+ssize SurfacePNCC::index = -1;
+ssize ImGuiSurface::index = -1;
 
 }

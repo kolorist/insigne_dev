@@ -35,7 +35,7 @@ struct VertexP {
 };
 
 struct SurfaceP {
-	static u32 index;
+	static ssize index;
 	static const u32 draw_calls_budget = 512u;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
@@ -76,7 +76,7 @@ struct VertexPT
 
 struct SurfacePT
 {
-	static u32 index;
+	static ssize index;
 	static const u32 draw_calls_budget = 16u;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
@@ -110,7 +110,7 @@ struct Vertex3DPT {
 };
 
 struct Surface3DPT {
-	static u32 index;
+	static ssize index;
 	static const u32 draw_calls_budget = 64u;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
@@ -144,7 +144,7 @@ struct VertexPC {
 };
 
 struct SurfacePC {
-	static u32 index;
+	static ssize index;
 	static const u32 draw_calls_budget = 64u;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
@@ -171,7 +171,7 @@ struct SurfacePC {
 };
 
 struct DebugLine {
-	static u32 index;
+	static ssize index;
 	static const u32 draw_calls_budget = 256u;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::lines;
 
@@ -205,7 +205,7 @@ struct VertexPNC {
 };
 
 struct SurfacePNC {
-	static u32 index;
+	static ssize index;
 	static const u32 draw_calls_budget = 64u;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
@@ -242,7 +242,7 @@ struct VertexPNCC {
 };
 
 struct SurfacePNCC {
-	static u32 index;
+	static ssize index;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
 	static void setup_states()
@@ -280,7 +280,7 @@ struct VertexPNCSH {
 };
 
 struct SurfacePNCSH {
-	static u32 index;
+	static ssize index;
 	static const u32 draw_calls_budget = 64u;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 
@@ -327,7 +327,7 @@ struct ImGuiVertex {
 };
 
 struct ImGuiSurface {
-	static u32 index;
+	static ssize index;
 	static const u32 draw_calls_budget = 64u;
 	static const insigne::geometry_mode_e geometry_mode = insigne::geometry_mode_e::triangles;
 

@@ -156,16 +156,11 @@ void Application::OnInitializeRenderer()
 	insigne::initialize_driver();
 	insigne::allocate_draw_command_buffers(6);
 
-	insigne::register_surface_type<Surface3DPT>();
-	insigne::unregister_surface_type<Surface3DPT>();
 	insigne::register_surface_type<SurfacePC>();
-	//insigne::register_surface_type<SurfacePNC>();
-	//insigne::register_surface_type<SurfacePNCSH>();
-	//insigne::register_surface_type<SurfacePN>();
 	insigne::register_surface_type<SurfaceP>();
 	insigne::register_surface_type<SurfacePT>();
-	insigne::register_surface_type<DebugLine>();
 
+	insigne::register_surface_type<DebugLine>();
 	insigne::register_surface_type<ImGuiSurface>();
 
 	insigne::initialize_render_thread();
@@ -188,10 +183,10 @@ void Application::OnInitializeGame()
 	//_CreateTestSuite<ShadowedPRT>();
 	//_CreateTestSuite<InterreflectPRT>();
 	//_CreateTestSuite<FormFactorsValidating>();
-	_CreateTestSuite<AccurateFormFactor>();
+	//_CreateTestSuite<AccurateFormFactor>();
 	//_CreateTestSuite<Quad2DRasterize>();
 	//_CreateTestSuite<GPUQuad2DRasterize>();
-	//_CreateTestSuite<Skeletal>();
+	_CreateTestSuite<Skeletal>();
 
 	if (m_CurrentTestSuite)
 	{
