@@ -38,6 +38,8 @@ include_directories ("${PROJECT_SOURCE_DIR}/src")
 file (GLOB_RECURSE file_list
 	"${PROJECT_SOURCE_DIR}/src/main.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Application.cpp"
+	"${PROJECT_SOURCE_DIR}/src/DemoHub.cpp"
+	"${PROJECT_SOURCE_DIR}/src/InsigneImGui.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Memory/MemorySystem.cpp"
 	"${PROJECT_SOURCE_DIR}/src/System/Controller.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/prt.cpp"

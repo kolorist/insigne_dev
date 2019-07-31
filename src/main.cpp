@@ -159,6 +159,14 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 						break;
 					}
 
+					case calyx::interact_event_e::character_input:
+					{
+						u32 keyCode = eve.interact_event_data.payload & 0xFF;
+						c8 asciiCode = keyCode & 0xFF;
+						s_Controller->IOEvents.CharacterInput(asciiCode);
+						break;
+					}
+
 					case calyx::interact_event_e::cursor_interact:
 					{
 						if (TEST_BIT(eve.interact_event_data.payload, CLX_MOUSE_LEFT_BUTTON)) {

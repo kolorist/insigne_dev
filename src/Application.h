@@ -9,6 +9,7 @@ namespace stone {
 class Controller;
 class ITestSuite;
 class IDebugUI;
+class IDemoHub;
 
 class Application {
 	public:
@@ -37,18 +38,8 @@ class Application {
 		void									OnCursorInteract(bool i_pressed, u32 i_buttonId);
 
 	private:
-		template <class TTestSuite>
-		void _CreateTestSuite()
-		{
-			TTestSuite* testSuite = g_PersistanceAllocator.allocate<TTestSuite>();
-			m_CurrentTestSuite = testSuite;
-			m_CurrentTestSuiteUI = testSuite;
-		}
-
-	private:
 		bool									m_Initialized;
-		ITestSuite*								m_CurrentTestSuite;
-		IDebugUI*								m_CurrentTestSuiteUI;
+		IDemoHub*								m_DemoHub;
 };
 
 }

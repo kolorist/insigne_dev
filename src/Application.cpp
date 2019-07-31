@@ -45,13 +45,13 @@
 #include "Graphics/Tests/SHMath.h"
 #include "Graphics/Tests/GlobalIllumination.h"
 #endif
+#include "DemoHub.h"
 
 namespace stone {
 
 Application::Application(Controller* i_controller)
 	: m_Initialized(false)
-	, m_CurrentTestSuite(nullptr)
-	, m_CurrentTestSuiteUI(nullptr)
+	, m_DemoHub(nullptr)
 {
 	//s_profileEvents[0].init(4096u, &g_SystemAllocator);
 	//s_profileEvents[1].init(4096u, &g_SystemAllocator);
@@ -61,14 +61,9 @@ Application::Application(Controller* i_controller)
 	i_controller->IOEvents.OnInitializeGame.bind<Application, &Application::OnInitializeGame>(this);
 	i_controller->IOEvents.OnPause.bind<Application, &Application::OnPause>(this);
 	i_controller->IOEvents.OnResume.bind<Application, &Application::OnResume>(this);
-
 	i_controller->IOEvents.OnFrameStep.bind<Application, &Application::OnFrameStep>(this);
 	i_controller->IOEvents.OnCleanUp.bind<Application, &Application::OnCleanUp>(this);
-	/*
-	i_controller->IOEvents.OnFocusChanged.bind<Application, &Application::OnFocusChanged>(this);
-	i_controller->IOEvents.OnDisplayChanged.bind<Application, &Application::OnDisplayChanged>(this);
-	*/
-	//i_controller->IOEvents.CharacterInput.bind<Application, &Application::OnCharacterInput>(this);
+	i_controller->IOEvents.CharacterInput.bind<Application, &Application::OnCharacterInput>(this);
 	i_controller->IOEvents.KeyInput.bind<Application, &Application::OnKeyInput>(this);
 	i_controller->IOEvents.CursorMove.bind<Application, &Application::OnCursorMove>(this);
 	i_controller->IOEvents.CursorInteract.bind<Application, &Application::OnCursorInteract>(this);
@@ -83,12 +78,7 @@ Application::~Application()
 void Application::UpdateFrame(f32 i_deltaMs)
 {
 	PROFILE_SCOPE(UpdateFrame);
-	if (m_CurrentTestSuite)
-	{
-		m_CurrentTestSuite->OnUpdate(i_deltaMs);
-
-		m_CurrentTestSuiteUI->OnFrameUpdate(i_deltaMs);
-	}
+	m_DemoHub->UpdateFrame(i_deltaMs);
 	/*
 	s_profileEvents[0].empty();
 	lotus::unpack_capture(s_profileEvents[0], 0);
@@ -100,10 +90,7 @@ void Application::UpdateFrame(f32 i_deltaMs)
 void Application::RenderFrame(f32 i_deltaMs)
 {
 	PROFILE_SCOPE(RenderFrame);
-	if (m_CurrentTestSuite)
-	{
-		m_CurrentTestSuite->OnRender(i_deltaMs);
-	}
+	m_DemoHub->RenderFrame(i_deltaMs);
 }
 
 // -----------------------------------------
@@ -150,6 +137,13 @@ void Application::OnInitializePlatform()
 	insigne::g_settings.native_res_x = commonCtx->window_width;
 	insigne::g_settings.native_res_y = commonCtx->window_height;
 
+	insigne::g_scene_settings.max_shaders = 32;
+	insigne::g_scene_settings.max_ubos = 1024;
+	insigne::g_scene_settings.max_ibos = 2048;
+	insigne::g_scene_settings.max_vbos = 2048;
+	insigne::g_scene_settings.max_textures = 256;
+	insigne::g_scene_settings.max_fbos = 32;
+
 	insigne::organize_memory();
 }
 
@@ -178,27 +172,8 @@ void Application::OnInitializeGame()
 {
 	LOG_TOPIC("app");
 	CLOVER_VERBOSE("Initialize game settings");
-	//_CreateTestSuite<DebugUITest>();
-	//_CreateTestSuite<CornelBox>();
-	//_CreateTestSuite<OctreePartition>();
-	//_CreateTestSuite<LightProbePlacement>();
-	//_CreateTestSuite<GILightProbe>();
-	//_CreateTestSuite<SHTest>();
-	//_CreateTestSuite<UnshadowedPRT>();
-	//_CreateTestSuite<ShapeGen>();
-	//_CreateTestSuite<ShadowedPRT>();
-	//_CreateTestSuite<InterreflectPRT>();
-	//_CreateTestSuite<FormFactorsValidating>();
-	//_CreateTestSuite<AccurateFormFactor>();
-	//_CreateTestSuite<Quad2DRasterize>();
-	//_CreateTestSuite<GPUQuad2DRasterize>();
-	_CreateTestSuite<Skeletal>();
-
-	if (m_CurrentTestSuite)
-	{
-		m_CurrentTestSuite->OnInitialize();
-		m_CurrentTestSuiteUI->Initialize();
-	}
+	m_DemoHub = g_PersistanceAllocator.allocate<DemoHub>();
+	m_DemoHub->Initialize();
 	m_Initialized = true;
 }
 
@@ -215,47 +190,29 @@ void Application::OnFrameStep(f32 i_deltaMs)
 
 void Application::OnCleanUp()
 {
-	if (m_CurrentTestSuite)
-	{
-		m_CurrentTestSuite->OnCleanUp();
-	}
+	m_DemoHub->CleanUp();
 	insigne::clean_up_and_stop_render_thread();
 }
 
 // -----------------------------------------
 void Application::OnCharacterInput(c8 i_character)
 {
+	m_DemoHub->OnCharacterInput(i_character);
 }
 
 void Application::OnKeyInput(u32 i_keyCode, u32 i_keyStatus)
 {
-	if (i_keyStatus == 0) { // pressed
-	} else if (i_keyStatus == 2) { // up
-	}
-
-	if (m_CurrentTestSuite->GetCameraMotion())
-	{
-		m_CurrentTestSuite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
-	}
-	m_CurrentTestSuiteUI->OnKeyInput(i_keyCode, i_keyStatus);
+	m_DemoHub->OnKeyInput(i_keyCode, i_keyStatus);
 }
 
 void Application::OnCursorMove(u32 i_x, u32 i_y)
 {
-	if (m_CurrentTestSuite->GetCameraMotion())
-	{
-		m_CurrentTestSuite->GetCameraMotion()->OnCursorMove(i_x, i_y);
-	}
-	m_CurrentTestSuiteUI->OnCursorMove(i_x, i_y);
+	m_DemoHub->OnCursorMove(i_x, i_y);
 }
 
 void Application::OnCursorInteract(bool i_pressed, u32 i_buttonId)
 {
-	if (m_CurrentTestSuite->GetCameraMotion())
-	{
-		m_CurrentTestSuite->GetCameraMotion()->OnCursorInteract(i_pressed);
-	}
-	m_CurrentTestSuiteUI->OnCursorInteract(i_pressed);
+	m_DemoHub->OnCursorInteract(i_pressed, i_buttonId);
 }
 
 }
