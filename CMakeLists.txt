@@ -54,6 +54,7 @@ file (GLOB_RECURSE file_list
 	"${PROJECT_SOURCE_DIR}/src/Graphics/SurfaceDefinitions.cpp"
 
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Performance/Empty.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/Performance/Triangle.cpp"
 
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainQuad.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHBaking.cpp"

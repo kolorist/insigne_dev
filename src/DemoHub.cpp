@@ -8,6 +8,7 @@
 
 // performance demo
 #include "Graphics/Performance/Empty.h"
+#include "Graphics/Performance/Triangle.h"
 // tech demo
 
 namespace stone
@@ -27,6 +28,7 @@ void DemoHub::Initialize()
 	InitializeImGui();
 
 	_EmplacePerformanceSuite<perf::Empty>();
+	_EmplacePerformanceSuite<perf::Triangle>();
 }
 
 void DemoHub::CleanUp()
