@@ -6,6 +6,10 @@
 
 #include "InsigneImGui.h"
 
+// performance demo
+#include "Graphics/Performance/Empty.h"
+// tech demo
+
 namespace stone
 {
 
@@ -21,6 +25,8 @@ DemoHub::~DemoHub()
 void DemoHub::Initialize()
 {
 	InitializeImGui();
+
+	_EmplacePerformanceSuite<perf::Empty>();
 }
 
 void DemoHub::CleanUp()
@@ -55,10 +61,40 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 	{
 		if (ImGui::BeginMenu("TestSuite"))
 		{
-			ImGui::MenuItem("<empty suite>", nullptr);
+			if (ImGui::BeginMenu("Performance"))
+			{
+				for (ssize i = 0; i < m_PerformanceSuite.get_size(); i++)
+				{
+					ITestSuite* suite = m_PerformanceSuite[i];
+					if (ImGui::MenuItem(suite->GetName(), nullptr))
+					{
+						_SwitchTestSuite(suite);
+					}
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Render tech"))
+			{
+				ImGui::MenuItem("<empty suite>", nullptr);
+				ImGui::EndMenu();
+			}
+			if (ImGui::MenuItem("Clear all suites"))
+			{
+				_SwitchTestSuite(nullptr);
+			}
 			ImGui::EndMenu();
 		}
+
+		if (m_CurrentTestSuite)
+		{
+			ImGui::MenuItem(m_CurrentTestSuite->GetName(), nullptr, nullptr, false);
+		}
 		ImGui::EndMainMenuBar();
+	}
+
+	if (m_CurrentTestSuite)
+	{
+		m_CurrentTestSuite->OnUpdate(i_deltaMs);
 	}
 
 	//ImGui::ShowTestWindow();
@@ -68,6 +104,7 @@ void DemoHub::RenderFrame(const f32 i_deltaMs)
 {
 	if (m_CurrentTestSuite)
 	{
+		m_CurrentTestSuite->OnRender(i_deltaMs);
 	}
 	else
 	{
@@ -78,6 +115,25 @@ void DemoHub::RenderFrame(const f32 i_deltaMs)
 		insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 		insigne::mark_present_render();
 		insigne::dispatch_render_pass();
+	}
+}
+
+//----------------------------------------------
+
+void DemoHub::_SwitchTestSuite(ITestSuite* i_to)
+{
+	if (i_to != m_CurrentTestSuite)
+	{
+		if (m_CurrentTestSuite)
+		{
+			m_CurrentTestSuite->OnCleanUp();
+		}
+
+		m_CurrentTestSuite = i_to;
+		if (m_CurrentTestSuite)
+		{
+			m_CurrentTestSuite->OnInitialize();
+		}
 	}
 }
 

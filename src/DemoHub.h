@@ -2,6 +2,8 @@
 
 #include "IDemoHub.h"
 
+#include <floral/containers/array.h>
+
 namespace stone
 {
 
@@ -25,6 +27,17 @@ public:
 	void										RenderFrame(const f32 i_deltaMs);
 
 private:
+	void										_SwitchTestSuite(ITestSuite* i_to);
+	template <class T>
+	void _EmplacePerformanceSuite()
+	{
+		ITestSuite* newSuite = g_PersistanceAllocator.allocate<T>();
+		m_PerformanceSuite.push_back(newSuite);
+	}
+
+private:
+	floral::inplace_array<ITestSuite*, 8>		m_PerformanceSuite;
+
 	ITestSuite*									m_CurrentTestSuite;
 };
 
