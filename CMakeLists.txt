@@ -53,6 +53,8 @@ file (GLOB_RECURSE file_list
 	# "${PROJECT_SOURCE_DIR}/src/Graphics/shapegen_geom.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/SurfaceDefinitions.cpp"
 
+	"${PROJECT_SOURCE_DIR}/src/Graphics/Performance/Empty.cpp"
+
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainQuad.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHBaking.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHBakingUtils.cpp"
