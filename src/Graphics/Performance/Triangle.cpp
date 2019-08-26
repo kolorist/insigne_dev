@@ -143,6 +143,8 @@ void Triangle::OnCleanUp()
 	insigne::cleanup_buffers_resource(m_BuffersBeginStateId);
 	insigne::cleanup_shading_resource(m_ShadingBeginStateId);
 	insigne::cleanup_textures_resource(m_TextureBeginStateId);
+	insigne::dispatch_render_pass();
+	insigne::wait_finish_dispatching();
 }
 
 }

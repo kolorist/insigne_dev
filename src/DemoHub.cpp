@@ -9,7 +9,9 @@
 // performance demo
 #include "Graphics/Performance/Empty.h"
 #include "Graphics/Performance/Triangle.h"
+
 // tech demo
+#include "Graphics/RenderTech/FrameBuffer.h"
 
 namespace stone
 {
@@ -29,6 +31,8 @@ void DemoHub::Initialize()
 
 	_EmplacePerformanceSuite<perf::Empty>();
 	_EmplacePerformanceSuite<perf::Triangle>();
+
+	_EmplaceRenderTechSuite<tech::FrameBuffer>();
 }
 
 void DemoHub::CleanUp()
@@ -77,7 +81,14 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 			}
 			if (ImGui::BeginMenu("Render tech"))
 			{
-				ImGui::MenuItem("<empty suite>", nullptr);
+				for (ssize i = 0; i < m_RenderTechSuite.get_size(); i++)
+				{
+					ITestSuite* suite = m_RenderTechSuite[i];
+					if (ImGui::MenuItem(suite->GetName(), nullptr))
+					{
+						_SwitchTestSuite(suite);
+					}
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::MenuItem("Clear all suites"))

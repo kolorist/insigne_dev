@@ -35,8 +35,16 @@ private:
 		m_PerformanceSuite.push_back(newSuite);
 	}
 
+	template <class T>
+	void _EmplaceRenderTechSuite()
+	{
+		ITestSuite* newSuite = g_PersistanceAllocator.allocate<T>();
+		m_RenderTechSuite.push_back(newSuite);
+	}
+
 private:
 	floral::inplace_array<ITestSuite*, 8>		m_PerformanceSuite;
+	floral::inplace_array<ITestSuite*, 8>		m_RenderTechSuite;
 
 	ITestSuite*									m_CurrentTestSuite;
 };
