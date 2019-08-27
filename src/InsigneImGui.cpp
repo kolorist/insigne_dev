@@ -75,6 +75,8 @@ static FreelistArena* s_MemoryArena = nullptr;
 
 //----------------------------------------------
 
+const ssize AllocateNewBuffer();
+
 static inline void* ImGuiCustomAlloc(const size_t sz)
 {
 	return s_MemoryArena->allocate(sz);
@@ -166,6 +168,10 @@ void InitializeImGui()
 		s_ImGuiMaterial.textures[texSlot].value = s_ImGuiTexture;
 	}
 
+	for (ssize i = 0; i < 8; i++)
+	{
+		AllocateNewBuffer();
+	}
 	insigne::dispatch_render_pass();
 }
 
@@ -226,6 +232,7 @@ void RenderImGui()
 		ssize bufferSlot = -1;
 		if (i > (s_ImGuiIB.get_size() - 1))
 		{
+			FLORAL_ASSERT_MSG(false, "Dangerous!!! May cause corrupted render when cleaning up a suite");
 			bufferSlot = AllocateNewBuffer();
 		}
 		else

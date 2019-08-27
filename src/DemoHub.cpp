@@ -13,6 +13,9 @@
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
 
+// tools demo
+#include "Graphics/Tools/SingleAccurateFormFactor.h"
+
 namespace stone
 {
 
@@ -33,6 +36,8 @@ void DemoHub::Initialize()
 	_EmplacePerformanceSuite<perf::Triangle>();
 
 	_EmplaceRenderTechSuite<tech::FrameBuffer>();
+
+	_EmplaceToolSuite<tools::SingleAccurateFormFactor>();
 }
 
 void DemoHub::CleanUp()
@@ -84,6 +89,18 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 				for (ssize i = 0; i < m_RenderTechSuite.get_size(); i++)
 				{
 					ITestSuite* suite = m_RenderTechSuite[i];
+					if (ImGui::MenuItem(suite->GetName(), nullptr))
+					{
+						_SwitchTestSuite(suite);
+					}
+				}
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("Tools"))
+			{
+				for (ssize i = 0; i < m_ToolSuite.get_size(); i++)
+				{
+					ITestSuite* suite = m_ToolSuite[i];
 					if (ImGui::MenuItem(suite->GetName(), nullptr))
 					{
 						_SwitchTestSuite(suite);
