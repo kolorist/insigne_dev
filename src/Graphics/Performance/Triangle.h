@@ -39,6 +39,7 @@ private:
 	ssize										m_BuffersBeginStateId;
 	ssize										m_ShadingBeginStateId;
 	ssize										m_TextureBeginStateId;
+	ssize										m_RenderBeginStateId;
 };
 
 }

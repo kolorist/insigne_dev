@@ -98,6 +98,7 @@ void FrameBuffer::OnInitialize()
 	m_BuffersBeginStateId = insigne::get_buffers_resource_state();
 	m_ShadingBeginStateId = insigne::get_shading_resource_state();
 	m_TextureBeginStateId = insigne::get_textures_resource_state();
+	m_RenderBeginStateId = insigne::get_render_resource_state();
 
 	// register surfaces
 	insigne::register_surface_type<SurfacePC>();
@@ -244,9 +245,11 @@ void FrameBuffer::OnCleanUp()
 	insigne::unregister_surface_type<SurfacePT>();
 	insigne::unregister_surface_type<SurfacePC>();
 
-	insigne::cleanup_buffers_resource(m_BuffersBeginStateId);
-	insigne::cleanup_shading_resource(m_ShadingBeginStateId);
+	insigne::cleanup_render_resource(m_RenderBeginStateId);
 	insigne::cleanup_textures_resource(m_TextureBeginStateId);
+	insigne::cleanup_shading_resource(m_ShadingBeginStateId);
+	insigne::cleanup_buffers_resource(m_BuffersBeginStateId);
+
 	insigne::dispatch_render_pass();
 	insigne::wait_finish_dispatching();
 }
