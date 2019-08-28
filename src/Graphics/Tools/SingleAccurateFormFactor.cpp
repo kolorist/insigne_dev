@@ -13,6 +13,7 @@
 #include <clover/Logger.h>
 
 #include "InsigneImGui.h"
+#include "Graphics/DebugDrawer.h"
 
 namespace stone
 {
@@ -23,7 +24,7 @@ static const_cstr k_SuiteName = "FormFactor - 1 Patches Pair";
 
 SingleAccurateFormFactor::SingleAccurateFormFactor()
 	: m_CameraMotion(
-		floral::camera_view_t { floral::vec3f(3.0f, 3.0f, 3.0f), floral::vec3f(-3.0f, -3.0f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
+		floral::camera_view_t { floral::vec3f(6.0f, 6.0f, 6.0f), floral::vec3f(-3.0f, -3.0f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 		floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
 {
 }
@@ -82,7 +83,7 @@ void SingleAccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 
 	// parallel
 	{
-		ImGui::Text("Parallel Patches");
+		ImGui::Text(">> Parallel Patches");
 		ImGui::Checkbox("Use Stratified##para", &m_ParaConfig.UseStratifiedSample);
 		ImGui::SameLine();
 		if (ImGui::Button("Reset##para"))
@@ -92,10 +93,7 @@ void SingleAccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 			m_ParaConfig.Distance = 1.0f;
 		}
 		ImGui::SliderInt("Samples##para", &m_ParaConfig.SamplesCount, 1, 32);
-		if (ImGui::SliderFloat("Distance##para", &m_ParaConfig.Distance, 0.0f, 3.0f))
-		{
-			_UpdateParallelVisual();
-		}
+		ImGui::SliderFloat("Distance##para", &m_ParaConfig.Distance, 0.0f, 3.0f);
 		ImGui::Button("Compute##para");
 	}
 
@@ -103,7 +101,7 @@ void SingleAccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 
 	// perpendicular
 	{
-		ImGui::Text("Perpendicular Patches");
+		ImGui::Text(">> Perpendicular Patches");
 		ImGui::Checkbox("Use Stratified##perp", &m_PerpConfig.UseStratifiedSample);
 		ImGui::SameLine();
 		if (ImGui::Button("Reset##perp"))
@@ -113,10 +111,7 @@ void SingleAccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 			m_PerpConfig.Angle = 90.0f;
 		}
 		ImGui::SliderInt("Samples##perp", &m_PerpConfig.SamplesCount, 1, 32);
-		if (ImGui::SliderFloat("Angle##perp", &m_PerpConfig.Angle, 0.0f, 180.0f))
-		{
-			_UpdatePerpendicularVisual();
-		}
+		ImGui::SliderFloat("Angle##perp", &m_PerpConfig.Angle, 0.0f, 180.0f);
 		ImGui::Button("Compute##perp");
 	}
 
@@ -131,6 +126,19 @@ void SingleAccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 
 	ImGui::TextColored(ImVec4(1.0f, 0.0f, 0.0f, 1.0f), "Computed Values");
 	ImGui::Separator();
+	{
+		ImGui::Text(">> Parallel Patches");
+		ImGui::Text("point2patch:");
+		ImGui::Text("patch2patch:");
+	}
+
+	ImGui::NewLine();
+
+	{
+		ImGui::Text(">> Perpendicular Patches");
+		ImGui::Text("point2patch:");
+		ImGui::Text("patch2patch:");
+	}
 
 	ImGui::EndChild();
 	ImGui::PopStyleVar();
@@ -139,12 +147,17 @@ void SingleAccurateFormFactor::OnUpdate(const f32 i_deltaMs)
 
 	// Logic update
 	m_CameraMotion.OnUpdate(i_deltaMs);
+	m_SceneData.WVP = m_CameraMotion.GetWVP();
+
+	_UpdateParallelVisual();
+	_UpdatePerpendicularVisual();
 }
 
 void SingleAccurateFormFactor::OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
+	debugdraw::Render(m_SceneData.WVP);
 	RenderImGui();
 
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
@@ -169,10 +182,41 @@ void SingleAccurateFormFactor::OnCleanUp()
 
 void SingleAccurateFormFactor::_UpdateParallelVisual()
 {
+	floral::vec3f tsl(-1.5f, 0.0f, 1.5f);
+	floral::vec3f q0[] = {
+		floral::vec3f(0.0f, 0.0f, 0.0f) + tsl,
+		floral::vec3f(1.0f, 0.0f, 0.0f) + tsl,
+		floral::vec3f(1.0f, 0.0f, 1.0f) + tsl,
+		floral::vec3f(0.0f, 0.0f, 1.0f) + tsl
+	};
+	floral::vec3f q1[4] {
+		q0[0] + floral::vec3f(0.0f, m_ParaConfig.Distance, 0.0f),
+		q0[1] + floral::vec3f(0.0f, m_ParaConfig.Distance, 0.0f),
+		q0[2] + floral::vec3f(0.0f, m_ParaConfig.Distance, 0.0f),
+		q0[3] + floral::vec3f(0.0f, m_ParaConfig.Distance, 0.0f),
+	};
+
+	debugdraw::DrawQuad3D(q0[0], q0[1], q0[2], q0[3], floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	debugdraw::DrawQuad3D(q1[0], q1[1], q1[2], q1[3], floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
 }
 
 void SingleAccurateFormFactor::_UpdatePerpendicularVisual()
 {
+	floral::vec3f q0[] = {
+		floral::vec3f(0.0f, 0.0f, 0.0f),
+		floral::vec3f(1.0f, 0.0f, 0.0f),
+		floral::vec3f(1.0f, 0.0f, 1.0f),
+		floral::vec3f(0.0f, 0.0f, 1.0f)
+	};
+	floral::vec3f q1[4] {
+		q0[0],
+		q0[1],
+		floral::vec3f(1.0f, sinf(floral::to_radians(m_PerpConfig.Angle)), cosf(floral::to_radians(m_PerpConfig.Angle))),
+		floral::vec3f(0.0f, sinf(floral::to_radians(m_PerpConfig.Angle)), cosf(floral::to_radians(m_PerpConfig.Angle)))
+	};
+
+	debugdraw::DrawQuad3D(q0[0], q0[1], q0[2], q0[3], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	debugdraw::DrawQuad3D(q1[0], q1[1], q1[2], q1[3], floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 }
 
 }
