@@ -5,6 +5,7 @@
 #include <imgui.h>
 
 #include "InsigneImGui.h"
+#include "Graphics/DebugDrawer.h"
 
 // performance demo
 #include "Graphics/Performance/Empty.h"
@@ -31,6 +32,7 @@ DemoHub::~DemoHub()
 void DemoHub::Initialize()
 {
 	InitializeImGui();
+	debugdraw::Initialize();
 
 	_EmplacePerformanceSuite<perf::Empty>();
 	_EmplacePerformanceSuite<perf::Triangle>();
@@ -42,6 +44,7 @@ void DemoHub::Initialize()
 
 void DemoHub::CleanUp()
 {
+	debugdraw::CleanUp();
 }
 
 void DemoHub::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
@@ -122,10 +125,12 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 		ImGui::EndMainMenuBar();
 	}
 
+	debugdraw::BeginFrame();
 	if (m_CurrentTestSuite)
 	{
 		m_CurrentTestSuite->OnUpdate(i_deltaMs);
 	}
+	debugdraw::EndFrame();
 
 	//ImGui::ShowTestWindow();
 }
@@ -140,6 +145,7 @@ void DemoHub::RenderFrame(const f32 i_deltaMs)
 	{
 		insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
+		debugdraw::Render(floral::mat4x4f(1.0f));
 		RenderImGui();
 
 		insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);

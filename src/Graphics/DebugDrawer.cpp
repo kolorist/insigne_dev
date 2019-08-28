@@ -2,12 +2,17 @@
 
 #include <math.h>
 
+#include <insigne/system.h>
 #include <insigne/commons.h>
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
 #include <insigne/ut_render.h>
+#include <insigne/ut_textures.h>
 
-namespace stone {
+#include <clover/Logger.h>
+
+namespace stone
+{
 
 static const_cstr s_VertexShader = R"(#version 300 es
 layout (location = 0) in highp vec3 l_Position_L;
@@ -164,6 +169,15 @@ void DebugDrawer::DrawIcosphere3D(const floral::vec3f& i_origin, const f32 i_rad
 
 void DebugDrawer::Initialize()
 {
+	CLOVER_VERBOSE("Initializing DebugDrawer");
+	// snapshot begin state
+	m_BuffersBeginStateId = insigne::get_buffers_resource_state();
+	m_ShadingBeginStateId = insigne::get_shading_resource_state();
+	m_TextureBeginStateId = insigne::get_textures_resource_state();
+	m_RenderBeginStateId = insigne::get_render_resource_state();
+
+	// DebugLine has already been registered
+
 	static const u32 s_verticesLimit = 1u << 17;
 	static const s32 s_indicesLimit = 1u << 18;
 	m_DebugVertices[0].init(s_verticesLimit, m_MemoryArena);
@@ -225,6 +239,19 @@ void DebugDrawer::Initialize()
 	insigne::dispatch_render_pass();
 }
 
+void DebugDrawer::CleanUp()
+{
+	CLOVER_VERBOSE("Cleaning up DebugDrawer");
+
+	insigne::cleanup_render_resource(m_RenderBeginStateId);
+	insigne::cleanup_textures_resource(m_TextureBeginStateId);
+	insigne::cleanup_shading_resource(m_ShadingBeginStateId);
+	insigne::cleanup_buffers_resource(m_BuffersBeginStateId);
+
+	insigne::dispatch_render_pass();
+	insigne::wait_finish_dispatching();
+}
+
 void DebugDrawer::Render(const floral::mat4x4f& i_wvp)
 {
 	m_Data[m_CurrentBufferIdx].WVP = i_wvp;
@@ -250,6 +277,51 @@ void DebugDrawer::EndFrame()
 	if (m_DebugIndices[m_CurrentBufferIdx].get_size() > 0)
 		insigne::update_ib(m_IB, &(m_DebugIndices[m_CurrentBufferIdx][0]), m_DebugIndices[m_CurrentBufferIdx].get_size(), 0);
 	else insigne::update_ib(m_IB, nullptr, 0, 0);
+}
+
+//----------------------------------------------
+static DebugDrawer* s_DebugDrawer;
+
+namespace debugdraw
+{
+
+void Initialize()
+{
+	FLORAL_ASSERT(s_DebugDrawer == nullptr);
+	s_DebugDrawer = g_PersistanceResourceAllocator.allocate<DebugDrawer>();
+	s_DebugDrawer->Initialize();
+}
+
+void CleanUp()
+{
+	s_DebugDrawer->CleanUp();
+}
+
+void BeginFrame()
+{
+	s_DebugDrawer->BeginFrame();
+}
+
+void EndFrame()
+{
+	s_DebugDrawer->EndFrame();
+}
+
+void Render(const floral::mat4x4f& i_wvp)
+{
+	s_DebugDrawer->Render(i_wvp);
+}
+
+void DrawLine3D(const floral::vec3f& i_x0, const floral::vec3f& i_x1, const floral::vec4f& i_color)
+{
+	s_DebugDrawer->DrawLine3D(i_x0, i_x1, i_color);
+}
+
+void DrawQuad3D(const floral::vec3f& i_p0, const floral::vec3f& i_p1, const floral::vec3f& i_p2, const floral::vec3f& i_p3, const floral::vec4f& i_color)
+{
+	s_DebugDrawer->DrawQuad3D(i_p0, i_p1, i_p2, i_p3, i_color);
+}
+
 }
 
 }

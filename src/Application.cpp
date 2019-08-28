@@ -156,10 +156,6 @@ void Application::OnInitializeRenderer()
 	insigne::allocate_draw_command_buffers(5);
 	insigne::allocate_post_draw_command_buffers(2);
 
-	//insigne::register_surface_type<SurfacePC>();
-	//insigne::register_surface_type<SurfaceP>();
-	//insigne::register_surface_type<SurfacePT>();
-
 	insigne::register_post_surface_type<DebugLine>();
 	insigne::register_post_surface_type<ImGuiSurface>();
 
