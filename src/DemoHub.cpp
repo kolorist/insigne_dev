@@ -13,6 +13,7 @@
 
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
+#include "Graphics/RenderTech/PBR.h"
 
 // tools demo
 #include "Graphics/Tools/SingleAccurateFormFactor.h"
@@ -38,6 +39,7 @@ void DemoHub::Initialize()
 	_EmplacePerformanceSuite<perf::Triangle>();
 
 	_EmplaceRenderTechSuite<tech::FrameBuffer>();
+	_EmplaceRenderTechSuite<tech::PBR>();
 
 	_EmplaceToolSuite<tools::SingleAccurateFormFactor>();
 }
