@@ -1,4 +1,7 @@
 cmake_minimum_required(VERSION 3.4.1)
+set (PROJECT_NAME "insigne_dev")
+project (${PROJECT_NAME})
+include ("${PROJECT_SOURCE_DIR}/project_configs.cmake")
 
 # building platform
 if (${ANDROID_BUILD})
@@ -20,9 +23,6 @@ if (${ANDROID_BUILD})
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions -Wall")
 endif (${ANDROID_BUILD})
-
-
-include ("${PROJECT_SOURCE_DIR}/project_configs.cmake")
 
 add_subdirectory (externals/floral)
 add_subdirectory (externals/helich)
@@ -137,6 +137,8 @@ else ()
 	message(STATUS ${PROJECT_NAME} " will be built using Windows configs")
 	add_definitions (
 		-DPLATFORM_WINDOWS)
+	
+	SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Xlinker /subsystem:console")
 
 	add_executable (${PROJECT_NAME} ${file_list})
 
