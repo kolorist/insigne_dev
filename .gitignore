@@ -24,6 +24,8 @@ debug32/
 debug64/
 release32/
 release64/
+clang32/
+clang64/
 bld/
 [Bb]in/
 [Oo]bj/

@@ -17,7 +17,7 @@ print("project name: " .. projectName);
 print("exe file name: " .. executableFileName .. ".exe");
 
 projConfigs = io.open("project_configs.cmake", "w");
-projConfigs:write(string.format("set (PROJECT_NAME \"%s\")\n", projectName));
+--projConfigs:write(string.format("set (PROJECT_NAME \"%s\")\n", projectName));
 projConfigs:write(string.format("set (EXECUTABLE_FILE_NAME \"%s\")\n", executableFileName));
 
 print("done generating, enjoy :D");
