@@ -1,22 +1,24 @@
 #pragma once
 
 #include <floral/stdaliases.h>
+#include <floral/math/rng.h>
 
 #include <insigne/commons.h>
 
 #include "Graphics/Tests/ITestSuite.h"
+#include "Graphics/FreeCamera.h"
 #include "Memory/MemorySystem.h"
 
 namespace stone
 {
-namespace perf
+namespace tools
 {
 
-class Triangle : public ITestSuite
+class SurfelsGenerator : public ITestSuite
 {
 public:
-	Triangle();
-	~Triangle();
+	SurfelsGenerator();
+	~SurfelsGenerator();
 
 	const_cstr									GetName() const override;
 
@@ -25,14 +27,24 @@ public:
 	void										OnRender(const f32 i_deltaMs) override;
 	void										OnCleanUp() override;
 
-	ICameraMotion*								GetCameraMotion() override { return nullptr; }
+	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
-	insigne::vb_handle_t						m_VB;
-	insigne::ib_handle_t						m_IB;
+	struct SceneData
+	{
+		floral::mat4x4f							WVP;
+	};
 
-	insigne::shader_handle_t					m_Shader;
-	insigne::material_desc_t					m_Material;
+private:
+	SceneData									m_SceneData;
+
+private:
+	floral::rng									m_RNG;
+
+private:
+	insigne::ub_handle_t						m_UB;
+	FreeCamera									m_CameraMotion;
+	MemoryArena*								m_MemoryArena;
 
 	// resource control
 private:

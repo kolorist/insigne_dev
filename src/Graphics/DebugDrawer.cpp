@@ -48,7 +48,7 @@ void main()
 DebugDrawer::DebugDrawer()
 	: m_CurrentBufferIdx(0)
 {
-	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
+	m_MemoryArena = g_PersistanceResourceAllocator.allocate_arena<LinearArena>(SIZE_MB(32));
 }
 
 DebugDrawer::~DebugDrawer()
@@ -167,6 +167,86 @@ void DebugDrawer::DrawIcosphere3D(const floral::vec3f& i_origin, const f32 i_rad
 
 // ---------------------------------------------
 
+void DebugDrawer::DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral::vec4f& i_color)
+{
+	floral::vec3f minCorner = i_position - floral::vec3f(i_size / 2.0f);
+	floral::vec3f maxCorner = i_position + floral::vec3f(i_size / 2.0f);
+	DrawSolidBox3D(minCorner, maxCorner, i_color);
+}
+
+void DebugDrawer::DrawSolidBox3D(const floral::vec3f& i_minCorner, const floral::vec3f& i_maxCorner, const floral::vec4f& i_color)
+{
+	floral::vec3f v2(i_minCorner);
+	floral::vec3f v4(i_maxCorner);
+	floral::vec3f v0(v4.x, v2.y, v4.z);
+	floral::vec3f v1(v4.x, v2.y, v2.z);
+	floral::vec3f v3(v2.x, v2.y, v4.z);
+	floral::vec3f v5(v4.x, v4.y, v2.z);
+	floral::vec3f v6(v2.x, v4.y, v2.z);
+	floral::vec3f v7(v2.x, v4.y, v4.z);
+
+	u32 currentIdx = m_DebugSurfaceVertices[m_CurrentBufferIdx].get_size();
+
+	m_DebugSurfaceVertices[m_CurrentBufferIdx].push_back(VertexPC { v0, i_color } );
+	m_DebugSurfaceVertices[m_CurrentBufferIdx].push_back(VertexPC { v1, i_color } );
+	m_DebugSurfaceVertices[m_CurrentBufferIdx].push_back(VertexPC { v2, i_color } );
+	m_DebugSurfaceVertices[m_CurrentBufferIdx].push_back(VertexPC { v3, i_color } );
+	m_DebugSurfaceVertices[m_CurrentBufferIdx].push_back(VertexPC { v4, i_color } );
+	m_DebugSurfaceVertices[m_CurrentBufferIdx].push_back(VertexPC { v5, i_color } );
+	m_DebugSurfaceVertices[m_CurrentBufferIdx].push_back(VertexPC { v6, i_color } );
+	m_DebugSurfaceVertices[m_CurrentBufferIdx].push_back(VertexPC { v7, i_color } );
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 0);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 3);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 2);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 2);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 1);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 0);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 4);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 5);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 6);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 6);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 7);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 4);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 6);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 2);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 3);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 3);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 7);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 6);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 4);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 0);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 1);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 1);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 5);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 4);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 5);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 1);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 2);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 2);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 6);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 5);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 3);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 0);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 4);
+
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 4);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 7);
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 3);
+}
+
+// ---------------------------------------------
+
 void DebugDrawer::Initialize()
 {
 	CLOVER_VERBOSE("Initializing DebugDrawer");
@@ -176,7 +256,7 @@ void DebugDrawer::Initialize()
 	m_TextureBeginStateId = insigne::get_textures_resource_state();
 	m_RenderBeginStateId = insigne::get_render_resource_state();
 
-	// DebugLine has already been registered
+	// DebugLine and DebugSurface has already been registered
 
 	static const u32 s_verticesLimit = 1u << 17;
 	static const s32 s_indicesLimit = 1u << 18;
@@ -184,6 +264,10 @@ void DebugDrawer::Initialize()
 	m_DebugVertices[1].init(s_verticesLimit, m_MemoryArena);
 	m_DebugIndices[0].init(s_indicesLimit, m_MemoryArena);
 	m_DebugIndices[1].init(s_indicesLimit, m_MemoryArena);
+	m_DebugSurfaceVertices[0].init(s_verticesLimit, m_MemoryArena);
+	m_DebugSurfaceVertices[1].init(s_verticesLimit, m_MemoryArena);
+	m_DebugSurfaceIndices[0].init(s_indicesLimit, m_MemoryArena);
+	m_DebugSurfaceIndices[1].init(s_indicesLimit, m_MemoryArena);
 
 	{
 		insigne::vbdesc_t desc;
@@ -206,6 +290,29 @@ void DebugDrawer::Initialize()
 
 		insigne::ib_handle_t newIB = insigne::create_ib(desc);
 		m_IB = newIB;
+	}
+
+	{
+		insigne::vbdesc_t desc;
+		desc.region_size = SIZE_MB(16);
+		desc.stride = sizeof(VertexPC);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::vb_handle_t newVB = insigne::create_vb(desc);
+		m_SurfaceVB = newVB;
+	}
+
+	{
+		insigne::ibdesc_t desc;
+		desc.region_size = SIZE_MB(8);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ib_handle_t newIB = insigne::create_ib(desc);
+		m_SurfaceIB = newIB;
 	}
 
 	{
@@ -258,7 +365,14 @@ void DebugDrawer::Render(const floral::mat4x4f& i_wvp)
 	insigne::update_ub(m_UB, &m_Data[m_CurrentBufferIdx], sizeof(MyData), 0);
 
 	if (m_DebugIndices[m_CurrentBufferIdx].get_size() > 0)
+	{
 		insigne::draw_surface<DebugLine>(m_VB, m_IB, m_Material);
+	}
+
+	if (m_DebugSurfaceIndices[m_CurrentBufferIdx].get_size() > 0)
+	{
+		insigne::draw_surface<DebugSurface>(m_SurfaceVB, m_SurfaceIB, m_Material);
+	}
 }
 
 void DebugDrawer::BeginFrame()
@@ -266,6 +380,8 @@ void DebugDrawer::BeginFrame()
 	m_CurrentBufferIdx = (m_CurrentBufferIdx + 1) % 2;
 	m_DebugVertices[m_CurrentBufferIdx].empty();
 	m_DebugIndices[m_CurrentBufferIdx].empty();
+	m_DebugSurfaceVertices[m_CurrentBufferIdx].empty();
+	m_DebugSurfaceIndices[m_CurrentBufferIdx].empty();
 }
 
 void DebugDrawer::EndFrame()
@@ -277,6 +393,14 @@ void DebugDrawer::EndFrame()
 	if (m_DebugIndices[m_CurrentBufferIdx].get_size() > 0)
 		insigne::update_ib(m_IB, &(m_DebugIndices[m_CurrentBufferIdx][0]), m_DebugIndices[m_CurrentBufferIdx].get_size(), 0);
 	else insigne::update_ib(m_IB, nullptr, 0, 0);
+
+	if (m_DebugSurfaceVertices[m_CurrentBufferIdx].get_size() > 0)
+		insigne::update_vb(m_SurfaceVB, &(m_DebugSurfaceVertices[m_CurrentBufferIdx][0]), m_DebugSurfaceVertices[m_CurrentBufferIdx].get_size(), 0);
+	else insigne::update_vb(m_SurfaceVB, nullptr, 0, 0);
+
+	if (m_DebugSurfaceIndices[m_CurrentBufferIdx].get_size() > 0)
+		insigne::update_ib(m_SurfaceIB, &(m_DebugSurfaceIndices[m_CurrentBufferIdx][0]), m_DebugSurfaceIndices[m_CurrentBufferIdx].get_size(), 0);
+	else insigne::update_ib(m_SurfaceIB, nullptr, 0, 0);
 }
 
 //----------------------------------------------
@@ -320,6 +444,11 @@ void DrawLine3D(const floral::vec3f& i_x0, const floral::vec3f& i_x1, const flor
 void DrawQuad3D(const floral::vec3f& i_p0, const floral::vec3f& i_p1, const floral::vec3f& i_p2, const floral::vec3f& i_p3, const floral::vec4f& i_color)
 {
 	s_DebugDrawer->DrawQuad3D(i_p0, i_p1, i_p2, i_p3, i_color);
+}
+
+void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral::vec4f& i_color)
+{
+	s_DebugDrawer->DrawPoint3D(i_position, i_size, i_color);
 }
 
 }

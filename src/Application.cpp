@@ -154,9 +154,10 @@ void Application::OnInitializeRenderer()
 	// graphics init
 	insigne::initialize_driver();
 	insigne::allocate_draw_command_buffers(5);
-	insigne::allocate_post_draw_command_buffers(2);
+	insigne::allocate_post_draw_command_buffers(4);
 
 	insigne::register_post_surface_type<DebugLine>();
+	insigne::register_post_surface_type<DebugSurface>();
 	insigne::register_post_surface_type<ImGuiSurface>();
 
 	insigne::initialize_render_thread();

@@ -61,6 +61,7 @@ file (GLOB_RECURSE file_list
 
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/FormFactorUtils.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/SingleAccurateFormFactor.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/SurfelsGenerator.cpp"
 
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainQuad.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHBaking.cpp"

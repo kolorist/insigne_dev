@@ -28,6 +28,9 @@ public:
 	//void										DrawOBB3D(const floral::obb3f& i_obb);
 	void										DrawIcosahedron3D(const floral::vec3f& i_origin, const f32 i_radius, const floral::vec4f& i_color);
 	void										DrawIcosphere3D(const floral::vec3f& i_origin, const f32 i_radius, const floral::vec4f& i_color);
+
+	void										DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral::vec4f& i_color);
+	void										DrawSolidBox3D(const floral::vec3f& i_minCorner, const floral::vec3f& i_maxCorner, const floral::vec4f& i_color);
 	// -------------------------------------
 	void										Initialize();
 	void										CleanUp();
@@ -38,22 +41,26 @@ public:
 	void										EndFrame();
 
 private:
-	s32										m_CurrentBufferIdx;
-	VerticesArray							m_DebugVertices[2];
-	IndicesArray							m_DebugIndices[2];
+	s32											m_CurrentBufferIdx;
+	VerticesArray								m_DebugVertices[2];
+	IndicesArray								m_DebugIndices[2];
+	VerticesArray								m_DebugSurfaceVertices[2];
+	IndicesArray								m_DebugSurfaceIndices[2];
 
 	struct MyData {
-		floral::mat4x4f						WVP;
+		floral::mat4x4f							WVP;
 	};
-	MyData									m_Data[2];
+	MyData										m_Data[2];
 
-	insigne::vb_handle_t					m_VB;
-	insigne::ib_handle_t					m_IB;
-	insigne::ub_handle_t					m_UB;
-	insigne::shader_handle_t				m_Shader;
-	insigne::material_desc_t				m_Material;
+	insigne::vb_handle_t						m_VB;
+	insigne::ib_handle_t						m_IB;
+	insigne::vb_handle_t						m_SurfaceVB;
+	insigne::ib_handle_t						m_SurfaceIB;
+	insigne::ub_handle_t						m_UB;
+	insigne::shader_handle_t					m_Shader;
+	insigne::material_desc_t					m_Material;
 
-	LinearArena*							m_MemoryArena;
+	LinearArena*								m_MemoryArena;
 
 	// resource control
 private:
@@ -75,6 +82,8 @@ void											Render(const floral::mat4x4f& i_wvp);
 
 void											DrawLine3D(const floral::vec3f& i_x0, const floral::vec3f& i_x1, const floral::vec4f& i_color);
 void											DrawQuad3D(const floral::vec3f& i_p0, const floral::vec3f& i_p1, const floral::vec3f& i_p2, const floral::vec3f& i_p3, const floral::vec4f& i_color);
+
+void											DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral::vec4f& i_color);
 }
 
 }

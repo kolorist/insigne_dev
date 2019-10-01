@@ -16,7 +16,7 @@ public:
 	Empty();
 	~Empty();
 
-	const_cstr									GetName() const;
+	const_cstr									GetName() const override;
 
 	void										OnInitialize() override;
 	void										OnUpdate(const f32 i_deltaMs) override;
