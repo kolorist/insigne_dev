@@ -16,6 +16,7 @@ struct PlyData
 	floral::fixed_array<floral::vec3f, TAllocator>	Color;
 
 	floral::fixed_array<s32, TAllocator>		Indices;
+
 };
 
 template <class TAllocator>

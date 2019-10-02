@@ -38,8 +38,8 @@ private:
 
 private:
 	SceneData									m_SceneData;
-	floral::fixed_array<VertexPC, LinearArena>	m_Vertices;
-	floral::fixed_array<floral::vec3f, LinearArena>	m_SamplePos;
+	floral::fixed_array<VertexPC, FreelistArena>	m_Vertices;
+	floral::fixed_array<floral::vec3f, FreelistArena>	m_SamplePos;
 
 private:
 	floral::rng									m_RNG;
@@ -47,7 +47,8 @@ private:
 private:
 	insigne::ub_handle_t						m_UB;
 	FreeCamera									m_CameraMotion;
-	LinearArena*								m_MemoryArena;
+	FreelistArena*								m_MemoryArena;
+	LinearArena*								m_ResourceArena;
 
 	// resource control
 private:

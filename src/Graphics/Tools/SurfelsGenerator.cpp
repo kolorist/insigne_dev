@@ -8,10 +8,13 @@
 #include <insigne/ut_textures.h>
 #include <insigne/ut_shading.h>
 
+#include <floral/math/coordinate.h>
+
 #include <clover/Logger.h>
 
 #include "InsigneImGui.h"
 #include "Graphics/DebugDrawer.h"
+#include "Graphics/PlyLoader.h"
 
 namespace stone
 {
@@ -47,29 +50,66 @@ void SurfelsGenerator::OnInitialize()
 	m_TextureBeginStateId = insigne::get_textures_resource_state();
 	m_RenderBeginStateId = insigne::get_render_resource_state();
 
-	m_MemoryArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(2));
+	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(2));
+	m_ResourceArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(2));
 
-	m_Vertices.reserve(32, m_MemoryArena);
-	m_Vertices.push_back(VertexPC { floral::vec3f(0.0f, 0.0f, 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f) });
-	m_Vertices.push_back(VertexPC { floral::vec3f(2.0f, 0.0f, 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f) });
-	m_Vertices.push_back(VertexPC { floral::vec3f(0.0f, 0.0f, 2.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f) });
-
-	size sampleArrSize = 128 * m_Vertices.get_size() / 3;
-	m_SamplePos.reserve(sampleArrSize, m_MemoryArena);
-	for (size i = 0; i < m_Vertices.get_size(); i += 3)
+	floral::fixed_array<f32, FreelistArena> triangleAreas;
+	f32 totalArea = 0.0f;
 	{
-		const VertexPC& v0 = m_Vertices[i];
-		const VertexPC& v1 = m_Vertices[i + 1];
-		const VertexPC& v2 = m_Vertices[i + 2];
+		PlyData<LinearArena> plyData = LoadFromPly(floral::path("gfx/envi/models/demo/cornel_box_triangles_pp.ply"), m_ResourceArena);
+		CLOVER_INFO("Mesh loaded");
+		size vtxCount = plyData.Position.get_size();
+		size idxCount = plyData.Indices.get_size();
 
-		for (size j = 0; j < 128; j++)
+		m_Vertices.reserve(idxCount, m_MemoryArena);
+		triangleAreas.reserve(idxCount / 3, m_MemoryArena);
+		for (size i = 0; i < idxCount; i += 3)
 		{
-			f32 sqrR1 = sqrtf(m_RNG.get_f32());
-			f32 r2 = m_RNG.get_f32();
+			VertexPC v0, v1, v2;
+			v0.Position = plyData.Position[plyData.Indices[i]];
+			v0.Color = floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f);
+			v1.Position = plyData.Position[plyData.Indices[i + 1]];
+			v1.Color = floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f);
+			v2.Position = plyData.Position[plyData.Indices[i + 2]];
+			v2.Color = floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f);
 
-			floral::vec3f samplePos = (1.0f - sqrR1) * v0.Position + sqrR1 * (1.0f - r2) * v1.Position + sqrR1 * r2 * v2.Position;
-			m_SamplePos.push_back(samplePos);
+			m_Vertices.push_back(v0);
+			m_Vertices.push_back(v1);
+			m_Vertices.push_back(v2);
+
+			f32 s = floral::get_triangle_area(v0.Position, v1.Position, v2.Position);
+			FLORAL_ASSERT(s > 0.0f);
+			triangleAreas.push_back(s);
+			totalArea += s;
 		}
+	}
+
+	size sampleArrSize = 2048;
+	size numTri = m_Vertices.get_size() / 3;
+	m_SamplePos.reserve(sampleArrSize, m_MemoryArena);
+	for (size i = 0; i < sampleArrSize; i++)
+	{
+		f32 as = m_RNG.get_f32() * totalArea;
+		size triIdx = triangleAreas.get_size() - 1;
+		for (size j = 0; j < triangleAreas.get_size(); j++)
+		{
+			as -= triangleAreas[j];
+			if (as <= 0.0f)
+			{
+				triIdx = j;
+				break;
+			}
+		}
+
+		const VertexPC& v0 = m_Vertices[triIdx * 3];
+		const VertexPC& v1 = m_Vertices[triIdx * 3 + 1];
+		const VertexPC& v2 = m_Vertices[triIdx * 3 + 2];
+
+		f32 sqrR1 = sqrtf(m_RNG.get_f32());
+		f32 r2 = m_RNG.get_f32();
+
+		floral::vec3f samplePos = (1.0f - sqrR1) * v0.Position + sqrR1 * (1.0f - r2) * v1.Position + sqrR1 * r2 * v2.Position;
+		m_SamplePos.push_back(samplePos);
 	}
 
 	{
@@ -91,7 +131,7 @@ void SurfelsGenerator::OnInitialize()
 
 void SurfelsGenerator::OnUpdate(const f32 i_deltaMs)
 {
-	ImGui::ShowTestWindow();
+	//ImGui::ShowTestWindow();
 
 	// Logic update
 	m_CameraMotion.OnUpdate(i_deltaMs);
@@ -131,7 +171,9 @@ void SurfelsGenerator::OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_SuiteName);
 
+	g_StreammingAllocator.free(m_ResourceArena);
 	g_StreammingAllocator.free(m_MemoryArena);
+	m_ResourceArena = nullptr;
 	m_MemoryArena = nullptr;
 
 	insigne::cleanup_render_resource(m_RenderBeginStateId);
