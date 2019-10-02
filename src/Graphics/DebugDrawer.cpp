@@ -406,6 +406,35 @@ void DebugDrawer::EndFrame()
 //----------------------------------------------
 static DebugDrawer* s_DebugDrawer;
 
+static const floral::vec4f k_Colors[] = {
+	floral::vec4f(0.0f, 0.0f, 0.5f, 1.0f),		// blue
+	floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f),		// bright blue
+	floral::vec4f(0.5f, 0.0f, 0.0f, 1.0f),		// red
+	floral::vec4f(0.5f, 0.0f, 0.5f, 1.0f),		// magenta
+	floral::vec4f(0.5f, 0.0f, 1.0f, 1.0f),		// violet
+	floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f),		// bright red
+	floral::vec4f(1.0f, 0.0f, 0.5f, 1.0f),		// purple
+	floral::vec4f(1.0f, 0.0f, 1.0f, 1.0f),		// bright magenta
+	floral::vec4f(0.0f, 0.5f, 0.0f, 1.0f),		// green
+	floral::vec4f(0.0f, 0.5f, 0.5f, 1.0f),		// cyan
+	floral::vec4f(0.0f, 0.5f, 1.0f, 1.0f),		// sky blue
+	floral::vec4f(0.5f, 0.5f, 0.0f, 1.0f),		// yellow
+	floral::vec4f(0.5f, 0.5f, 0.5f, 1.0f),		// gray
+	floral::vec4f(0.5f, 0.5f, 1.0f, 1.0f),		// pale blue
+	floral::vec4f(1.0f, 0.5f, 0.0f, 1.0f),		// orange
+	floral::vec4f(1.0f, 0.5f, 0.5f, 1.0f),		// pink
+	floral::vec4f(1.0f, 0.5f, 1.0f, 1.0f),		// pale magenta
+	floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f),		// bright green
+	floral::vec4f(0.0f, 1.0f, 0.5f, 1.0f),		// sea green
+	floral::vec4f(0.0f, 1.0f, 1.0f, 1.0f),		// bright cyan
+	floral::vec4f(0.5f, 1.0f, 0.0f, 1.0f),		// lime green
+	floral::vec4f(0.5f, 1.0f, 0.5f, 1.0f),		// pale green
+	floral::vec4f(0.5f, 1.0f, 1.0f, 1.0f),		// pale cyan
+	floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f),		// bright yellow
+	floral::vec4f(1.0f, 1.0f, 0.5f, 1.0f),		// pale yellow
+};
+static const size k_ColorsCount = 25;
+
 namespace debugdraw
 {
 
@@ -449,6 +478,21 @@ void DrawQuad3D(const floral::vec3f& i_p0, const floral::vec3f& i_p1, const flor
 void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral::vec4f& i_color)
 {
 	s_DebugDrawer->DrawPoint3D(i_position, i_size, i_color);
+}
+
+void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const size i_colorIdx /* = 0xFF */)
+{
+	static size currentColorIdx = 0;
+
+	if (i_colorIdx == 0xFF)
+	{
+		s_DebugDrawer->DrawPoint3D(i_position, i_size, k_Colors[currentColorIdx]);
+		currentColorIdx = (currentColorIdx + 1) % k_ColorsCount;
+	}
+	else
+	{
+		s_DebugDrawer->DrawPoint3D(i_position, i_size, k_Colors[i_colorIdx % k_ColorsCount]);
+	}
 }
 
 }

@@ -84,6 +84,7 @@ void											DrawLine3D(const floral::vec3f& i_x0, const floral::vec3f& i_x1, 
 void											DrawQuad3D(const floral::vec3f& i_p0, const floral::vec3f& i_p1, const floral::vec3f& i_p2, const floral::vec3f& i_p3, const floral::vec4f& i_color);
 
 void											DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral::vec4f& i_color);
+void											DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const size i_colorIdx = 0xFF);
 }
 
 }

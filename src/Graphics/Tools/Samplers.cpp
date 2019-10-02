@@ -1,4 +1,4 @@
-#include "SurfelsGenerator.h"
+#include "Samplers.h"
 
 #include <imgui.h>
 
@@ -7,6 +7,8 @@
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_textures.h>
 #include <insigne/ut_shading.h>
+
+#include <floral/math/utils.h>
 
 #include <clover/Logger.h>
 
@@ -18,9 +20,29 @@ namespace stone
 namespace tools
 {
 
-static const_cstr k_SuiteName = "Surfels Generator";
+//----------------------------------------------
 
-SurfelsGenerator::SurfelsGenerator()
+const floral::vec3f get_uniform_sphere_sample(const floral::vec2f& i_uniformInput)
+{
+	f32 z = 1.0f - 2.0f * i_uniformInput.x;
+	f32 r = sqrtf(floral::max(0.0f, 1.0f - z * z));
+	f32 phi = 2.0f * floral::pi * i_uniformInput.y;
+	return floral::vec3f(r * cosf(phi), z, r * sinf(phi));
+}
+
+const floral::vec3f get_uniform_hemisphere_sample(const floral::vec2f& i_uniformInput)
+{
+	f32 z = i_uniformInput.x;
+	f32 r = sqrtf(floral::max(0.0f, 1.0f - z * z));
+	f32 phi = 2.0f * floral::pi * i_uniformInput.y;
+	return floral::vec3f(r * cosf(phi), z, r * sinf(phi));
+}
+
+//----------------------------------------------
+
+static const_cstr k_SuiteName = "Samplers";
+
+Samplers::Samplers()
 	: m_CameraMotion(
 		floral::camera_view_t { floral::vec3f(6.0f, 6.0f, 6.0f), floral::vec3f(-3.0f, -3.0f, -3.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 		floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
@@ -29,16 +51,16 @@ SurfelsGenerator::SurfelsGenerator()
 {
 }
 
-SurfelsGenerator::~SurfelsGenerator()
+Samplers::~Samplers()
 {
 }
 
-const_cstr SurfelsGenerator::GetName() const
+const_cstr Samplers::GetName() const
 {
 	return k_SuiteName;
 }
 
-void SurfelsGenerator::OnInitialize()
+void Samplers::OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// snapshot begin state
@@ -49,27 +71,15 @@ void SurfelsGenerator::OnInitialize()
 
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(2));
 
-	m_Vertices.reserve(32, m_MemoryArena);
-	m_Vertices.push_back(VertexPC { floral::vec3f(0.0f, 0.0f, 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f) });
-	m_Vertices.push_back(VertexPC { floral::vec3f(2.0f, 0.0f, 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f) });
-	m_Vertices.push_back(VertexPC { floral::vec3f(0.0f, 0.0f, 2.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f) });
-
-	size sampleArrSize = 128 * m_Vertices.get_size() / 3;
-	m_SamplePos.reserve(sampleArrSize, m_MemoryArena);
-	for (size i = 0; i < m_Vertices.get_size(); i += 3)
+	m_SamplePos.reserve(256, m_MemoryArena);
+	for (size i = 0; i < 256; i++)
 	{
-		const VertexPC& v0 = m_Vertices[i];
-		const VertexPC& v1 = m_Vertices[i + 1];
-		const VertexPC& v2 = m_Vertices[i + 2];
-
-		for (size j = 0; j < 128; j++)
-		{
-			f32 sqrR1 = sqrtf(m_RNG.get_f32());
-			f32 r2 = m_RNG.get_f32();
-
-			floral::vec3f samplePos = (1.0f - sqrR1) * v0.Position + sqrR1 * (1.0f - r2) * v1.Position + sqrR1 * r2 * v2.Position;
-			m_SamplePos.push_back(samplePos);
-		}
+		floral::vec2f uniInput(0.0f);
+		uniInput.x = m_RNG.get_f32();
+		uniInput.y = m_RNG.get_f32();
+		floral::vec3f samplePos = get_uniform_hemisphere_sample(uniInput);
+		//floral::vec3f samplePos = get_uniform_sphere_sample(uniInput);
+		m_SamplePos.push_back(samplePos);
 	}
 
 	{
@@ -89,25 +99,11 @@ void SurfelsGenerator::OnInitialize()
 	}
 }
 
-void SurfelsGenerator::OnUpdate(const f32 i_deltaMs)
+void Samplers::OnUpdate(const f32 i_deltaMs)
 {
-	ImGui::ShowTestWindow();
-
 	// Logic update
 	m_CameraMotion.OnUpdate(i_deltaMs);
 	m_SceneData.WVP = m_CameraMotion.GetWVP();
-
-	//debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(3.0f, 0.0f, 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
-	for (size i = 0; i < m_Vertices.get_size(); i += 3)
-	{
-		const VertexPC& v0 = m_Vertices[i];
-		const VertexPC& v1 = m_Vertices[i + 1];
-		const VertexPC& v2 = m_Vertices[i + 2];
-
-		debugdraw::DrawLine3D(v0.Position, v1.Position, v0.Color);
-		debugdraw::DrawLine3D(v1.Position, v2.Position, v1.Color);
-		debugdraw::DrawLine3D(v2.Position, v0.Position, v2.Color);
-	}
 
 	for (size i = 0; i < m_SamplePos.get_size(); i++)
 	{
@@ -115,7 +111,7 @@ void SurfelsGenerator::OnUpdate(const f32 i_deltaMs)
 	}
 }
 
-void SurfelsGenerator::OnRender(const f32 i_deltaMs)
+void Samplers::OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
@@ -127,7 +123,7 @@ void SurfelsGenerator::OnRender(const f32 i_deltaMs)
 	insigne::dispatch_render_pass();
 }
 
-void SurfelsGenerator::OnCleanUp()
+void Samplers::OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_SuiteName);
 

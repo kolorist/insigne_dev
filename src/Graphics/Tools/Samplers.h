@@ -15,11 +15,11 @@ namespace stone
 namespace tools
 {
 
-class SurfelsGenerator : public ITestSuite
+class Samplers : public ITestSuite
 {
 public:
-	SurfelsGenerator();
-	~SurfelsGenerator();
+	Samplers();
+	~Samplers();
 
 	const_cstr									GetName() const override;
 
@@ -38,7 +38,6 @@ private:
 
 private:
 	SceneData									m_SceneData;
-	floral::fixed_array<VertexPC, LinearArena>	m_Vertices;
 	floral::fixed_array<floral::vec3f, LinearArena>	m_SamplePos;
 
 private:

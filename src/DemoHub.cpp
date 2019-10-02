@@ -18,6 +18,7 @@
 // tools demo
 #include "Graphics/Tools/SingleAccurateFormFactor.h"
 #include "Graphics/Tools/SurfelsGenerator.h"
+#include "Graphics/Tools/Samplers.h"
 
 namespace stone
 {
@@ -44,6 +45,7 @@ void DemoHub::Initialize()
 
 	_EmplaceToolSuite<tools::SingleAccurateFormFactor>();
 	_EmplaceToolSuite<tools::SurfelsGenerator>();
+	_EmplaceToolSuite<tools::Samplers>();
 }
 
 void DemoHub::CleanUp()
