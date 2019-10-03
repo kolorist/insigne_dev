@@ -480,19 +480,9 @@ void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral
 	s_DebugDrawer->DrawPoint3D(i_position, i_size, i_color);
 }
 
-void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const size i_colorIdx /* = 0xFF */)
+void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const size i_colorIdx)
 {
-	static size currentColorIdx = 0;
-
-	if (i_colorIdx == 0xFF)
-	{
-		s_DebugDrawer->DrawPoint3D(i_position, i_size, k_Colors[currentColorIdx]);
-		currentColorIdx = (currentColorIdx + 1) % k_ColorsCount;
-	}
-	else
-	{
-		s_DebugDrawer->DrawPoint3D(i_position, i_size, k_Colors[i_colorIdx % k_ColorsCount]);
-	}
+	s_DebugDrawer->DrawPoint3D(i_position, i_size, k_Colors[i_colorIdx % k_ColorsCount]);
 }
 
 }

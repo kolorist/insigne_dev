@@ -1,7 +1,6 @@
 #pragma once
 
 #include <floral/stdaliases.h>
-#include <floral/math/rng.h>
 
 #include <insigne/commons.h>
 
@@ -12,14 +11,14 @@
 
 namespace stone
 {
-namespace tools
+namespace tech
 {
 
-class SurfelsGenerator : public ITestSuite
+class FragmentPartition : public ITestSuite
 {
 public:
-	SurfelsGenerator();
-	~SurfelsGenerator();
+	FragmentPartition();
+	~FragmentPartition();
 
 	const_cstr									GetName() const override;
 
@@ -36,21 +35,30 @@ private:
 		floral::mat4x4f							WVP;
 	};
 
+	struct WorldData
+	{
+		floral::vec4f							BBMinCorner;
+		floral::vec4f							BBDimension;
+	};
+
 private:
 	SceneData									m_SceneData;
-	floral::fixed_array<VertexPC, FreelistArena>	m_Vertices;
-	floral::fixed_array<floral::vec3f, FreelistArena>	m_SamplePos;
-
-private:
-	floral::rng									m_RNG;
-
-private:
-	insigne::ub_handle_t						m_UB;
+	WorldData									m_WorldData;
 	FreeCamera									m_CameraMotion;
+	floral::fixed_array<VertexP, LinearArena>	m_VerticesData;
+	floral::fixed_array<s32, LinearArena>		m_IndicesData;
 
 private:
-	FreelistArena*								m_MemoryArena;
+	insigne::vb_handle_t						m_VB;
+	insigne::ib_handle_t						m_IB;
+	insigne::ub_handle_t						m_UB;
+
+	insigne::shader_handle_t					m_Shader;
+	insigne::material_desc_t					m_Material;
+
+private:
 	LinearArena*								m_ResourceArena;
+	FreelistArena*								m_TemporalArena;
 
 	// resource control
 private:

@@ -107,7 +107,7 @@ void Samplers::OnUpdate(const f32 i_deltaMs)
 
 	for (size i = 0; i < m_SamplePos.get_size(); i++)
 	{
-		debugdraw::DrawPoint3D(m_SamplePos[i], 0.02f, i);
+		debugdraw::DrawPoint3D(m_SamplePos[i], 0.1f, i);
 	}
 }
 

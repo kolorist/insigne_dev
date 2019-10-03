@@ -55,6 +55,7 @@ PlyData<TAllocator> LoadFromPly(const floral::path& i_path, TAllocator* i_alloca
 	retData.Normal.reserve(vertexCount, i_allocator);
 	retData.TexCoord.reserve(vertexCount, i_allocator);
 	retData.Color.reserve(vertexCount, i_allocator);
+	retData.Indices.reserve(faceCount * 3, i_allocator);
 
 	// vertex data
 	for (u32 i = 0; i < vertexCount; i++)
@@ -83,7 +84,6 @@ PlyData<TAllocator> LoadFromPly(const floral::path& i_path, TAllocator* i_alloca
 	}
 
 	// indices
-	retData.Indices.reserve(faceCount * 3, i_allocator);
 	for (u32 i = 0; i < faceCount; i++)
 	{
 		s32 indicesPerFace = 0;
@@ -153,6 +153,7 @@ PlyData<TAllocator> LoadFFPatchesFromPly(const floral::path& i_path, TAllocator*
 	retData.Normal.reserve(vertexCount, i_allocator);
 	retData.TexCoord.reserve(vertexCount, i_allocator);
 	retData.Color.reserve(vertexCount, i_allocator);
+	retData.Indices.reserve(faceCount * 4, i_allocator);
 
 	// vertex data
 	for (u32 i = 0; i < vertexCount; i++)
@@ -181,7 +182,6 @@ PlyData<TAllocator> LoadFFPatchesFromPly(const floral::path& i_path, TAllocator*
 	}
 
 	// indices
-	retData.Indices.reserve(faceCount * 4, i_allocator);
 	for (u32 i = 0; i < faceCount; i++)
 	{
 		s32 indicesPerFace = 0;
