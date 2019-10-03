@@ -15,6 +15,7 @@
 #include "Graphics/RenderTech/FrameBuffer.h"
 #include "Graphics/RenderTech/PBR.h"
 #include "Graphics/RenderTech/FragmentPartition.h"
+#include "Graphics/RenderTech/LightProbeGI.h"
 
 // tools demo
 #include "Graphics/Tools/SingleAccurateFormFactor.h"
@@ -44,6 +45,7 @@ void DemoHub::Initialize()
 	_EmplaceRenderTechSuite<tech::FrameBuffer>();
 	_EmplaceRenderTechSuite<tech::PBR>();
 	_EmplaceRenderTechSuite<tech::FragmentPartition>();
+	_EmplaceRenderTechSuite<tech::LightProbeGI>();
 
 	_EmplaceToolSuite<tools::SingleAccurateFormFactor>();
 	_EmplaceToolSuite<tools::SurfelsGenerator>();
