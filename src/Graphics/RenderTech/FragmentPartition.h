@@ -41,9 +41,20 @@ private:
 		floral::vec4f							BBDimension;
 	};
 
+	struct SHCoeffs
+	{
+		floral::vec4f							CoEffs[9];	// 3 bands
+	};
+
+	struct SHData
+	{
+		SHCoeffs								Probes[64];
+	};
+
 private:
 	SceneData									m_SceneData;
 	WorldData									m_WorldData;
+	SHData*										m_SHData;
 	FreeCamera									m_CameraMotion;
 	floral::fixed_array<VertexP, LinearArena>	m_VerticesData;
 	floral::fixed_array<s32, LinearArena>		m_IndicesData;
@@ -52,6 +63,7 @@ private:
 	insigne::vb_handle_t						m_VB;
 	insigne::ib_handle_t						m_IB;
 	insigne::ub_handle_t						m_UB;
+	insigne::ub_handle_t						m_SHUB;
 
 	insigne::shader_handle_t					m_Shader;
 	insigne::material_desc_t					m_Material;

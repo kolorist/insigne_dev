@@ -29,6 +29,7 @@ FragmentPartition::FragmentPartition()
 	: m_CameraMotion(
 		floral::camera_view_t { floral::vec3f(0.0f, 1.0f, -6.0f), floral::vec3f(0.0f, 0.0f, 1.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 		floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
+	, m_SHData(nullptr)
 	, m_ResourceArena(nullptr)
 	, m_TemporalArena(nullptr)
 {
@@ -89,7 +90,7 @@ void FragmentPartition::OnInitialize()
 			m_IndicesData.push_back(plyData.Indices[i]);
 		}
 
-		f32 stepCount = 4.0f;
+		f32 stepCount = 3.0f;
 		minCorner = minCorner - floral::vec3f(0.1f);
 		maxCorner = maxCorner + floral::vec3f(0.1f);
 		m_WorldData.BBMinCorner = floral::vec4f(minCorner.x, minCorner.y, minCorner.z, 0.0f);
@@ -137,10 +138,31 @@ void FragmentPartition::OnInitialize()
 		insigne::copy_update_ub(m_UB, &m_WorldData, sizeof(WorldData), 256);
 	}
 
+	// sh data
+	{
+		size shDataSize = sizeof(SHData);
+		m_SHData = m_ResourceArena->allocate<SHData>();
+
+		memset(m_SHData, 0, shDataSize);
+		for (size i = 0; i < 64; i++)
+		{
+			m_SHData->Probes[i].CoEffs[0] = floral::vec4f(f32(i) / 64.0f, 0.0f, 0.0f, 1.0f);
+		}
+
+		insigne::ubdesc_t desc;
+		desc.region_size = shDataSize;
+		desc.data = m_SHData;
+		desc.data_size = shDataSize;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		m_SHUB = insigne::create_ub(desc);
+	}
+
 	{
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
 		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
 		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_World", insigne::param_data_type_e::param_ub));
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_SHData", insigne::param_data_type_e::param_ub));
 
 		strcpy(desc.vs, s_VertexShaderCode);
 		strcpy(desc.fs, s_FragmentShaderCode);
@@ -157,6 +179,10 @@ void FragmentPartition::OnInitialize()
 		{
 			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_World");
 			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 256, 256, m_UB };
+		}
+		{
+			s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_SHData");
+			m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_SHUB };
 		}
 	}
 }
