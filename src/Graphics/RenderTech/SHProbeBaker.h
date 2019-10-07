@@ -1,6 +1,10 @@
 #pragma once
 
-#include <floral/stdaliases.h>
+#include <floral.h>
+
+#include <insigne/commons.h>
+
+#include "Memory/MemorySystem.h"
 
 namespace stone
 {
@@ -21,9 +25,29 @@ public:
 	~SHProbeBaker();
 
 	void										Initialize();
-	void										DoBake();
+	void										CleanUp();
+	const bool									FrameUpdate();
+	template <class T>
+	void										StartSHBaking(const T& i_shPos, voidptr o_shOutput, const floral::simple_callback<void, const floral::mat4x4f&>& i_renderCb);
 
+private:
+	floral::fixed_array<floral::vec3f, LinearArena>			m_SHPositions;
+	floral::simple_callback<void, const floral::mat4x4f&>	m_RenderCB;
+	f32*													m_ProbePixelData;
+	SHData*													m_SHOutputBuffer;
+
+	insigne::framebuffer_handle_t							m_ProbeRB;
+
+	size													m_CurrentProbeIdx;
+	u64														m_PixelDataReadyFrameIdx;
+	bool													m_CurrentProbeCaptured;
+	bool													m_IsSHBakingFinished;
+
+private:
+	LinearArena*								m_ResourceArena;
 };
 
 }
 }
+
+#include "SHProbeBaker.inl"

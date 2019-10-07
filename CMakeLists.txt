@@ -59,6 +59,8 @@ file (GLOB_RECURSE file_list
 	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/FrameBuffer.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/PBR.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/FragmentPartition.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/SHProbeBaker.cpp"
+	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/LightProbeGI.cpp"
 
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/FormFactorUtils.cpp"
 	"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/SingleAccurateFormFactor.cpp"
