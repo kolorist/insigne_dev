@@ -2,23 +2,15 @@
 
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <cstring>
 
-#include <random>
-#include <algorithm>
+#include <floral/math/rng.h>
 
 namespace stone
 {
 
-static std::random_device rd;
-static std::mt19937 gen(rd());
-static std::uniform_real_distribution<f64> dis(0.0, 1.0);
-
-static const s32 n_bands = 3;
-
-inline f64 get_random()
-{
-	return dis(gen);
-}
+static const s32								n_bands = 3;
+static floral::rng								s_RNG(u64("prt.h"));
 
 inline u64 factorial(u32 n)
 {
@@ -151,8 +143,8 @@ void sh_setup_spherical_samples(sh_sample* samples, s32 sqrt_n_samples)
 	{
 		for (s32 b = 0; b < sqrt_n_samples; b++)
 		{
-			f64 x = (a + get_random()) * oneOverN;
-			f64 y = (b + get_random()) * oneOverN;
+			f64 x = (a + s_RNG.get_f64()) * oneOverN;
+			f64 y = (b + s_RNG.get_f64()) * oneOverN;
 			f64 theta = 0, phi = 0;
 			map_uniform_distributions_to_spherical_coord(x, y, theta, phi);
 			samples[i].sph = highp_vec3_t { theta, phi, 1.0 };
@@ -319,6 +311,52 @@ void reconstruct_sh_irradiance_light_probe(highp_vec3_t* coeffs, f32* imageData,
 				imageData[pixelIdx * 3 + 1] = (f32)mappedColor.y;
 				imageData[pixelIdx * 3 + 2] = (f32)mappedColor.z;
 			}
+		}
+	}
+}
+
+void generate_debug_light_probe(f32* imageData, const s32 resolution, const s32 n_samples, const u32 faceIdx)
+{
+	memset(imageData, 0, sizeof(f32) * 3 * resolution * resolution);
+	const f64 twoOverN = 2.0 / n_samples;
+
+	for (s32 y = 0; y < n_samples; y++)
+	{
+		for (s32 z = 0; z < n_samples; z++)
+		{
+			f64 yy = s_RNG.get_f64() * 2.0 - 1.0;
+			f64 zz = s_RNG.get_f64() * 2.0 - 1.0;
+
+			highp_vec3_t vec(0.0);
+			switch (faceIdx)
+			{
+				case 0: // pos x
+					vec = highp_vec3_t(1.0, yy, zz);
+					break;
+				case 1: // neg x
+					vec = highp_vec3_t(-1.0, yy, zz);
+					break;
+				case 2: // pos y
+					vec = highp_vec3_t(yy, 1.0, zz);
+					break;
+				case 3: // neg y
+					vec = highp_vec3_t(yy, -1.0, zz);
+					break;
+				case 4: // pos z
+					vec = highp_vec3_t(yy, zz, 1.0);
+					break;
+				case 5: // neg z
+					vec = highp_vec3_t(yy, zz, -1.0);
+					break;
+			}
+			f64 u, v;
+			convert_cartesian_to_lightprobe_coord(vec, u, v);
+			s32 upx = (s32)(u * resolution);
+			s32 upy = (s32)(v * resolution);
+			s32 pixelIdx = upy * resolution + upx;
+			imageData[pixelIdx * 3] = 1.0f;
+			imageData[pixelIdx * 3 + 1] = 0.0f;
+			imageData[pixelIdx * 3 + 2] = 0.0f;
 		}
 	}
 }

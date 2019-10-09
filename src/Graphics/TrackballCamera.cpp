@@ -2,19 +2,49 @@
 
 #include <clover.h>
 
+#include <math.h>
+
 namespace stone {
 
-TrackballCamera::TrackballCamera()
+TrackballCamera::TrackballCamera(const floral::camera_view_t& i_view, const floral::camera_persp_t& i_proj)
+	: m_CursorPressed(false)
+	, m_PrevCursorPos(0, 0)
+	, m_CursorPos(0, 0)
+	, m_Radius(0.0f)
+	, m_CamView(i_view)
 {
-	m_Rotation = floral::construct_quaternion_axis(floral::vec3f(0.0f, 0.0f, 0.0f), 0.0f);
-	m_LastRotation = floral::construct_quaternion_axis(floral::vec3f(0.0f, 0.0f, 0.0f), 0.0f);
+	m_Projection = floral::construct_perspective(i_proj);
+}
 
-	floral::camera_view_t camView;
-	camView.position = floral::normalize(floral::vec3f(7.0f, 0.5f, 0.0f));
-	camView.look_at = floral::vec3f(0.0f);
-	camView.up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
+void TrackballCamera::SetScreenResolution(const u32 i_width, const u32 i_height)
+{
+	m_HalfWidth = i_width / 2;
+	m_HalfHeight = i_height / 2;
+	if (m_HalfWidth > m_HalfHeight)
+	{
+		m_Radius = (f32)m_HalfHeight;
+	}
+	else
+	{
+		m_Radius = (f32)m_HalfWidth;
+	}
+}
 
-	m_InverseView = floral::construct_lookat_point(camView).get_inverse();
+floral::mat4x4f TrackballCamera::GetWVP() const
+{
+	floral::quaternionf q = GetRotation();
+
+	floral::camera_view_t cv = m_CamView;
+	floral::vec4f cp = floral::vec4f(cv.position, 1.0f);
+	floral::vec4f cu = floral::vec4f(cv.up_direction, 0.0f);
+	floral::mat4x4f m = q.to_transform();
+	cp = m * cp;
+	cu = m * cu;
+	cv.position = floral::vec3f(cp.x, cp.y, cp.z);
+	cv.up_direction = floral::vec3f(cu.x, cu.y, cu.z);
+
+	floral::mat4x4f v = floral::construct_lookat_point(cv);
+	return m_Projection * v;
 }
 
 void TrackballCamera::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
@@ -23,44 +53,57 @@ void TrackballCamera::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
 
 void TrackballCamera::OnCursorMove(const u32 i_x, const u32 i_y)
 {
-	f32 x = (f32)i_x / 1280.0f * 2.0f - 1.0f;
-	f32 y = -((f32)i_y / 720.0f * 2.0f - 1.0f);
-	m_SphereCoord.x = x;
-	m_SphereCoord.y = y;
-
-	if (x * x + y * y >= 0.5f) {
-		m_SphereCoord.z = 0.5f / sqrtf(x * x + y * y);
-	} else {
-		m_SphereCoord.z = sqrtf(1.0f - (x * x + y * y));
-	}
-
-	if (m_CursorPressed) {
-		floral::vec4f p(m_SphereCoord.x, m_SphereCoord.y, m_SphereCoord.z, 1.0f);
-		p = floral::normalize(m_InverseView * p);
-		m_EndCoord = floral::normalize(floral::vec3f(p.x, p.y, p.z));
-
-		floral::vec3f n = floral::cross(m_StartCoord, m_EndCoord);
-		f32 theta = floral::to_degree(floral::angle(m_StartCoord, m_EndCoord)) * 6.0f;
-		floral::quaternionf q = floral::construct_quaternion_axis(n, theta);
-		m_Rotation = q;
-	}
+	m_CursorPos = floral::vec2i(i_x, i_y);
 }
 
 void TrackballCamera::OnCursorInteract(const bool i_pressed)
 {
-	if (i_pressed) {
-		if (!m_CursorPressed) {
-			floral::vec4f p(m_SphereCoord.x, m_SphereCoord.y, m_SphereCoord.z, 1.0f);
-			p = m_InverseView * p;
-			m_StartCoord = floral::normalize(floral::vec3f(p.x, p.y, p.z));
-		}
-	} else {
-		if (m_CursorPressed) {
-			m_LastRotation = m_Rotation * m_LastRotation;
-			m_Rotation = floral::construct_quaternion_axis(floral::vec3f(0.0f, 0.0f, 1.0f), 0.0f);
-		}
+	if (i_pressed)
+	{
+		m_CursorPressed = true;
+		m_PrevCursorPos = m_CursorPos;
 	}
-	m_CursorPressed = i_pressed;
+	else
+	{
+		m_CursorPressed = false;
+		m_PrevRotation = (m_Rotation * m_PrevRotation).normalize();
+		m_Rotation = floral::quaternionf();
+	}
+}
+
+void TrackballCamera::OnUpdate(const f32 i_deltaMs)
+{
+	if (m_CursorPressed)
+	{
+		floral::vec3f prevArc = _GetArcCursor(m_PrevCursorPos);
+		floral::vec3f arc = _GetArcCursor(m_CursorPos);
+		m_Rotation = floral::construct_quaternion_v2v(prevArc, arc).normalize();
+	}
+}
+
+//----------------------------------------------
+
+floral::vec3f TrackballCamera::_GetArcCursor(const floral::vec2i& i_vec) const
+{
+	if (m_HalfWidth == 0 || m_HalfHeight == 0 || m_Radius == 0.0f)
+	{
+		return floral::vec3f(0.0f);
+	}
+
+	f32 x = i_vec.x - m_HalfWidth;
+	f32 y = m_HalfHeight - i_vec.y;
+
+	f32 arc = sqrtf(x * x + y * y);
+	f32 a = (arc / m_Radius);
+	f32 b = atan2f(y, x);
+	f32 x2 = m_Radius * sinf(a);
+
+	floral::vec3f ret;
+	ret.z = x2 * cosf(b);
+	ret.y = -x2 * sinf(b);
+	ret.x = m_Radius * cosf(a);
+
+	return floral::normalize(ret);
 }
 
 }

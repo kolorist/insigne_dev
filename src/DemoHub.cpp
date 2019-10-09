@@ -14,6 +14,7 @@
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
 #include "Graphics/RenderTech/PBR.h"
+#include "Graphics/RenderTech/SHCalculator.h"
 #include "Graphics/RenderTech/FragmentPartition.h"
 #include "Graphics/RenderTech/LightProbeGI.h"
 
@@ -44,6 +45,7 @@ void DemoHub::Initialize()
 
 	_EmplaceRenderTechSuite<tech::FrameBuffer>();
 	_EmplaceRenderTechSuite<tech::PBR>();
+	_EmplaceRenderTechSuite<tech::SHCalculator>();
 	_EmplaceRenderTechSuite<tech::FragmentPartition>();
 	_EmplaceRenderTechSuite<tech::LightProbeGI>();
 
@@ -59,6 +61,10 @@ void DemoHub::CleanUp()
 
 void DemoHub::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
 {
+	if (m_CurrentTestSuite)
+	{
+		m_CurrentTestSuite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
+	}
 }
 
 void DemoHub::OnCharacterInput(const c8 i_charCode)
@@ -69,11 +75,19 @@ void DemoHub::OnCharacterInput(const c8 i_charCode)
 void DemoHub::OnCursorMove(const u32 i_x, const u32 i_y)
 {
 	ImGuiCursorMove(i_x, i_y);
+	if (m_CurrentTestSuite)
+	{
+		m_CurrentTestSuite->GetCameraMotion()->OnCursorMove(i_x, i_y);
+	}
 }
 
 void DemoHub::OnCursorInteract(const bool i_pressed, const u32 i_buttonId)
 {
 	ImGuiCursorInteract(i_pressed);
+	if (m_CurrentTestSuite)
+	{
+		m_CurrentTestSuite->GetCameraMotion()->OnCursorInteract(i_pressed);
+	}
 }
 
 void DemoHub::UpdateFrame(const f32 i_deltaMs)
