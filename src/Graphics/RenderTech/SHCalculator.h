@@ -31,6 +31,10 @@ public:
 	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
+	void										_ComputeSH();
+	void										_ComputeDebugSH(const u32 i_faceIdx);
+
+private:
 	struct SHComputeData
 	{
 		LinearArena* LocalMemoryArena;
@@ -39,10 +43,12 @@ private:
 		f32* OutputIrradianceTex;
 		floral::vec3f OutputCoeffs[9];
 		u32 Resolution;
+		u32 DebugFaceIndex;
 	};
 
 	SHComputeData								m_SHComputeTaskData;
 	static refrain2::Task						ComputeSHCoeffs(voidptr i_data);
+	static refrain2::Task						ComputeDebugSHCoeffs(voidptr i_data);
 
 private:
 	struct SceneData

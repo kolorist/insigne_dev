@@ -148,7 +148,6 @@ void SHCalculator::OnInitialize()
 	}
 
 	{
-#if 0
 		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/grace_probe.cbtex");
 		floral::file_stream dataStream;
 		dataStream.buffer = (p8)m_TemporalArena->allocate(texFile.file_size);
@@ -159,14 +158,10 @@ void SHCalculator::OnInitialize()
 		dataStream.read(&header);
 
 		FLORAL_ASSERT(header.colorRange == cb::ColorRange::HDR);
-#endif
-		const u32 res = 512;
 
 		insigne::texture_desc_t texDesc;
-		//texDesc.width = header.resolution;
-		//texDesc.height = header.resolution;
-		texDesc.width = res;
-		texDesc.height = res;
+		texDesc.width = header.resolution;
+		texDesc.height = header.resolution;
 		texDesc.format = insigne::texture_format_e::hdr_rgb;
 		texDesc.min_filter = insigne::filtering_e::linear;
 		texDesc.mag_filter = insigne::filtering_e::linear;
@@ -181,15 +176,25 @@ void SHCalculator::OnInitialize()
 		m_IrrTextureData = (f32*)g_PersistanceResourceAllocator.allocate(dataSize);
 		memset(m_IrrTextureData, 0, dataSize);
 
-		//m_TextureResolution = header.resolution;
-		m_TextureResolution = res;
-#if 0
+		m_TextureResolution = header.resolution;
 		dataStream.read_bytes(m_TextureData, dataSize);
-#else
-		generate_debug_light_probe(m_TextureData, res, 500, 0);
-#endif
 		memcpy(texDesc.data, m_TextureData, dataSize);
 		m_Texture = insigne::create_texture(texDesc);
+	}
+
+	{
+		insigne::texture_desc_t texDesc;
+		texDesc.width = m_TextureResolution;
+		texDesc.height = m_TextureResolution;
+		texDesc.format = insigne::texture_format_e::hdr_rgb;
+		texDesc.min_filter = insigne::filtering_e::linear;
+		texDesc.mag_filter = insigne::filtering_e::linear;
+		texDesc.dimension = insigne::texture_dimension_e::tex_2d;
+		texDesc.has_mipmap = false;
+		texDesc.data = nullptr;
+
+		m_IrradianceTexture = insigne::create_texture(texDesc);
+		m_RadianceTexture = insigne::create_texture(texDesc);
 	}
 }
 
@@ -197,61 +202,27 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 {
 	// DebugUI
 	ImGui::Begin("Controller");
+	ImGui::Text("debug sh");
+	if (ImGui::Button("PosX")) _ComputeDebugSH(0);
+	ImGui::SameLine();
+	if (ImGui::Button("NegX")) _ComputeDebugSH(1);
+	ImGui::SameLine();
+	if (ImGui::Button("PosY")) _ComputeDebugSH(2);
+	ImGui::SameLine();
+	if (ImGui::Button("NegY")) _ComputeDebugSH(3);
+	ImGui::SameLine();
+	if (ImGui::Button("PosZ")) _ComputeDebugSH(4);
+	ImGui::SameLine();
+	if (ImGui::Button("NegZ")) _ComputeDebugSH(5);
+
+	ImGui::Separator();
+
 	ImGui::Text("grace_probe");
 	ImGui::Image(&m_Texture, ImVec2(128, 128));
 
-	const u32 res = 512;
-	if (ImGui::Button("Generate PosX"))
-	{
-		generate_debug_light_probe(m_TextureData, res, 500, 0);
-		insigne::copy_update_texture(m_Texture, m_TextureData);
-	}
-	if (ImGui::Button("Generate NegX"))
-	{
-		generate_debug_light_probe(m_TextureData, res, 500, 1);
-		insigne::copy_update_texture(m_Texture, m_TextureData);
-	}
-	if (ImGui::Button("Generate PosY"))
-	{
-		generate_debug_light_probe(m_TextureData, res, 500, 2);
-		insigne::copy_update_texture(m_Texture, m_TextureData);
-	}
-	if (ImGui::Button("Generate NegY"))
-	{
-		generate_debug_light_probe(m_TextureData, res, 500, 3);
-		insigne::copy_update_texture(m_Texture, m_TextureData);
-	}
-	if (ImGui::Button("Generate PosZ"))
-	{
-		generate_debug_light_probe(m_TextureData, res, 500, 4);
-		insigne::copy_update_texture(m_Texture, m_TextureData);
-	}
-	if (ImGui::Button("Generate NegZ"))
-	{
-		generate_debug_light_probe(m_TextureData, res, 500, 5);
-		insigne::copy_update_texture(m_Texture, m_TextureData);
-	}
-
 	if (ImGui::Button("Compute SH Coeffs"))
 	{
-		if (!m_ComputingSH)
-		{
-			m_ComputingSH = true;
-			m_SHReady = false;
-			m_TemporalArena->free_all();
-			m_SHComputeTaskData.InputTexture = m_TextureData;
-			m_SHComputeTaskData.OutputRadianceTex = m_RadTextureData;
-			m_SHComputeTaskData.OutputIrradianceTex = m_IrrTextureData;
-			m_SHComputeTaskData.Resolution = m_TextureResolution;
-			m_SHComputeTaskData.LocalMemoryArena = m_TemporalArena->allocate_arena<LinearArena>(SIZE_MB(4));
-
-			m_Counter.store(1);
-			refrain2::Task newTask;
-			newTask.pm_Instruction = &SHCalculator::ComputeSHCoeffs;
-			newTask.pm_Data = (voidptr)&m_SHComputeTaskData;
-			newTask.pm_Counter = &m_Counter;
-			refrain2::g_TaskManager->PushTask(newTask);
-		}
+		_ComputeSH();
 	}
 
 	if (m_SHReady)
@@ -296,24 +267,10 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 				texDesc.has_mipmap = false;
 
 				const size dataSize = insigne::prepare_texture_desc(texDesc);
-				memcpy(texDesc.data, m_IrrTextureData, dataSize);
-				m_IrradianceTexture = insigne::create_texture(texDesc);
+				insigne::copy_update_texture(m_IrradianceTexture, m_IrrTextureData, dataSize);
+				insigne::copy_update_texture(m_RadianceTexture, m_RadTextureData, dataSize);
 			}
 
-			{
-				insigne::texture_desc_t texDesc;
-				texDesc.width = m_TextureResolution;
-				texDesc.height = m_TextureResolution;
-				texDesc.format = insigne::texture_format_e::hdr_rgb;
-				texDesc.min_filter = insigne::filtering_e::linear;
-				texDesc.mag_filter = insigne::filtering_e::linear;
-				texDesc.dimension = insigne::texture_dimension_e::tex_2d;
-				texDesc.has_mipmap = false;
-
-				const size dataSize = insigne::prepare_texture_desc(texDesc);
-				memcpy(texDesc.data, m_RadTextureData, dataSize);
-				m_RadianceTexture = insigne::create_texture(texDesc);
-			}
 			m_ComputingSH = false;
 			m_SHReady = true;
 		}
@@ -355,6 +312,61 @@ void SHCalculator::OnCleanUp()
 }
 
 //----------------------------------------------
+
+void SHCalculator::_ComputeSH()
+{
+	if (m_ComputingSH)
+	{
+		return;
+	}
+
+	m_ComputingSH = true;
+	m_SHReady = false;
+
+	m_TemporalArena->free_all();
+	m_SHComputeTaskData.InputTexture = m_TextureData;
+	m_SHComputeTaskData.OutputRadianceTex = m_RadTextureData;
+	m_SHComputeTaskData.OutputIrradianceTex = m_IrrTextureData;
+	m_SHComputeTaskData.Resolution = m_TextureResolution;
+	m_SHComputeTaskData.LocalMemoryArena = m_TemporalArena->allocate_arena<LinearArena>(SIZE_MB(4));
+	m_SHComputeTaskData.DebugFaceIndex = 0;
+
+	m_Counter.store(1);
+	refrain2::Task newTask;
+	newTask.pm_Instruction = &SHCalculator::ComputeSHCoeffs;
+	newTask.pm_Data = (voidptr)&m_SHComputeTaskData;
+	newTask.pm_Counter = &m_Counter;
+	refrain2::g_TaskManager->PushTask(newTask);
+}
+
+void SHCalculator::_ComputeDebugSH(const u32 i_faceIdx)
+{
+	if (m_ComputingSH)
+	{
+		return;
+	}
+
+	m_ComputingSH = true;
+	m_SHReady = false;
+
+	m_TemporalArena->free_all();
+	m_SHComputeTaskData.InputTexture = nullptr;
+	m_SHComputeTaskData.OutputRadianceTex = m_RadTextureData;
+	m_SHComputeTaskData.OutputIrradianceTex = m_IrrTextureData;
+	m_SHComputeTaskData.Resolution = m_TextureResolution;
+	m_SHComputeTaskData.LocalMemoryArena = m_TemporalArena->allocate_arena<LinearArena>(SIZE_MB(4));
+	m_SHComputeTaskData.DebugFaceIndex = i_faceIdx;
+
+	m_Counter.store(1);
+	refrain2::Task newTask;
+	newTask.pm_Instruction = &SHCalculator::ComputeDebugSHCoeffs;
+	newTask.pm_Data = (voidptr)&m_SHComputeTaskData;
+	newTask.pm_Counter = &m_Counter;
+	refrain2::g_TaskManager->PushTask(newTask);
+}
+
+//----------------------------------------------
+
 refrain2::Task SHCalculator::ComputeSHCoeffs(voidptr i_data)
 {
 	SHComputeData* input = (SHComputeData*)i_data;
@@ -365,6 +377,33 @@ refrain2::Task SHCalculator::ComputeSHCoeffs(voidptr i_data)
 
 	highp_vec3_t shResult[9];
 	sh_project_light_image(input->InputTexture, input->Resolution, NSamples, 9, samples, shResult);
+
+	for (s32 i = 0; i < 9; i++)
+	{
+		CLOVER_DEBUG("(%f; %f; %f)", shResult[i].x, shResult[i].y, shResult[i].z);
+
+		input->OutputCoeffs[i].x = (f32)shResult[i].x;
+		input->OutputCoeffs[i].y = (f32)shResult[i].y;
+		input->OutputCoeffs[i].z = (f32)shResult[i].z;
+	}
+
+	reconstruct_sh_radiance_light_probe(shResult, input->OutputRadianceTex, input->Resolution, 1024);
+	reconstruct_sh_irradiance_light_probe(shResult, input->OutputIrradianceTex, input->Resolution, 1024, 0.4f);
+
+	CLOVER_VERBOSE("Compute finished");
+	return refrain2::Task();
+}
+
+refrain2::Task SHCalculator::ComputeDebugSHCoeffs(voidptr i_data)
+{
+	SHComputeData* input = (SHComputeData*)i_data;
+	s32 sqrtNSamples = 100;
+	s32 NSamples = sqrtNSamples * sqrtNSamples;
+	sh_sample* samples = (sh_sample*)input->LocalMemoryArena->allocate_array<sh_sample>(NSamples);
+	sh_setup_spherical_samples(samples, sqrtNSamples);
+
+	highp_vec3_t shResult[9];
+	debug_sh_project_light_image(input->DebugFaceIndex, input->Resolution, NSamples, 9, samples, shResult);
 
 	for (s32 i = 0; i < 9; i++)
 	{

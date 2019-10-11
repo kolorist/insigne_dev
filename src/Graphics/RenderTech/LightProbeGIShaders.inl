@@ -225,8 +225,8 @@ void main()
 
 	mediump vec3 shColor = computeSH(p, vec3(-v_Normal.x, v_Normal.y, v_Normal.z), cp);
 
-	//o_Color = vec4(shColor + v_Color, 1.0f);
-	o_Color = vec4(shColor, 1.0f);
+	o_Color = vec4(shColor * v_Color, 1.0f);
+	//o_Color = vec4(shColor, 1.0f);
 }
 )";
 

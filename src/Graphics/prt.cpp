@@ -210,6 +210,84 @@ void sh_project_light_image(f32* imageData, const s32 resolution, const s32 n_sa
 	}
 }
 
+void debug_sh_project_light_image(const u32 faceIdx, const s32 resolution, const s32 n_samples, const s32 n_coeffs, const sh_sample* samples, highp_vec3_t* result)
+{
+	for (s32 i = 0; i < n_coeffs; i++)
+	{
+		result[i] = highp_vec3_t { 0.0, 0.0, 0.0 };
+	}
+
+	highp_vec3_t debugDir(0.0);
+	switch (faceIdx)
+	{
+		case 0: // pos x
+			{
+				debugDir.x = 1.0;
+				break;
+			}
+		case 1: // neg x
+			{
+				debugDir.x = -1.0;
+				break;
+			}
+		case 2: // pos y
+			{
+				debugDir.y = 1.0;
+				break;
+			}
+		case 3: // neg y
+			{
+				debugDir.y = -1.0;
+				break;
+			}
+		case 4: // pos z
+			{
+				debugDir.z = 1.0;
+				break;
+			}
+		case 5: // neg z
+			{
+				debugDir.z = -1.0;
+				break;
+			}
+		default:
+			break;
+	}
+
+	const f64 weight = 4.0 * M_PI;
+	for (s32 i = 0; i < n_samples; i++)
+	{
+		highp_vec3_t direction = samples[i].vec;
+		for (s32 j = 0; j < n_coeffs; j++)
+		{
+			f64 threshold = cosf(floral::to_radians(30));
+			highp_vec3_t col;
+			f64 angle = floral::dot(floral::normalize(direction), debugDir);
+			if (angle >= threshold)
+			{
+				col = highp_vec3_t(0.0, 1.0, 0.0);
+			}
+			else
+			{
+				col = highp_vec3_t(0.0);
+			}
+			
+			f64 shfunc = samples[i].coeff[j];
+			result[j].x += (col.x * shfunc);
+			result[j].y += (col.y * shfunc);
+			result[j].z += (col.z * shfunc);
+		}
+	}
+
+	f64 factor = weight / n_samples;
+	for (s32 i = 0; i < n_coeffs; i++)
+	{
+		result[i].x = result[i].x * factor;
+		result[i].y = result[i].y * factor;
+		result[i].z = result[i].z * factor;
+	}
+}
+
 void reconstruct_sh_radiance_light_probe(highp_vec3_t* coeffs, f32* imageData, const s32 resolution, const s32 n_samples)
 {
 	const f64 c0 = sqrt(1.0 / (4.0 * M_PI));
@@ -311,52 +389,6 @@ void reconstruct_sh_irradiance_light_probe(highp_vec3_t* coeffs, f32* imageData,
 				imageData[pixelIdx * 3 + 1] = (f32)mappedColor.y;
 				imageData[pixelIdx * 3 + 2] = (f32)mappedColor.z;
 			}
-		}
-	}
-}
-
-void generate_debug_light_probe(f32* imageData, const s32 resolution, const s32 n_samples, const u32 faceIdx)
-{
-	memset(imageData, 0, sizeof(f32) * 3 * resolution * resolution);
-	const f64 twoOverN = 2.0 / n_samples;
-
-	for (s32 y = 0; y < n_samples; y++)
-	{
-		for (s32 z = 0; z < n_samples; z++)
-		{
-			f64 yy = s_RNG.get_f64() * 2.0 - 1.0;
-			f64 zz = s_RNG.get_f64() * 2.0 - 1.0;
-
-			highp_vec3_t vec(0.0);
-			switch (faceIdx)
-			{
-				case 0: // pos x
-					vec = highp_vec3_t(1.0, yy, zz);
-					break;
-				case 1: // neg x
-					vec = highp_vec3_t(-1.0, yy, zz);
-					break;
-				case 2: // pos y
-					vec = highp_vec3_t(yy, 1.0, zz);
-					break;
-				case 3: // neg y
-					vec = highp_vec3_t(yy, -1.0, zz);
-					break;
-				case 4: // pos z
-					vec = highp_vec3_t(yy, zz, 1.0);
-					break;
-				case 5: // neg z
-					vec = highp_vec3_t(yy, zz, -1.0);
-					break;
-			}
-			f64 u, v;
-			convert_cartesian_to_lightprobe_coord(vec, u, v);
-			s32 upx = (s32)(u * resolution);
-			s32 upy = (s32)(v * resolution);
-			s32 pixelIdx = upy * resolution + upx;
-			imageData[pixelIdx * 3] = 1.0f;
-			imageData[pixelIdx * 3 + 1] = 0.0f;
-			imageData[pixelIdx * 3 + 2] = 0.0f;
 		}
 	}
 }
