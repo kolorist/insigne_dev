@@ -241,7 +241,7 @@ int main(int argc, char** argv)
 	clover::InitializeConsoleOutput("console", clover::LogLevel::Verbose);
 
 	CLOVER_INFO("Texture Baker");
-	CLOVER_INFO("Build: 0.2.0a");
+	CLOVER_INFO("Build: 0.3.0a");
 
 	if (argc == 1) {
 		CLOVER_INFO(

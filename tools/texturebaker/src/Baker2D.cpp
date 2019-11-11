@@ -16,11 +16,6 @@ void ConvertTexture2D(const_cstr i_inputTexPath, const_cstr i_outputTexPath, con
 {
 	CLOVER_INFO("Input texture:  %s", i_inputTexPath);
 	CLOVER_INFO("Output texture: %s", i_outputTexPath);
-	CLOVER_INFO(
-			"Conversion settings:\n"
-			"  - Max mips: %d",
-			i_maxMips);
-
 	CLOVER_INFO("Begin conversion...");
 	CLOVER_DEBUG("Loading original image '%s'...", i_inputTexPath);
 	s32 x, y, n;
@@ -35,10 +30,29 @@ void ConvertTexture2D(const_cstr i_inputTexPath, const_cstr i_outputTexPath, con
 
 	cymbi::CBTexture2DHeader header;
 	memcpy(header.magicCharacters, "CBFM", 4);
-	header.colorRange = cymbi::ColorRange::HDR;
+	header.colorRange = cymbi::ColorRange::LDR;
 	header.colorSpace = cymbi::ColorSpace::Linear;
 	header.colorChannel = cymbi::ColorChannel::RGB;
+	switch (n)
+	{
+		case 1:
+			header.colorChannel = cymbi::ColorChannel::R;
+			break;
+		case 3:
+			header.colorChannel = cymbi::ColorChannel::RGB;
+			break;
+		default:
+			CLOVER_ERROR("Unsupported channel count");
+			return;
+	}
 	header.encodedGamma = 1.0f;
+
+	CLOVER_INFO(
+			"Conversion settings (LDR):\n"
+			"  - Max mips: %d\n"
+			"  - Channels count: %d",
+			i_maxMips,
+			n);
 
 	// mips count?
 	s32 mipsCount = (s32)log2(x) + 1;
