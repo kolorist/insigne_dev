@@ -19,7 +19,7 @@ void ConvertTexture2D(const_cstr i_inputTexPath, const_cstr i_outputTexPath, con
 	CLOVER_INFO("Begin conversion...");
 	CLOVER_DEBUG("Loading original image '%s'...", i_inputTexPath);
 	s32 x, y, n;
-	p8 data = stbi_load(i_inputTexPath, &x, &y, &n, 0);
+	p8 data = stbi_load(i_inputTexPath, &x, &y, &n, 3);
 	CLOVER_DEBUG(
 			"Original image loaded:\n"
 			"  - Resolution: %d x %d\n"
@@ -33,17 +33,10 @@ void ConvertTexture2D(const_cstr i_inputTexPath, const_cstr i_outputTexPath, con
 	header.colorRange = cymbi::ColorRange::LDR;
 	header.colorSpace = cymbi::ColorSpace::Linear;
 	header.colorChannel = cymbi::ColorChannel::RGB;
-	switch (n)
+	if (n == 1)
 	{
-		case 1:
-			header.colorChannel = cymbi::ColorChannel::R;
-			break;
-		case 3:
-			header.colorChannel = cymbi::ColorChannel::RGB;
-			break;
-		default:
-			CLOVER_ERROR("Unsupported channel count");
-			return;
+		CLOVER_INFO("Image data converted from 1 channel to 3 channels");
+		n = 3;
 	}
 	header.encodedGamma = 1.0f;
 
@@ -92,6 +85,8 @@ void ConvertTexture2D(const_cstr i_inputTexPath, const_cstr i_outputTexPath, con
 			g_PersistanceAllocator.free(rzdata);
 		}
 	}
+	
+	g_PersistanceAllocator.free(data);
 
 	fclose(fp);
 	CLOVER_INFO("All done. Enjoy :D");
