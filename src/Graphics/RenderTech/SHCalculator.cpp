@@ -82,8 +82,8 @@ void SHCalculator::OnInitialize()
 
 		floral::reset_generation_transforms_stack();
 		floral::geo_generate_result_t genResult = floral::generate_unit_icosphere_3d(
-				0, sizeof(VertexP),
-				(s32)floral::geo_vertex_format_e::position,
+				2, 0, sizeof(VertexP),
+				floral::geo_vertex_format_e::position,
 				&sphereVertices[0], &sphereIndices[0]);
 		sphereVertices.resize(genResult.vertices_generated);
 		sphereIndices.resize(genResult.indices_generated);

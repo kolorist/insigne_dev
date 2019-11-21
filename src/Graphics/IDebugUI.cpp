@@ -64,12 +64,12 @@ static const size k_IndexBufferBudget = SIZE_MB(2);
 
 static FreelistArena* s_MemoryArena = nullptr;
 
-void* ImGuiCustomAlloc(const size_t sz)
+void* ImGuiCustomAlloc(const size_t sz, voidptr userData)
 {
 	return s_MemoryArena->allocate(sz);
 }
 
-void ImGuiCustomFree(void* ptr)
+void ImGuiCustomFree(void* ptr, voidptr userData)
 {
 	if (ptr)
 	{
@@ -96,9 +96,11 @@ IDebugUI::IDebugUI()
 
 void IDebugUI::Initialize()
 {
+	ImGuiContext* ctx = ImGui::CreateContext();
+	ImGui::SetCurrentContext(ctx);
+	ImGui::StyleColorsClassic();
 	ImGuiIO& io = ImGui::GetIO();
-	io.MemAllocFn = &ImGuiCustomAlloc;
-	io.MemFreeFn = &ImGuiCustomFree;
+	ImGui::SetAllocatorFunctions(&ImGuiCustomAlloc, &ImGuiCustomFree, nullptr);
 
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 

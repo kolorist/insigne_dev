@@ -77,7 +77,7 @@ void PBR::OnInitialize()
 
 		floral::reset_generation_transforms_stack();
 		floral::geo_generate_result_t genResult = floral::generate_unit_icosphere_3d(
-				0, sizeof(VertexPN),
+				2, 0, sizeof(VertexPN),
 				floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
 				&sphereVertices[0], &sphereIndices[0]);
 		sphereVertices.resize(genResult.vertices_generated);

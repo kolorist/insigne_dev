@@ -77,12 +77,12 @@ static FreelistArena* s_MemoryArena = nullptr;
 
 const ssize AllocateNewBuffer();
 
-static inline void* ImGuiCustomAlloc(const size_t sz)
+static inline void* ImGuiCustomAlloc(const size_t sz, voidptr userData)
 {
 	return s_MemoryArena->allocate(sz);
 }
 
-static inline void ImGuiCustomFree(void* ptr)
+static inline void ImGuiCustomFree(void* ptr, voidptr userData)
 {
 	if (ptr)
 	{
@@ -95,9 +95,11 @@ void InitializeImGui()
 	FLORAL_ASSERT(s_MemoryArena == nullptr);
 	s_MemoryArena = g_PersistanceAllocator.allocate_arena<FreelistArena>(k_CPUMemoryBudget);
 
+	ImGuiContext* ctx = ImGui::CreateContext();
+	ImGui::SetCurrentContext(ctx);
+	ImGui::StyleColorsClassic();
 	ImGuiIO& io = ImGui::GetIO();
-	io.MemAllocFn = &ImGuiCustomAlloc;
-	io.MemFreeFn = &ImGuiCustomFree;
+	ImGui::SetAllocatorFunctions(&ImGuiCustomAlloc, &ImGuiCustomFree, nullptr);
 
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 

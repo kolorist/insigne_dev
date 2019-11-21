@@ -178,7 +178,7 @@ void InterreflectPRT::OnInitialize()
 					&m_Vertices[vtxCount], &m_Indices[idxCount],
 
 					mnfVtxCount, sizeof(VertexP), 0.05f,
-					(s32)floral::geo_vertex_format_e::position,
+					floral::geo_vertex_format_e::position,
 					&m_MnfVertices[mnfVtxCount], &m_MnfIndices[mnfIdxCount]);
 
 			for (size i = vtxCount; i < vtxCount + genResult.vertices_generated; i++)
@@ -205,7 +205,7 @@ void InterreflectPRT::OnInitialize()
 					&m_Vertices[vtxCount], &m_Indices[idxCount],
 
 					mnfVtxCount, sizeof(VertexP), 0.05f,
-					(s32)floral::geo_vertex_format_e::position,
+					floral::geo_vertex_format_e::position,
 					&m_MnfVertices[mnfVtxCount], &m_MnfIndices[mnfIdxCount]);
 
 			for (size i = vtxCount; i < vtxCount + genResult.vertices_generated; i++)
@@ -231,7 +231,7 @@ void InterreflectPRT::OnInitialize()
 					&m_Vertices[vtxCount], &m_Indices[idxCount],
 
 					mnfVtxCount, sizeof(VertexP), 0.05f,
-					(s32)floral::geo_vertex_format_e::position,
+					floral::geo_vertex_format_e::position,
 					&m_MnfVertices[mnfVtxCount], &m_MnfIndices[mnfIdxCount]);
 
 			for (size i = vtxCount; i < vtxCount + genResult.vertices_generated; i++)
@@ -257,7 +257,7 @@ void InterreflectPRT::OnInitialize()
 					&m_Vertices[vtxCount], &m_Indices[idxCount],
 
 					mnfVtxCount, sizeof(VertexP), 0.05f,
-					(s32)floral::geo_vertex_format_e::position,
+					floral::geo_vertex_format_e::position,
 					&m_MnfVertices[mnfVtxCount], &m_MnfIndices[mnfIdxCount]);
 
 			for (size i = vtxCount; i < vtxCount + genResult.vertices_generated; i++)

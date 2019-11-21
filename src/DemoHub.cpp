@@ -63,7 +63,10 @@ void DemoHub::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
 {
 	if (m_CurrentTestSuite)
 	{
-		m_CurrentTestSuite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
+		if (m_CurrentTestSuite->GetCameraMotion())
+		{
+			m_CurrentTestSuite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
+		}
 	}
 }
 
@@ -77,7 +80,10 @@ void DemoHub::OnCursorMove(const u32 i_x, const u32 i_y)
 	ImGuiCursorMove(i_x, i_y);
 	if (m_CurrentTestSuite)
 	{
-		m_CurrentTestSuite->GetCameraMotion()->OnCursorMove(i_x, i_y);
+		if (m_CurrentTestSuite->GetCameraMotion())
+		{
+			m_CurrentTestSuite->GetCameraMotion()->OnCursorMove(i_x, i_y);
+		}
 	}
 }
 
@@ -86,7 +92,10 @@ void DemoHub::OnCursorInteract(const bool i_pressed, const u32 i_buttonId)
 	ImGuiCursorInteract(i_pressed);
 	if (m_CurrentTestSuite)
 	{
-		m_CurrentTestSuite->GetCameraMotion()->OnCursorInteract(i_pressed);
+		if (m_CurrentTestSuite->GetCameraMotion())
+		{
+			m_CurrentTestSuite->GetCameraMotion()->OnCursorInteract(i_pressed);
+		}
 	}
 }
 
