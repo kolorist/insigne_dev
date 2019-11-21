@@ -20,7 +20,7 @@ PlyLoader<TAllocator>::~PlyLoader()
 }
 
 template <class TAllocator>
-void PlyLoader<TAllocator>::LoadFromFile(const floral::path& i_path)
+void PlyLoader<TAllocator>::LoadFromFile(const floral::path& i_path, const bool i_isAscii /* = false */)
 {
 	m_PlyFile = floral::open_file(i_path);
 	m_DataStream.buffer = (p8)m_Allocator->allocate(m_PlyFile.file_size);
@@ -64,39 +64,89 @@ void PlyLoader<TAllocator>::LoadFromFile(const floral::path& i_path)
 	m_DataStream.read_line_to_buffer(buffer);	// property list
 	m_DataStream.read_line_to_buffer(buffer);	// end_header
 
-	// vertex data
-	for (u32 i = 0; i < vertexCount; i++)
+	if (i_isAscii)
 	{
-		floral::vec3f pos(0.0f);
-		floral::vec3f norm(0.0f);
-		floral::vec2f uv(0.0f);
-		m_DataStream.read(&pos.x);
-		m_DataStream.read(&pos.y);
-		m_DataStream.read(&pos.z);
-		if (hasNormal)
+		for (u32 i = 0; i < vertexCount; i++)
 		{
-			m_DataStream.read(&norm.x);
-			m_DataStream.read(&norm.y);
-			m_DataStream.read(&norm.z);
-		}
-		m_DataStream.read(&uv.x);
-		m_DataStream.read(&uv.y);
-		m_Positions->push_back(pos);
-		m_Normals->push_back(norm);
-		m_UVs->push_back(uv);
-	}
+			c8 lineBuffer[1024];
+			m_DataStream.read_line_to_buffer(lineBuffer);
+			floral::vec3f pos(0.0f);
+			floral::vec3f norm(0.0f);
+			floral::vec2f uv(0.0f);
 
-	// indices
-	for (u32 i = 0; i < faceCount; i++)
-	{
-		u8 indicesPerFace = 0;
-		m_DataStream.read(&indicesPerFace);
-		FLORAL_ASSERT(indicesPerFace == 3);
-		for (u8 j = 0; j < indicesPerFace; j++)
+			if (hasNormal)
+			{
+				s32 c = sscanf(lineBuffer, "%f %f %f %f %f %f %f %f",
+						&pos.x, &pos.y, &pos.z,
+						&norm.x, &norm.y, &norm.z,
+						&uv.x, &uv.y);
+				FLORAL_ASSERT(c == 8);
+			}
+			else
+			{
+				s32 c = sscanf(lineBuffer, "%f %f %f %f %f",
+						&pos.x, &pos.y, &pos.z,
+						&uv.x, &uv.y);
+				FLORAL_ASSERT(c == 5);
+			}
+			m_Positions->push_back(pos);
+			m_Normals->push_back(norm);
+			m_UVs->push_back(uv);
+		}
+
+		for (u32 i = 0; i < faceCount; i++)
 		{
-			s32 index = 0;
-			m_DataStream.read(&index);
-			m_Indices->push_back(index);
+			c8 lineBuffer[1024];
+			m_DataStream.read_line_to_buffer(lineBuffer);
+
+			s32 ipf = 0;
+			s32 indices[3];
+			s32 c = sscanf(lineBuffer, "%d %d %d %d",
+					&ipf,
+					&indices[0], &indices[1], &indices[2]);
+			FLORAL_ASSERT(c == 4);
+
+			m_Indices->push_back(indices[0]);
+			m_Indices->push_back(indices[1]);
+			m_Indices->push_back(indices[2]);
+		}
+	}
+	else
+	{
+		// vertex data
+		for (u32 i = 0; i < vertexCount; i++)
+		{
+			floral::vec3f pos(0.0f);
+			floral::vec3f norm(0.0f);
+			floral::vec2f uv(0.0f);
+			m_DataStream.read(&pos.x);
+			m_DataStream.read(&pos.y);
+			m_DataStream.read(&pos.z);
+			if (hasNormal)
+			{
+				m_DataStream.read(&norm.x);
+				m_DataStream.read(&norm.y);
+				m_DataStream.read(&norm.z);
+			}
+			m_DataStream.read(&uv.x);
+			m_DataStream.read(&uv.y);
+			m_Positions->push_back(pos);
+			m_Normals->push_back(norm);
+			m_UVs->push_back(uv);
+		}
+
+		// indices
+		for (u32 i = 0; i < faceCount; i++)
+		{
+			u8 indicesPerFace = 0;
+			m_DataStream.read(&indicesPerFace);
+			FLORAL_ASSERT(indicesPerFace == 3);
+			for (u8 j = 0; j < indicesPerFace; j++)
+			{
+				s32 index = 0;
+				m_DataStream.read(&index);
+				m_Indices->push_back(index);
+			}
 		}
 	}
 	FLORAL_ASSERT(m_DataStream.is_eos());

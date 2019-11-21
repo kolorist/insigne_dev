@@ -124,15 +124,36 @@ int main(int argc, char** argv)
 	// we have to call it ourself as we do not have calyx here
 	helich::init_memory_system();
 
-	clover::Initialize();
+	clover::Initialize("main", clover::LogLevel::Verbose);
 	clover::InitializeVSOutput("vs", clover::LogLevel::Verbose);
 	clover::InitializeConsoleOutput("console", clover::LogLevel::Verbose);
 
 	CLOVER_INFO("Model Baker v2");
 
-	if (argc != 2)
+	if (argc != 3 && argc != 5)
+	{
+		CLOVER_INFO("Syntax:");
+		CLOVER_INFO("  > modelbaker.exe --pbrt-scene [path_to_pbrt_scene]");
+		CLOVER_INFO("  > modelbaker.exe --ply-mesh [path_to_ply_mesh] --output [output_file_path]");
 		return -1;
-	
+	}
+
+	if (strcmp(argv[1], "--pbrt-scene") == 0)
+	{
+	}
+	else if (strcmp(argv[1], "--ply-mesh") == 0)
+	{
+		CLOVER_INFO("Beginning PLY Mesh conversion...");
+
+		g_TemporalArena.free_all();
+		cb::PlyLoader<FreelistArena> loader(&g_TemporalArena);
+		loader.LoadFromFile(floral::path(argv[2]), true);
+		loader.ConvertToCBOBJ(argv[4]);
+
+		CLOVER_INFO("All done. Enjoy :D");
+	}
+
+#if 0
 	strcpy(s_SceneFolder, argv[1]);
 	c8 cbScenePath[1024];
 	sprintf(cbScenePath, "%s/scene.cbscn", s_SceneFolder);
@@ -181,6 +202,7 @@ int main(int argc, char** argv)
 		loader.ExtractPositionData(0, arr);
 		CLOVER_INFO("test done");
 	}
+#endif
 
 	return 0;
 }

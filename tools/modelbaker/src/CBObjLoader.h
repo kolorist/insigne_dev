@@ -1,9 +1,9 @@
 #pragma once
 
-#include <stdaliases.h>
-#include <io/nativeio.h>
-#include <cmds/path.h>
-#include <containers/array.h>
+#include <floral/stdaliases.h>
+#include <floral/io/nativeio.h>
+#include <floral/cmds/path.h>
+#include <floral/containers/array.h>
 
 #include "CBObjDefinitions.h"
 

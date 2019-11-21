@@ -1,9 +1,9 @@
 #pragma once
 
-#include <stdaliases.h>
-#include <io/nativeio.h>
-#include <cmds/path.h>
-#include <containers/array.h>
+#include <floral/stdaliases.h>
+#include <floral/io/nativeio.h>
+#include <floral/cmds/path.h>
+#include <floral/containers/array.h>
 
 #include "PBRTSceneDefs.h"
 
@@ -17,7 +17,7 @@ class PlyLoader
 		PlyLoader(TAllocator* i_allocator);
 		~PlyLoader();
 
-		void									LoadFromFile(const floral::path& i_path);
+		void									LoadFromFile(const floral::path& i_path, const bool i_isAscii = false);
 		void									ConvertToCBOBJ(const_cstr i_filePath);
 
 	private:
