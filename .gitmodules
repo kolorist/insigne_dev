@@ -1,31 +1,27 @@
 [submodule "externals/android"]
 	path = externals/android
-	url = z:/android.git
+	url = https://github.com/kolorist/android.git
 [submodule "externals/floral"]
 	path = externals/floral
-	url = z:/floral.git
-	branch = dev-x64
+	url = https://github.com/kolorist/floral.git
 [submodule "externals/helich"]
 	path = externals/helich
-	url = z:/helich.git
-	branch = dev-x64
+	url = https://github.com/kolorist/helich.git
 [submodule "externals/clover"]
 	path = externals/clover
-	url = z:/clover.git
-	branch = dev-x64
+	url = https://github.com/kolorist/clover.git
 [submodule "externals/calyx"]
 	path = externals/calyx
-	url = z:/calyx.git
+	url = https://github.com/kolorist/calyx.git
 [submodule "externals/refrain2"]
 	path = externals/refrain2
-	url = z:/refrain2.git
-	branch = dev-x64
+	url = https://github.com/kolorist/refrain2.git
 [submodule "externals/imgui"]
 	path = externals/imgui
-	url = z:/imgui.git
+	url = https://github.com/kolorist/imgui.git
 [submodule "externals/insigne"]
 	path = externals/insigne
-	url = z:/insigne.git
+	url = https://github.com/kolorist/insigne.git
 [submodule "externals/lotus"]
 	path = externals/lotus
-	url = z:/lotus.git
+	url = https://github.com/kolorist/lotus.git
