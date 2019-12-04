@@ -203,16 +203,12 @@ void ConvertTexture2D_PBRAttrib(const_cstr i_roughnessTex,
 		p8 combinedData = g_PersistanceAllocator.allocate_array<u8>(nx * ny * 4);
 		if (i == 1)
 		{
-			for (s32 px = 0; px < nx; px++)
+			for (s32 pidx = 0; pidx < nx * ny; pidx++)
 			{
-				for (s32 py = 0; py < ny; py++)
-				{
-					s32 pidx = px * nx + py;
-					combinedData[pidx] = roughnessData[pidx];
-					combinedData[pidx + 1] = metallicData[pidx];
-					combinedData[pidx + 2] = emissiveData[pidx];
-					combinedData[pidx + 3] = emissionMaskData[pidx];
-				}
+				combinedData[4 * pidx] = roughnessData[pidx];
+				combinedData[4 * pidx + 1] = metallicData[pidx];
+				combinedData[4 * pidx + 2] = emissiveData[pidx];
+				combinedData[4 * pidx + 3] = emissionMaskData[pidx];
 			}
 			fwrite(combinedData, sizeof(u8), nx * ny * 4, fp);
 		}
