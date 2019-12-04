@@ -2,6 +2,8 @@
 
 #include <clover.h>
 
+#include <floral/assert/assert.h>
+
 #include "Memory/MemorySystem.h"
 #include "CBFormats.h"
 
@@ -88,6 +90,175 @@ void ConvertTexture2D(const_cstr i_inputTexPath, const_cstr i_outputTexPath, con
 	
 	g_PersistanceAllocator.free(data);
 
+	fclose(fp);
+	CLOVER_INFO("All done. Enjoy :D");
+}
+
+void ConvertTexture2D_PBRAttrib(const_cstr i_roughnessTex,
+		const_cstr i_metallicTex, const_cstr i_emissiveTex,
+		const_cstr i_emissionMaskTex, const_cstr i_outputTexPath, const s32 i_maxMips)
+{
+	CLOVER_INFO("Roughness texture:  %s", i_roughnessTex);
+	CLOVER_INFO("Metallic texture: %s", i_metallicTex);
+	CLOVER_INFO("Emissive texture: %s", i_emissiveTex);
+	CLOVER_INFO("Emission mask texture: %s", i_emissionMaskTex);
+
+	CLOVER_INFO("Begin conversion...");
+	p8 roughnessData = nullptr;
+	p8 metallicData = nullptr;
+	p8 emissiveData = nullptr;
+	p8 emissionMaskData = nullptr;
+	s32 resX = 0, resY = 0;
+
+	{
+		CLOVER_DEBUG("Loading roughness texture '%s'...", i_roughnessTex);
+		s32 x, y, n;
+		roughnessData = stbi_load(i_roughnessTex, &x, &y, &n, 0);
+		resX = x; resY = y;
+		CLOVER_DEBUG(
+				"Roughness texture loaded:\n"
+				"  - Resolution: %d x %d\n"
+				"  - Color Channels: %d",
+				x, y, n);
+		FLORAL_ASSERT(n == 1);
+	}
+	{
+		CLOVER_DEBUG("Loading metallic texture '%s'...", i_metallicTex);
+		s32 x, y, n;
+		metallicData = stbi_load(i_metallicTex, &x, &y, &n, 0);
+		CLOVER_DEBUG(
+				"Metallic texture loaded:\n"
+				"  - Resolution: %d x %d\n"
+				"  - Color Channels: %d",
+				x, y, n);
+		FLORAL_ASSERT(n == 1);
+		FLORAL_ASSERT(x == resX); FLORAL_ASSERT(y == resY);
+	}
+	{
+		CLOVER_DEBUG("Loading emissive texture '%s'...", i_emissiveTex);
+		s32 x, y, n;
+		emissiveData = stbi_load(i_emissiveTex, &x, &y, &n, 0);
+		CLOVER_DEBUG(
+				"Emissive texture loaded:\n"
+				"  - Resolution: %d x %d\n"
+				"  - Color Channels: %d",
+				x, y, n);
+		FLORAL_ASSERT(n == 1);
+		FLORAL_ASSERT(x == resX); FLORAL_ASSERT(y == resY);
+	}
+	{
+		CLOVER_DEBUG("Loading emissive mask texture '%s'...", i_emissionMaskTex);
+		s32 x, y, n;
+		emissionMaskData = stbi_load(i_emissionMaskTex, &x, &y, &n, 0);
+		resX = x; resY = y;
+		CLOVER_DEBUG(
+				"Emissive mask texture loaded:\n"
+				"  - Resolution: %d x %d\n"
+				"  - Color Channels: %d",
+				x, y, n);
+		FLORAL_ASSERT(n == 1);
+		FLORAL_ASSERT(x == resX); FLORAL_ASSERT(y == resY);
+	}
+
+	FILE* fp = fopen(i_outputTexPath, "wb");
+
+	cymbi::CBTexture2DHeader header;
+	memcpy(header.magicCharacters, "CBFM", 4);
+	header.colorRange = cymbi::ColorRange::LDR;
+	header.colorSpace = cymbi::ColorSpace::Linear;
+	header.colorChannel = cymbi::ColorChannel::RGBA;
+	header.encodedGamma = 1.0f;
+
+	CLOVER_INFO(
+			"Conversion settings (LDR):\n"
+			"  - Max mips: %d\n"
+			"  - Channels count: 4",
+			i_maxMips);
+
+	// mips count?
+	s32 mipsCount = (s32)log2(resX) + 1;
+	s32 maxMips = 0;
+	s32 mipOffset = 0;
+
+	if (i_maxMips > 0) {
+		maxMips = i_maxMips;
+		mipOffset = 0;
+		if (mipsCount > maxMips) {
+			mipOffset = mipsCount - maxMips;
+			mipsCount = maxMips;
+		}
+	} else {
+		maxMips = mipsCount;
+	}
+	header.mipsCount = mipsCount;
+	CLOVER_DEBUG("Settled at mips count = %d", header.mipsCount);
+
+	fwrite((p8)&header, sizeof(cymbi::CBTexture2DHeader), 1, fp);
+
+	for (s32 i = 1 + mipOffset; i <= mipsCount + mipOffset; i++)
+	{
+		s32 nx = resX >> (i - 1);
+		s32 ny = resY >> (i - 1);
+		CLOVER_DEBUG("Creating mip #%d at size %dx%d...", i - mipOffset, nx, ny);
+		p8 combinedData = g_PersistanceAllocator.allocate_array<u8>(nx * ny * 4);
+		if (i == 1)
+		{
+			for (s32 px = 0; px < nx; px++)
+			{
+				for (s32 py = 0; py < ny; py++)
+				{
+					s32 pidx = px * nx + py;
+					combinedData[pidx] = roughnessData[pidx];
+					combinedData[pidx + 1] = metallicData[pidx];
+					combinedData[pidx + 2] = emissiveData[pidx];
+					combinedData[pidx + 3] = emissionMaskData[pidx];
+				}
+			}
+			fwrite(combinedData, sizeof(u8), nx * ny * 4, fp);
+		}
+		else
+		{
+			p8 rzRoughness = g_PersistanceAllocator.allocate_array<u8>(nx * ny);
+			p8 rzMetallic = g_PersistanceAllocator.allocate_array<u8>(nx * ny);
+			p8 rzEmissive = g_PersistanceAllocator.allocate_array<u8>(ny * ny);
+			p8 rzEmissionMask = g_PersistanceAllocator.allocate_array<u8>(nx * ny);
+			stbir_resize_uint8_srgb(
+					roughnessData, resX, resY, 0,
+					rzRoughness, nx, ny, 0,
+					1, STBIR_ALPHA_CHANNEL_NONE, 0);
+			stbir_resize_uint8_srgb(
+					metallicData, resX, resY, 0,
+					rzMetallic, nx, ny, 0,
+					1, STBIR_ALPHA_CHANNEL_NONE, 0);
+			stbir_resize_uint8_srgb(
+					emissiveData, resX, resY, 0,
+					rzEmissive, nx, ny, 0,
+					1, STBIR_ALPHA_CHANNEL_NONE, 0);
+			stbir_resize_uint8_srgb(
+					emissionMaskData, resX, resY, 0,
+					rzEmissionMask, nx, ny, 0,
+					1, STBIR_ALPHA_CHANNEL_NONE, 0);
+			for (s32 pidx = 0; pidx < nx * ny; pidx++)
+			{
+				combinedData[4 * pidx] = rzRoughness[pidx];
+				combinedData[4 * pidx + 1] = rzMetallic[pidx];
+				combinedData[4 * pidx + 2] = rzEmissive[pidx];
+				combinedData[4 * pidx + 3] = rzEmissionMask[pidx];
+			}
+			g_PersistanceAllocator.free(rzEmissionMask);
+			g_PersistanceAllocator.free(rzEmissive);
+			g_PersistanceAllocator.free(rzMetallic);
+			g_PersistanceAllocator.free(rzRoughness);
+			fwrite(combinedData, sizeof(u8), nx * ny * 4, fp);
+		}
+		g_PersistanceAllocator.free(combinedData);
+	}
+
+	stbi_image_free(roughnessData);
+	stbi_image_free(metallicData);
+	stbi_image_free(emissiveData);
+	stbi_image_free(emissionMaskData);
+	
 	fclose(fp);
 	CLOVER_INFO("All done. Enjoy :D");
 }

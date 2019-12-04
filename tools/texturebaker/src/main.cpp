@@ -246,16 +246,19 @@ int main(int argc, char** argv)
 	if (argc == 1) {
 		CLOVER_INFO(
 				"Texture Baker Syntax:\n"
-				"	> 2D Texture:           texturebaker.exe -t input_texture.png -m 10 -o output_texture.cbtex\n"
-				"	> HDR 2D Texture:       texturebaker.exe -hdrt input_texture.hdr -m 10 -o output_texture.cbtex\n"
-				"	> ShadingProbe Texture: texturebaker.exe -p input_cubemap_no_ext -f pfm -o output_cubemap.cbprb\n"
-				"	> Spherical Harmonics:  texturebaker.exe -sh input_texture.hdr -o output_shdata.cbsh\n"
-				"	> CubeMap Texture:      texturebaker.exe -s input_skybox_no_ext -f pfm -o output_skybox.cbskb");
+				"	> 2D Texture:            texturebaker.exe -t input_texture.png -m 10 -o output_texture.cbtex\n"
+				"	> PBR Attrib 2D Texture: texturebaker.exe -pbra roughness.png metallic.png emissive.png emission_mask.png -m 10 -o output_texture.cbtex\n"
+				"	> HDR 2D Texture:        texturebaker.exe -hdrt input_texture.hdr -m 10 -o output_texture.cbtex\n"
+				"	> ShadingProbe Texture:  texturebaker.exe -p input_cubemap_no_ext -f pfm -o output_cubemap.cbprb\n"
+				"	> Spherical Harmonics:   texturebaker.exe -sh input_texture.hdr -o output_shdata.cbsh\n"
+				"	> CubeMap Texture:       texturebaker.exe -s input_skybox_no_ext -f pfm -o output_skybox.cbskb");
 		return 0;
 	}
 
 	if (strcmp(argv[1], "-t") == 0) {
 		ConvertTexture2D(argv[2], argv[6], atoi(argv[4]));
+	} else if (strcmp(argv[1], "-pbra") == 0) {
+		ConvertTexture2D_PBRAttrib(argv[2], argv[3], argv[4], argv[5], argv[9], atoi(argv[7]));
 	} else if (strcmp(argv[1], "-hdrt") == 0) {
 		ConvertTexture2DHDR(argv[2], argv[6], atoi(argv[4]));
 	} else if (strcmp(argv[1], "-p") == 0) {
