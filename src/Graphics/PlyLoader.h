@@ -3,6 +3,7 @@
 #include <floral/stdaliases.h>
 #include <floral/containers/array.h>
 #include <floral/gpds/vec.h>
+#include <floral/cmds/path.h>
 
 namespace stone
 {

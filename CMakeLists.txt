@@ -1,29 +1,67 @@
+# 1. required version
 cmake_minimum_required(VERSION 3.4.1)
+
+# 2. initial setup
 set (PROJECT_NAME "insigne_dev")
 project (${PROJECT_NAME})
 include ("${PROJECT_SOURCE_DIR}/project_configs.cmake")
+message (STATUS "Project: ${PROJECT_NAME}")
+message (STATUS "Executable: ${EXECUTABLE_FILE_NAME}.exe")
+message (STATUS "Project source directory: ${PROJECT_SOURCE_DIR}")
+message (STATUS "Project binary directory: ${PROJECT_BINARY_DIR}")
 
-# building platform
-if (${ANDROID_BUILD})
-	message(STATUS "Building for Android Platform")
-	message(STATUS "Android API level: ${ANDROID_PLATFORM_LEVEL}")
-	
-	if (${ANDROID_PLATFORM_LEVEL} LESS 12)
-		message(FATAL_ERROR "GLES3 does not present with Android API level <= 11.")
-		return()
-	elseif (${ANDROID_PLATFORM_LEVEL} LESS 18)
-		message(STATUS "GLES3 will be dynamic initialized with Android API level 12 -> 17")
-		add_definitions("-DDYNAMIC_ES3")
-		set(OPENGL_LIB GLESv2)
-	else ()
-		message(STATUS "Building using API level >= 18")
-		set(OPENGL_LIB GLESv3)
-	endif (${ANDROID_PLATFORM_LEVEL} LESS 12)
-	
-	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -fno-rtti -fno-exceptions -Wall")
-endif (${ANDROID_BUILD})
+# 3. target platform
+if (${TARGET_PLATFORM} STREQUAL "arm64-v8a"
+	OR ${TARGET_PLATFORM} STREQUAL "arm-v7a"
+	OR ${TARGET_PLATFORM} STREQUAL "x86"
+	OR ${TARGET_PLATFORM} STREQUAL "x64")
+	message (STATUS "Target platform: ${TARGET_PLATFORM}")
+else ()
+	message (FATAL_ERROR "Target platform: no platform specified or you are using not supported target platform, please choose one of (arm64-v8a, arm-v7a, x86, x64)")
+	return()
+endif ()
 
+# 4. build commands output
+if (${USE_MSVC_PROJECT})
+	message (STATUS "MSVC Solution / Project structure will be generated")
+endif ()
+
+# 5.1 file listing
+if (${USE_MSVC_PROJECT})
+	file (GLOB_RECURSE file_list
+		LIST_DIRECTORIES false
+		"${PROJECT_SOURCE_DIR}/src/*.cpp"
+		"${PROJECT_SOURCE_DIR}/src/*.h")
+else ()
+	file (GLOB_RECURSE file_list
+		LIST_DIRECTORIES false
+		"${PROJECT_SOURCE_DIR}/src/*.cpp")
+endif ()
+
+# 5.2 exclude file according to platform
+if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
+
+else ()
+	file (GLOB_RECURSE deprecated_files
+		LIST_DIRECTORIES false
+		"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/*.cpp"
+		"${PROJECT_SOURCE_DIR}/src/ImGuiDebug/*.cpp")
+	list (REMOVE_ITEM file_list ${deprecated_files})
+endif ()
+
+# 6. platform specific compiling
+if (${TARGET_PLATFORM} STREQUAL "arm64-v8a")
+
+elseif (${TARGET_PLATFORM} STREQUAL "arm-v7a")
+
+elseif (${TARGET_PLATFORM} STREQUAL "x86")
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+elseif (${TARGET_PLATFORM} STREQUAL "x64")
+	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+endif ()
+include_directories("${PROJECT_SOURCE_DIR}/src")
+
+# 7. subdirectories
 add_subdirectory (externals/floral)
 add_subdirectory (externals/helich)
 add_subdirectory (externals/clover)
@@ -33,98 +71,9 @@ add_subdirectory (externals/insigne)
 add_subdirectory (externals/imgui)
 add_subdirectory (externals/lotus)
 
-include_directories ("${PROJECT_SOURCE_DIR}/src")
-
-file (GLOB_RECURSE file_list
-	"${PROJECT_SOURCE_DIR}/src/main.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Application.cpp"
-	"${PROJECT_SOURCE_DIR}/src/DemoHub.cpp"
-	"${PROJECT_SOURCE_DIR}/src/InsigneImGui.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Memory/MemorySystem.cpp"
-	"${PROJECT_SOURCE_DIR}/src/System/Controller.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/prt.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/stb_impl.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/DebugDrawer.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/IDebugUI.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/TrackballCamera.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/FreeCamera.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/GeometryBuilder.cpp"
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/shapegen.cpp"
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/shapegen_geom.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/SurfaceDefinitions.cpp"
-
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Performance/Empty.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Performance/Triangle.cpp"
-
-	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/FrameBuffer.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/PBR.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/SHCalculator.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/FragmentPartition.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/SHProbeBaker.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/LightProbeGI.cpp"
-
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/FormFactorUtils.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/SingleAccurateFormFactor.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/SurfelsGenerator.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/Samplers.cpp"
-
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainQuad.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHBaking.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHBakingUtils.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/FormFactorsBaking.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/FormFactorsValidating.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHTest.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/UnshadowedPRT.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/InterreflectPRT.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/ShadowedPRT.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/ShapeGen.cpp"
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/PlainTextureQuad.cpp"
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CubeMapTexture.cpp"
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/VectorMath.cpp"
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GPUVectorMath.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CornelBox.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/OctreePartition.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/LightProbePlacement.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/CbFormats.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/DebugUITest.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GILightProbe.cpp"
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/OmniShadow.cpp"
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/SHMath.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/AccurateFormFactor.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/Quad2DRasterize.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GPUQuad2DRasterize.cpp"
-	"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/Skeletal.cpp"
-
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GlobalIllumination.cpp"
-	# "${PROJECT_SOURCE_DIR}/src/Graphics/Tests/GIShader.cpp"
-	)
-
-add_definitions(
-	-D_CRT_SECURE_NO_WARNINGS)
-	
-if (${ANDROID_BUILD})
-	message(STATUS ${PROJECT_NAME} " will be built using Android configs")
-	add_definitions (
-		-DPLATFORM_POSIX)
-		
-	# platform abi
-	if (${ANDROID_ABI} STREQUAL "arm64-v8a")
-		message(STATUS ${PROJECT_NAME} " Android ABI: arm64")
-		add_definitions (
-			-DPOSIX64)
-	else ()
-		message(STATUS ${PROJECT_NAME} " Android ABI: arm")
-		add_definitions (
-			-DPOSIX32)
-	endif (${ANDROID_ABI} STREQUAL "arm64-v8a")	
-	
-	set (file_list
-		${file_list}
-		"externals/android/app/src/main/cpp/jnibridge.cpp")
-		
+# 8. platform specific linking
+if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
 	add_library(${PROJECT_NAME} SHARED ${file_list})
-
-	# Include libraries needed for gles3jni lib
 	target_link_libraries(${PROJECT_NAME}
 		floral
 		helich
@@ -134,20 +83,12 @@ if (${ANDROID_BUILD})
 		insigne
 		imgui
 		lotus
-		${OPENGL_LIB}
+		GLESv3
 		android
 		log
 		m)
 else ()
-	# project (${PROJECT_NAME})
-	message(STATUS ${PROJECT_NAME} " will be built using Windows configs")
-	add_definitions (
-		-DPLATFORM_WINDOWS)
-	
-	SET(CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Xlinker /subsystem:console")
-
 	add_executable (${PROJECT_NAME} ${file_list})
-
 	target_link_libraries (${PROJECT_NAME} 
 		floral
 		helich
@@ -158,6 +99,30 @@ else ()
 		imgui
 		lotus
 		comctl32)
-
+	set (CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Xlinker /subsystem:console")
 	set_target_properties (${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${EXECUTABLE_FILE_NAME})
-endif (${ANDROID_BUILD})
+endif ()
+
+# 9. C and CXX compile options
+if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
+	target_compile_options(${PROJECT_NAME}
+		PUBLIC	$<$<COMPILE_LANGUAGE:CXX>:-std=c++11 -Wall -fno-rtti -fno-exceptions>
+		PUBLIC	$<$<COMPILE_LANGUAGE:C>:-std=c11 -Wall>)
+else ()
+	# we will c++14 on Windows build as c++11 yields compile errors
+	target_compile_options(${PROJECT_NAME}
+		PUBLIC	$<$<COMPILE_LANGUAGE:CXX>:-std=c++14 -Wall -fno-rtti -fno-exceptions>
+		PUBLIC	$<$<COMPILE_LANGUAGE:C>:-std=c14 -Wall>)
+endif ()
+
+# 10. misc
+if (${USE_MSVC_PROJECT})
+	# organize filters
+	foreach(_source IN ITEMS ${file_list})
+		get_filename_component(_source_path "${_source}" PATH)
+		file(RELATIVE_PATH _source_path_rel "${PROJECT_SOURCE_DIR}" "${_source_path}")
+		string(REPLACE "/" "\\" _group_path "${_source_path_rel}")
+		source_group("${_group_path}" FILES "${_source}")
+	endforeach()
+	# TODO: startup project and working directory
+endif ()

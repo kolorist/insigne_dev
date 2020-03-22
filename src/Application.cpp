@@ -77,7 +77,7 @@ Application::~Application()
 // -----------------------------------------
 void Application::UpdateFrame(f32 i_deltaMs)
 {
-	PROFILE_SCOPE(UpdateFrame);
+	PROFILE_SCOPE("UpdateFrame");
 	m_DemoHub->UpdateFrame(i_deltaMs);
 	/*
 	s_profileEvents[0].empty();
@@ -89,7 +89,7 @@ void Application::UpdateFrame(f32 i_deltaMs)
 
 void Application::RenderFrame(f32 i_deltaMs)
 {
-	PROFILE_SCOPE(RenderFrame);
+	PROFILE_SCOPE("RenderFrame");
 	m_DemoHub->RenderFrame(i_deltaMs);
 }
 
