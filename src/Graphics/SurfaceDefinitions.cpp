@@ -3,6 +3,7 @@
 namespace stone
 {
 
+ssize SurfaceSkybox::index = -1;
 ssize SurfaceP::index = -1;
 ssize Surface3DPT::index = -1;
 ssize SurfacePC::index = -1;

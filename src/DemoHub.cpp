@@ -14,6 +14,7 @@
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
 #include "Graphics/RenderTech/PBR.h"
+#include "Graphics/RenderTech/PBRWithIBL.h"
 #include "Graphics/RenderTech/SHCalculator.h"
 #include "Graphics/RenderTech/FragmentPartition.h"
 #include "Graphics/RenderTech/LightProbeGI.h"
@@ -45,6 +46,7 @@ void DemoHub::Initialize()
 
 	_EmplaceRenderTechSuite<tech::FrameBuffer>();
 	_EmplaceRenderTechSuite<tech::PBR>();
+	_EmplaceRenderTechSuite<tech::PBRWithIBL>();
 	_EmplaceRenderTechSuite<tech::SHCalculator>();
 	_EmplaceRenderTechSuite<tech::FragmentPartition>();
 	_EmplaceRenderTechSuite<tech::LightProbeGI>();

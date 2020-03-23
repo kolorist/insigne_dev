@@ -195,7 +195,7 @@ void PBR::OnInitialize()
 		m_SurfaceUB = insigne::create_ub(desc);
 
 		m_SurfaceData.BaseColor = floral::vec4f(1.0f, 0.3f, 0.4f, 0.0f);
-		m_SurfaceData.Attributes = floral::vec4f(0.4f, 0.6f, 0.0f, 0.0f);
+		m_SurfaceData.Attributes = floral::vec4f(0.4f, 0.5f, 0.0f, 0.0f);
 
 		insigne::copy_update_ub(m_SurfaceUB, &m_SurfaceData, sizeof(SurfaceData), 0);
 	}
@@ -307,6 +307,7 @@ void PBR::OnUpdate(const f32 i_deltaMs)
 
 void PBR::OnRender(const f32 i_deltaMs)
 {
+	insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
 	insigne::begin_render_pass(m_PostFXBuffer);
 	//insigne::draw_surface<SurfacePC>(m_VB, m_IB, m_Material);
 	insigne::draw_surface<SurfacePN>(m_SphereVB, m_SphereIB, m_PBRMaterial);

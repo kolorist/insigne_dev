@@ -44,6 +44,9 @@ mediump vec3 eval_sh_irradiance(in mediump vec3 i_normal)
 	const mediump float a1 = 2.094395f;
 	const mediump float a2 = 0.785398f;
 
+	//TODO: we can pre-multiply those above factors with SH coeffs before transfering them
+	//to the GPU
+
 	return
 		a0 * c0 * iu_SH[0]
 

@@ -28,6 +28,7 @@ public:
 
 private:
 	void										_SwitchTestSuite(ITestSuite* i_to);
+
 	template <class T>
 	void _EmplacePerformanceSuite()
 	{

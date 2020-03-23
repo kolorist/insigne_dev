@@ -46,6 +46,175 @@ void convert_cartesian_to_lightprobe_coord(highp_vec3_t vec, f64& u, f64& v)
 	v = 0.5 - vec.y * r;
 }
 
+void convert_cartesian_to_latlong_coord(highp_vec3_t vec, f64& u, f64& v)
+{
+	f64 phi = atan2(vec.x, vec.z);
+	f64 theta = acos(vec.y);
+
+	u = (floral::pi + phi) * (0.5 / floral::pi);
+	v = theta / floral::pi;
+}
+
+void convert_cartesian_to_vstrip_cubemap_coord(highp_vec3_t vec, f64& u, f64& v)
+{
+	f64 absX = abs(vec.x);
+	f64 absY = abs(vec.y);
+	f64 absZ = abs(vec.z);
+
+	const bool isXPositive = vec.x > 0.0;
+	const bool isYPositive = vec.y > 0.0;
+	const bool isZPositive = vec.z > 0.0;
+
+	f64 maxAxis = 0.0, uc = 0.0, vc = 0.0;
+	u64 faceIndex = 0;
+
+	// positive X
+	if (isXPositive && absX >= absY && absX >= absZ)
+	{
+		// u [0..1] goes from +z to -z
+		// v [0..1] goes from -y to +y
+		maxAxis = absX;
+		uc = -vec.z;
+		vc = vec.y;
+		faceIndex = 0;
+	}
+	// negative X
+	if (!isXPositive && absX >= absY && absX >= absZ)
+	{
+		// u [0..1] goes from -z to +z
+		// v [0..1] goes from -y to +y
+		maxAxis = absX;
+		uc = vec.z;
+		vc = vec.y;
+		faceIndex = 1;
+	}
+	// positive y
+	if (isYPositive && absY >= absX && absY >= absZ)
+	{
+		// u [0..1] goes from -x to +x
+		// v [0..1] goes from +z to -z
+		maxAxis = absY;
+		uc = vec.x;
+		vc = -vec.z;
+		faceIndex = 2;
+	}
+	// negative y
+	if (!isYPositive && absY >= absX && absY >= absZ)
+	{
+		// u [0..1] goes from -x to +x
+		// v [0..1] goes from -z to +z
+		maxAxis = absY;
+		uc = vec.x;
+		vc = vec.z;
+		faceIndex = 3;
+	}
+	// positive z
+	if (isZPositive && absZ >= absX && absZ >= absY)
+	{
+		// u [0..1] goes from -x to +x
+		// v [0..1] goes from -y to +y
+		maxAxis = absZ;
+		uc = vec.x;
+		vc = vec.y;
+		faceIndex = 4;
+	}
+	// negative z
+	if (!isZPositive && absZ >= absX && absZ >= absY)
+	{
+		// u [0..1] goes from +x to -x
+		// v [0..1] goes from -y to +y
+		maxAxis = absZ;
+		uc = -vec.x;
+		vc = vec.y;
+		faceIndex = 5;
+	}
+
+	uc = 0.5 * (uc / maxAxis + 1.0);
+	vc = 0.5 * (vc / maxAxis + 1.0);
+	vc = vc / 6.0 + (5 - faceIndex) * 1.0;
+	u = uc; v = vc;
+}
+
+void convert_cartesian_to_hstrip_cubemap_coord(highp_vec3_t vec, f64& u, f64& v)
+{
+	f64 absX = abs(vec.x);
+	f64 absY = abs(vec.y);
+	f64 absZ = abs(vec.z);
+
+	const bool isXPositive = vec.x > 0.0;
+	const bool isYPositive = vec.y > 0.0;
+	const bool isZPositive = vec.z > 0.0;
+
+	f64 maxAxis = 0.0, uc = 0.0, vc = 0.0;
+	u64 faceIndex = 0;
+
+	// positive X
+	if (isXPositive && absX >= absY && absX >= absZ)
+	{
+		// u [0..1] goes from +z to -z
+		// v [0..1] goes from -y to +y
+		maxAxis = absX;
+		uc = -vec.z;
+		vc = vec.y;
+		faceIndex = 0;
+	}
+	// negative X
+	if (!isXPositive && absX >= absY && absX >= absZ)
+	{
+		// u [0..1] goes from -z to +z
+		// v [0..1] goes from -y to +y
+		maxAxis = absX;
+		uc = vec.z;
+		vc = vec.y;
+		faceIndex = 1;
+	}
+	// positive y
+	if (isYPositive && absY >= absX && absY >= absZ)
+	{
+		// u [0..1] goes from -x to +x
+		// v [0..1] goes from +z to -z
+		maxAxis = absY;
+		uc = vec.x;
+		vc = -vec.z;
+		faceIndex = 2;
+	}
+	// negative y
+	if (!isYPositive && absY >= absX && absY >= absZ)
+	{
+		// u [0..1] goes from -x to +x
+		// v [0..1] goes from -z to +z
+		maxAxis = absY;
+		uc = vec.x;
+		vc = vec.z;
+		faceIndex = 3;
+	}
+	// positive z
+	if (isZPositive && absZ >= absX && absZ >= absY)
+	{
+		// u [0..1] goes from -x to +x
+		// v [0..1] goes from -y to +y
+		maxAxis = absZ;
+		uc = vec.x;
+		vc = vec.y;
+		faceIndex = 4;
+	}
+	// negative z
+	if (!isZPositive && absZ >= absX && absZ >= absY)
+	{
+		// u [0..1] goes from +x to -x
+		// v [0..1] goes from -y to +y
+		maxAxis = absZ;
+		uc = -vec.x;
+		vc = vec.y;
+		faceIndex = 5;
+	}
+
+	uc = 0.5 * (uc / maxAxis + 1.0);
+	vc = 0.5 * (vc / maxAxis + 1.0);
+	uc = (faceIndex * 1.0 + uc) / 6.0;
+	u = uc; v = vc;
+}
+
 const bool convert_lightprobe_to_cartesian_coord(const f64 u, const f64 v, highp_vec3_t& vec)
 {
 	f64 uu = 2.0 * u - 1.0;
@@ -179,6 +348,32 @@ void light_probe_access(highp_vec3_t* color, f32* imageData, const s32 resolutio
 	color->z = imageData[pixel_index * 3 + 2];
 }
 
+void light_probe_access_hstrip(highp_vec3_t* color, f32* imageData, const s32 resolution, highp_vec3_t direction)
+{
+	f64 tex_coord[2];
+	convert_cartesian_to_hstrip_cubemap_coord(direction, tex_coord[0], tex_coord[1]);
+	s32 pixel_coord[2];
+	pixel_coord[0] = (s32)(tex_coord[0] * resolution * 6);
+	pixel_coord[1] = (s32)(tex_coord[1] * resolution);
+	s32 pixel_index = pixel_coord[1] * resolution * 6 + pixel_coord[0];
+	color->x = imageData[pixel_index * 3];
+	color->y = imageData[pixel_index * 3 + 1];
+	color->z = imageData[pixel_index * 3 + 2];
+}
+
+void light_probe_access_vstrip(highp_vec3_t* color, f32* imageData, const s32 resolution, highp_vec3_t direction)
+{
+	f64 tex_coord[2];
+	convert_cartesian_to_vstrip_cubemap_coord(direction, tex_coord[0], tex_coord[1]);
+	s32 pixel_coord[2];
+	pixel_coord[0] = (s32)(tex_coord[0] * resolution * 6);
+	pixel_coord[1] = (s32)(tex_coord[1] * resolution);
+	s32 pixel_index = pixel_coord[1] * resolution * 6 + pixel_coord[0];
+	color->x = imageData[pixel_index * 3];
+	color->y = imageData[pixel_index * 3 + 1];
+	color->z = imageData[pixel_index * 3 + 2];
+}
+
 void sh_project_light_image(f32* imageData, const s32 resolution, const s32 n_samples, const s32 n_coeffs, const sh_sample* samples, highp_vec3_t* result)
 {
 	for (s32 i = 0; i < n_coeffs; i++)
@@ -194,6 +389,8 @@ void sh_project_light_image(f32* imageData, const s32 resolution, const s32 n_sa
 		{
 			highp_vec3_t col;
 			light_probe_access(&col, imageData, resolution, direction);
+			//light_probe_access_hstrip(&col, imageData, resolution, direction);
+			//light_probe_access_vstrip(&col, imageData, resolution, direction);
 			f64 shfunc = samples[i].coeff[j];
 			result[j].x += (col.x * shfunc);
 			result[j].y += (col.y * shfunc);
@@ -271,7 +468,7 @@ void debug_sh_project_light_image(const u32 faceIdx, const s32 resolution, const
 			{
 				col = highp_vec3_t(0.0);
 			}
-			
+
 			f64 shfunc = samples[i].coeff[j];
 			result[j].x += (col.x * shfunc);
 			result[j].y += (col.y * shfunc);

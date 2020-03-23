@@ -67,7 +67,7 @@ void SHCalculator::OnInitialize()
 	insigne::register_surface_type<SurfaceP>();
 
 	// memory arena
-	m_TemporalArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
+	m_TemporalArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(48));
 
 	{
 		// ico sphere
@@ -82,7 +82,7 @@ void SHCalculator::OnInitialize()
 
 		floral::reset_generation_transforms_stack();
 		floral::geo_generate_result_t genResult = floral::generate_unit_icosphere_3d(
-				2, 0, sizeof(VertexP),
+				3, 0, sizeof(VertexP),
 				floral::geo_vertex_format_e::position,
 				&sphereVertices[0], &sphereIndices[0]);
 		sphereVertices.resize(genResult.vertices_generated);
@@ -148,7 +148,9 @@ void SHCalculator::OnInitialize()
 	}
 
 	{
-		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/grace_probe.cbtex");
+#define MODE 1
+#if (MODE == 1)
+		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/Alexs_Apt_2k_lightprobe.cbtex");
 		floral::file_stream dataStream;
 		dataStream.buffer = (p8)m_TemporalArena->allocate(texFile.file_size);
 		floral::read_all_file(texFile, dataStream);
@@ -180,6 +182,40 @@ void SHCalculator::OnInitialize()
 		dataStream.read_bytes(m_TextureData, dataSize);
 		memcpy(texDesc.data, m_TextureData, dataSize);
 		m_Texture = insigne::create_texture(texDesc);
+#elif (MODE == 2)
+		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/alexs.cbtex");
+		floral::file_stream dataStream;
+		dataStream.buffer = (p8)m_TemporalArena->allocate(texFile.file_size);
+		floral::read_all_file(texFile, dataStream);
+		floral::close_file(texFile);
+
+		cb::CBTexture2DHeader header;
+		dataStream.read(&header);
+
+		FLORAL_ASSERT(header.colorRange == cb::ColorRange::HDR);
+
+		insigne::texture_desc_t texDesc;
+		texDesc.width = 1536;
+		texDesc.height = 256;
+		texDesc.format = insigne::texture_format_e::hdr_rgb;
+		texDesc.min_filter = insigne::filtering_e::linear;
+		texDesc.mag_filter = insigne::filtering_e::linear;
+		texDesc.dimension = insigne::texture_dimension_e::tex_2d;
+		texDesc.has_mipmap = false;
+
+		const size dataSize = insigne::prepare_texture_desc(texDesc);
+
+		m_TextureData = (f32*)g_PersistanceResourceAllocator.allocate(dataSize);
+		m_RadTextureData = (f32*)g_PersistanceResourceAllocator.allocate(dataSize / 6);
+		memset(m_RadTextureData, 0, dataSize / 6);
+		m_IrrTextureData = (f32*)g_PersistanceResourceAllocator.allocate(dataSize / 6);
+		memset(m_IrrTextureData, 0, dataSize / 6);
+
+		m_TextureResolution = 256;
+		dataStream.read_bytes(m_TextureData, dataSize);
+		memcpy(texDesc.data, m_TextureData, dataSize);
+		m_Texture = insigne::create_texture(texDesc);
+#endif
 	}
 
 	{
