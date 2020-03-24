@@ -7,6 +7,7 @@
 #include <clover/Logger.h>
 
 #include <insigne/system.h>
+#include <insigne/counters.h>
 #include <insigne/ut_render.h>
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
@@ -16,6 +17,8 @@
 
 #include "InsigneImGui.h"
 #include "Graphics/stb_image.h"
+#include "Graphics/stb_image_resize.h"
+#include "Graphics/stb_image_write.h"
 #include "Graphics/prt.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/DebugDrawer.h"
@@ -53,6 +56,36 @@ static const_cstr k_Images[] = {
 	"uvchecker_hstrip.hdr",
 	"alexs_appartment_hstrip.hdr",
 	"alexs_appartment_equi.hdr"
+};
+
+static const floral::vec3f s_lookAts[] =
+{
+	floral::vec3f(1.0f, 0.0f, 0.0f),
+	floral::vec3f(-1.0f, 0.0f, 0.0f),
+	floral::vec3f(0.0f, 1.0f, 0.0f),
+	floral::vec3f(0.0f, -1.0f, 0.0f),
+	floral::vec3f(0.0f, 0.0f, 1.0f),
+	floral::vec3f(0.0f, 0.0f, -1.0f)
+};
+
+static const floral::vec3f s_upDirs[] =
+{
+	floral::vec3f(0.0f, -1.0f, 0.0f),
+	floral::vec3f(0.0f, -1.0f, 0.0f),
+	floral::vec3f(0.0f, 0.0f, 1.0f),
+	floral::vec3f(0.0f, 0.0f, -1.0f),
+	floral::vec3f(0.0f, -1.0f, 0.0f),
+	floral::vec3f(0.0f, -1.0f, 0.0f)
+};
+
+static const insigne::cubemap_face_e s_faces[] =
+{
+	insigne::cubemap_face_e::positive_x,
+	insigne::cubemap_face_e::negative_x,
+	insigne::cubemap_face_e::positive_y,
+	insigne::cubemap_face_e::negative_y,
+	insigne::cubemap_face_e::positive_z,
+	insigne::cubemap_face_e::negative_z
 };
 
 static const_cstr k_SuiteName = "ibl calculator";
@@ -106,6 +139,7 @@ SHCalculator::SHCalculator()
 	, m_ComputingSH(false)
 	, m_SHReady(false)
 	, m_SpecReady(false)
+	, m_IsCapturingSpecData(false)
 	, m_Counter(0)
 	, m_CamPos(2.0f, 0.0f, 0.0f)
 {
@@ -131,6 +165,7 @@ void SHCalculator::OnInitialize()
 
 	// register surfaces
 	insigne::register_surface_type<SurfaceP>();
+	insigne::register_surface_type<SurfaceSkybox>();
 	insigne::register_surface_type<SurfacePT>();
 
 	// memory arena
@@ -180,6 +215,45 @@ void SHCalculator::OnInitialize()
 	}
 
 	{
+		m_TemporalArena->free_all();
+		floral::fast_fixed_array<VertexP, FreelistArena> vtxData(1024, m_TemporalArena);
+		floral::fast_fixed_array<s32, FreelistArena> idxData(1024, m_TemporalArena);
+		vtxData.resize(1024);
+		idxData.resize(1024);
+
+		floral::reset_generation_transforms_stack();
+
+		floral::geo_generate_result_t genResult = floral::generate_unit_box_3d(
+				0, sizeof(VertexP),
+				floral::geo_vertex_format_e::position,
+				&vtxData[0], &idxData[0]);
+
+		vtxData.resize(genResult.vertices_generated);
+		idxData.resize(genResult.indices_generated);
+
+		// upload
+		{
+			insigne::vbdesc_t desc;
+			desc.region_size = SIZE_KB(1);
+			desc.stride = sizeof(VertexP);
+			desc.data = &vtxData[0];
+			desc.count = genResult.vertices_generated;
+			desc.usage = insigne::buffer_usage_e::static_draw;
+
+			m_SkyboxVB = insigne::copy_create_vb(desc);
+		}
+		{
+			insigne::ibdesc_t desc;
+			desc.region_size = SIZE_KB(1);
+			desc.data = &idxData[0];
+			desc.count = genResult.indices_generated;
+			desc.usage = insigne::buffer_usage_e::static_draw;
+
+			m_SkyboxIB = insigne::copy_create_ib(desc);
+		}
+	}
+
+	{
 		insigne::ubdesc_t desc;
 		desc.region_size = 512;
 		desc.data = nullptr;
@@ -194,6 +268,74 @@ void SHCalculator::OnInitialize()
 		m_SceneData.WVP = m_CameraMotion.GetWVP();
 		memset(m_SceneData.SH, 0, sizeof(m_SceneData.SH));
 		insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
+	}
+
+	{
+		m_IBLBakeProjection.near_plane = 0.01f;
+		m_IBLBakeProjection.far_plane = 100.0f;
+		m_IBLBakeProjection.fov = 90.0f;
+		m_IBLBakeProjection.aspect_ratio = 1.0f;
+
+		m_IBLBakeView.position = floral::vec3f(0.0f, 0.0f, 0.0f);
+		m_IBLBakeView.look_at = floral::vec3f(1.0f, 0.0f, 0.0f);
+		m_IBLBakeView.up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
+
+		floral::mat4x4f p = floral::construct_perspective(m_IBLBakeProjection);
+		floral::mat4x4f v = floral::construct_lookat_point(m_IBLBakeView);
+		m_IBLBakeSceneData.WVP = p * v;
+		m_IBLBakeSceneData.CameraPos = floral::vec4f(m_IBLBakeView.position, 0.0f);
+
+		insigne::ubdesc_t desc;
+		desc.region_size = 256;
+		desc.data = nullptr;
+		desc.data_size = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		m_IBLBakeSceneUB = insigne::create_ub(desc);
+		insigne::copy_update_ub(m_IBLBakeSceneUB, &m_IBLBakeSceneData, sizeof(IBLBakeSceneData), 0);
+	}
+
+	m_PrefilterConfigs.roughness = floral::vec2f(0.8f, 0.0f);
+	{
+		insigne::ubdesc_t desc;
+		desc.region_size = 256;
+		desc.data = nullptr;
+		desc.data_size = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+		desc.alignment = 0;
+
+		m_PrefilterUB = insigne::create_ub(desc);
+		insigne::copy_update_ub(m_PrefilterUB, &m_PrefilterConfigs, sizeof(PrefilterConfigs), 0);
+	}
+
+	m_PreviewConfigs.texLod = floral::vec2f(0.0f, 0.0f);
+	m_PreviewSpecConfigs.texLod = floral::vec2f(0.0f, 0.0f);
+	{
+		insigne::ubdesc_t desc;
+		desc.region_size = 256;
+		desc.data = nullptr;
+		desc.data_size = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+		desc.alignment = 0;
+
+		m_PreviewUB = insigne::create_ub(desc);
+		m_PreviewSpecUB = insigne::create_ub(desc);
+		insigne::copy_update_ub(m_PreviewUB, &m_PreviewConfigs, sizeof(PreviewConfigs), 0);
+		insigne::copy_update_ub(m_PreviewSpecUB, &m_PreviewSpecConfigs, sizeof(PreviewConfigs), 0);
+	}
+
+	{
+		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
+		insigne::color_attachment_t atm;
+		strcpy(atm.name, "main_color_cube");
+		atm.texture_format = insigne::texture_format_e::hdr_rgb;
+		atm.texture_dimension = insigne::texture_dimension_e::tex_cube;
+		desc.color_attachments->push_back(atm);
+		desc.width = 256; desc.height = 256;
+		desc.has_depth = false;
+		desc.color_has_mipmap = true;
+
+		m_SpecularFB = insigne::create_framebuffer(desc);
 	}
 
 	{
@@ -248,7 +390,9 @@ void SHCalculator::OnInitialize()
 
 		texDesc.width = 256;
 		texDesc.height = 256;
+		texDesc.min_filter = insigne::filtering_e::linear_mipmap_linear;
 		texDesc.dimension = insigne::texture_dimension_e::tex_cube;
+		texDesc.has_mipmap = true;
 		m_CurrentInputTexture3D = insigne::create_texture(texDesc);
 	}
 
@@ -339,6 +483,7 @@ void SHCalculator::OnInitialize()
 	{
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
 		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Preview", insigne::param_data_type_e::param_ub));
 		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler_cube));
 
 		strcpy(desc.vs, s_ProbeVS);
@@ -349,6 +494,7 @@ void SHCalculator::OnInitialize()
 		m_PreviewShader[1] = insigne::create_shader(desc);
 		insigne::infuse_material(m_PreviewShader[1], m_PreviewMaterial[1]);
 		insigne::helpers::assign_uniform_block(m_PreviewMaterial[1], "ub_Scene", 0, 256, m_UB);
+		insigne::helpers::assign_uniform_block(m_PreviewMaterial[1], "ub_Preview", 0, 0, m_PreviewUB);
 	}
 
 	{
@@ -367,6 +513,24 @@ void SHCalculator::OnInitialize()
 	}
 
 	m_CurrentPreviewMat = &m_ProbeMaterial;
+
+	{
+		insigne::shader_desc_t desc = insigne::create_shader_desc();
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_PrefilterConfigs", insigne::param_data_type_e::param_ub));
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler_cube));
+
+		strcpy(desc.vs, s_PMREMVS);
+		sprintf(desc.fs, "#version 300 es\n#define USE_LIGHT_PROBE\n%s", s_PMREMFS);
+		desc.vs_path = floral::path("/demo/pmrem_vs");
+		desc.fs_path = floral::path("/demo/pmrem_fs");
+
+		m_PMREMShader = insigne::create_shader(desc);
+		insigne::infuse_material(m_PMREMShader, m_PMREMMaterial);
+
+		insigne::helpers::assign_uniform_block(m_PMREMMaterial, "ub_Scene", 0, 0, m_IBLBakeSceneUB);
+		insigne::helpers::assign_uniform_block(m_PMREMMaterial, "ub_PrefilterConfigs", 0, 0, m_PrefilterUB);
+	}
 }
 
 void SHCalculator::OnUpdate(const f32 i_deltaMs)
@@ -409,19 +573,86 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 		if (ImGui::Button("Preview 3D##cube"))
 		{
 			insigne::helpers::assign_texture(m_PreviewMaterial[m_Projection], "u_Tex", m_CurrentPreviewTexture);
+			if (m_Projection == 1)
+			{
+				insigne::helpers::assign_uniform_block(m_PreviewMaterial[m_Projection], "ub_Preview", 0, 0, m_PreviewUB);
+			}
 			m_CurrentPreviewMat = &m_PreviewMaterial[m_Projection];
+		}
+		if (m_Projection == 1)
+		{
+			if (ImGui::SliderFloat("Texture LOD", &m_PreviewConfigs.texLod.x, 0.0f, 9.0f))
+			{
+				insigne::copy_update_ub(m_PreviewUB, &m_PreviewConfigs, sizeof(PreviewConfigs), 0);
+			}
 		}
 	}
 
 	if (ImGui::Button("Calculate"))
 	{
 		_ComputeSH();
+		if (m_Projection == 1)
+		{
+			insigne::helpers::assign_texture(m_PMREMMaterial, "u_Tex", m_CurrentInputTexture);
+			m_NeedBakePMREM = true;
+		}
+	}
+	ImGui::Separator();
+
+	if (m_SpecReady && m_SHReady)
+	{
+		if (ImGui::Button("Save to file"))
+		{
+			insigne::texture_desc_t texDesc;
+			texDesc.width = 256;
+			texDesc.height = 256;
+			texDesc.format = insigne::texture_format_e::hdr_rgb;
+			texDesc.dimension = insigne::texture_dimension_e::tex_cube;
+			texDesc.has_mipmap = true;
+			const size dataSize = insigne::prepare_texture_desc(texDesc);
+
+			m_SpecImgData = m_TemporalArena->allocate_array<f32>(dataSize);
+			m_SpecPromisedFrame = insigne::schedule_framebuffer_capture(m_SpecularFB, m_SpecImgData);
+			m_IsCapturingSpecData = true;
+		}
+	}
+
+	if (m_IsCapturingSpecData && insigne::get_current_frame_idx() >= m_SpecPromisedFrame)
+	{
+		f32* pData = m_SpecImgData;
+		for (s32 f = 0; f < 6; f++)
+		{
+			s32 texSize = 256;
+			for (s32 m = 0; m < 9; m++)
+			{
+				c8 filename[64];
+				sprintf(filename, "out_f%d_m%d.hdr", f, m);
+				stbi_write_hdr(filename, texSize, texSize, 3, pData);
+				pData += texSize * texSize * 3;
+				texSize >>= 1;
+			}
+		}
+		m_TemporalArena->free(m_SpecImgData);
+		m_SpecImgData = nullptr;
+		m_IsCapturingSpecData = false;
 	}
 
 	ImGui::Separator();
 	if (m_SpecReady)
 	{
 		ImGui::Text("PMREM");
+		if (ImGui::Button("Preview 3D##spec"))
+		{
+			insigne::helpers::assign_texture(m_PreviewMaterial[m_Projection], "u_Tex",
+					insigne::extract_color_attachment(m_SpecularFB, 0));
+			insigne::helpers::assign_uniform_block(m_PreviewMaterial[m_Projection], "ub_Preview", 0, 0, m_PreviewSpecUB);
+			m_CurrentPreviewMat = &m_PreviewMaterial[m_Projection];
+		}
+
+		if (ImGui::SliderFloat("Specular Texture LOD", &m_PreviewSpecConfigs.texLod.x, 0.0f, 9.0f))
+		{
+			insigne::copy_update_ub(m_PreviewSpecUB, &m_PreviewSpecConfigs, sizeof(PreviewConfigs), 0);
+		}
 	}
 	else
 	{
@@ -494,6 +725,32 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 
 void SHCalculator::OnRender(const f32 i_deltaMs)
 {
+	if (m_NeedBakePMREM)
+	{
+		for (s32 m = 0; m < 9; m++)
+		{
+			f32 r = (f32)m / 4.0f;
+			m_PrefilterConfigs.roughness = floral::vec2f(r, 0.0f);
+			insigne::copy_update_ub(m_PrefilterUB, &m_PrefilterConfigs, sizeof(PrefilterConfigs), 0);
+			for (size i = 0; i < 6; i++)
+			{
+				m_IBLBakeView.look_at = s_lookAts[i];
+				m_IBLBakeView.up_direction = s_upDirs[i];
+				floral::mat4x4f p = floral::construct_perspective(m_IBLBakeProjection);
+				floral::mat4x4f v = floral::construct_lookat_point(m_IBLBakeView);
+				m_IBLBakeSceneData.WVP = p * v;
+				insigne::copy_update_ub(m_IBLBakeSceneUB, &m_IBLBakeSceneData, sizeof(IBLBakeSceneData), 0);
+
+				insigne::begin_render_pass(m_SpecularFB, s_faces[i], m);
+				insigne::draw_surface<SurfaceSkybox>(m_SkyboxVB, m_SkyboxIB, m_PMREMMaterial);
+				insigne::end_render_pass(m_SpecularFB);
+				insigne::dispatch_render_pass();
+			}
+		}
+		m_NeedBakePMREM = false;
+		m_SpecReady = true;
+	}
+
 	insigne::begin_render_pass(m_PostFXBuffer);
 	insigne::draw_surface<SurfaceP>(m_ProbeVB, m_ProbeIB, *m_CurrentPreviewMat);
 	debugdraw::Render(m_SceneData.WVP);
@@ -517,6 +774,7 @@ void SHCalculator::OnCleanUp()
 	m_TemporalArena = nullptr;
 
 	insigne::unregister_surface_type<SurfacePT>();
+	insigne::unregister_surface_type<SurfaceSkybox>();
 	insigne::unregister_surface_type<SurfaceP>();
 
 	insigne::cleanup_render_resource(m_RenderBeginStateId);
@@ -645,28 +903,39 @@ void SHCalculator::_LoadHDRImage(const_cstr i_fileName)
 
 	if (m_Projection == 1)
 	{
-		f32* imgData3D = m_TemporalArena->allocate_array<f32>(256 * 256 * 3 * 6);
-
-		f32* pOutBuffer = imgData3D;
-		for (s32 i = 0; i < 6; i++)
-		{
-			trim_image(imageData, pOutBuffer, i * 256, 0,
-					256, 256,
-					m_InputTextureSize.x, m_InputTextureSize.y, 3);
-			pOutBuffer += (256 * 256 * 3);
-		}
-
 		insigne::texture_desc_t texDesc;
 		texDesc.width = 256;
 		texDesc.height = 256;
 		texDesc.format = insigne::texture_format_e::hdr_rgb;
-		texDesc.min_filter = insigne::filtering_e::linear;
+		texDesc.min_filter = insigne::filtering_e::linear_mipmap_linear;
 		texDesc.mag_filter = insigne::filtering_e::linear;
 		texDesc.dimension = insigne::texture_dimension_e::tex_cube;
-		texDesc.has_mipmap = false;
+		texDesc.has_mipmap = true;
 
 		const size dataSize = insigne::prepare_texture_desc(texDesc);
-		FLORAL_ASSERT(dataSize == 256 * 256 * 3 * 6 * sizeof(f32));
+		f32* imgData3D = (f32*)m_TemporalArena->allocate(dataSize);
+		f32* pOutBuffer = imgData3D;
+		for (s32 i = 0; i < 6; i++)
+		{
+			// mip 0
+			CLOVER_DEBUG("Building face %d mip 0 for H-Strip...", i);
+			f32* mip0Data = pOutBuffer;
+			trim_image(imageData, pOutBuffer, i * 256, 0,
+					256, 256,
+					m_InputTextureSize.x, m_InputTextureSize.y, 3);
+			pOutBuffer += (256 * 256 * 3);
+			// rest of the mips chain
+			s32 texSize = 256;
+			for (s32 m = 0; m < 8; m++)
+			{
+				CLOVER_DEBUG("Building face %d mip %d for H-Strip...", i, m + 1);
+				texSize >>= 1;
+				stbir_resize_float(mip0Data, 256, 256, 0,
+						pOutBuffer, texSize, texSize, 0, 3);
+				pOutBuffer += (texSize * texSize * 3);
+			}
+		}
+
 		insigne::copy_update_texture(m_CurrentInputTexture3D, imgData3D, dataSize);
 		m_TemporalArena->free(imgData3D);
 		m_CurrentPreviewTexture = m_CurrentInputTexture3D;

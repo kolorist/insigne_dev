@@ -241,26 +241,26 @@ void main()
         highp float NdotL = max(dot(N, L), 0.0);
         if(NdotL > 0.0)
         {
-		    // sample from the environment's mip level based on roughness/pdf
+			// sample from the environment's mip level based on roughness/pdf
 			highp float D   = DistributionGGX(N, H, u_Roughness);
 			highp float NdotH = max(dot(N, H), 0.0);
 			highp float HdotV = max(dot(H, V), 0.0);
 			highp float pdf = D * NdotH / (4.0 * HdotV) + 0.0001;
 
-            highp float resolution = 256.0; // resolution of source cubemap (per face)
-            highp float saTexel  = 4.0 * PI / (6.0 * resolution * resolution);
-            highp float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
+			highp float resolution = 256.0; // resolution of source cubemap (per face)
+			highp float saTexel  = 4.0 * PI / (6.0 * resolution * resolution);
+			highp float saSample = 1.0 / (float(SAMPLE_COUNT) * pdf + 0.0001);
 
-            highp float mipLevel = u_Roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel); 
+			highp float mipLevel = u_Roughness == 0.0 ? 0.0 : 0.5 * log2(saSample / saTexel);
 
 			highp vec3 hdrColor = textureLod(u_Tex, L, mipLevel).rgb;
-            prefilteredColor += hdrColor * NdotL;
-            totalWeight      += NdotL;
-        }
-    }
-    prefilteredColor = prefilteredColor / totalWeight;
+			prefilteredColor += hdrColor * NdotL;
+			totalWeight      += NdotL;
+		}
+	}
+prefilteredColor = prefilteredColor / totalWeight;
 
-    o_Color = prefilteredColor;
+o_Color = prefilteredColor;
 }
 )";
 
@@ -309,7 +309,7 @@ void main()
 {
 	mediump float gamma = 2.2;
 	mediump vec3 hdrColor = texture(u_Tex, v_TexCoord).rgb;
-	
+
 	// reinhard tone mapping
 	mediump vec3 mapped = hdrColor / (hdrColor + vec3(1.0));
 	// gamma correction

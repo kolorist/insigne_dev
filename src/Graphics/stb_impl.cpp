@@ -36,3 +36,8 @@ void free(voidptr i_data)
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define STBIR_MALLOC(size, context)				((void)context, stone::stb::malloc(size))
+#define STBIR_FREE(ptr, context)				((void)context, stone::stb::free(ptr))
+
+#define STB_IMAGE_RESIZE_IMPLEMENTATION
+#include "stb_image_resize.h"

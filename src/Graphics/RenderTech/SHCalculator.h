@@ -60,9 +60,32 @@ private:
 		floral::vec4f							SH[9];
 	};
 
+	struct IBLBakeSceneData
+	{
+		floral::mat4x4f							WVP;
+		floral::vec4f							CameraPos;
+	};
+
+	struct PrefilterConfigs
+	{
+		floral::vec2f							roughness;
+	};
+
+	struct PreviewConfigs
+	{
+		floral::vec2f							texLod;
+	};
+
 private:
 	TrackballCamera								m_CameraMotion;
 	SceneData									m_SceneData;
+
+	IBLBakeSceneData							m_IBLBakeSceneData;
+	PrefilterConfigs							m_PrefilterConfigs;
+	PreviewConfigs								m_PreviewConfigs;
+	PreviewConfigs								m_PreviewSpecConfigs;
+	floral::camera_view_t						m_IBLBakeView;
+	floral::camera_persp_t						m_IBLBakeProjection;
 
 private:
 	FreelistArena*								m_TemporalArena;
@@ -83,6 +106,16 @@ private:
 	insigne::shader_handle_t					m_ToneMapShader;
 	insigne::material_desc_t					m_ToneMapMaterial;
 
+	insigne::vb_handle_t						m_SkyboxVB;
+	insigne::ib_handle_t						m_SkyboxIB;
+	insigne::ub_handle_t						m_IBLBakeSceneUB;
+	insigne::ub_handle_t						m_PrefilterUB;
+	insigne::ub_handle_t						m_PreviewUB;
+	insigne::ub_handle_t						m_PreviewSpecUB;
+	insigne::framebuffer_handle_t				m_SpecularFB;
+	insigne::shader_handle_t					m_PMREMShader;
+	insigne::material_desc_t					m_PMREMMaterial;
+
 	insigne::texture_handle_t					m_Texture[3];
 	floral::vec2i								m_InputTextureSize;
 	insigne::texture_handle_t					m_CurrentInputTexture;
@@ -98,11 +131,16 @@ private:
 	floral::vec3f								m_MinHDR;
 	floral::vec3f								m_MaxHDR;
 
+	bool										m_NeedBakePMREM;
 	bool										m_ImgLoaded;
 	bool										m_ComputingSH;
 	bool										m_SHReady;
 	bool										m_SpecReady;
 	insigne::material_desc_t*					m_CurrentPreviewMat;
+
+	f32*										m_SpecImgData;
+	u64											m_SpecPromisedFrame;
+	bool										m_IsCapturingSpecData;
 
 	floral::vec3f								m_CamPos;
 
