@@ -290,4 +290,10 @@ void ImGuiCursorInteract(const bool i_pressed)
 	}
 }
 
+const bool DidImGuiConsumeMouse()
+{
+	ImGuiIO& io = ImGui::GetIO();
+	return io.WantCaptureMouse;
+}
+
 }

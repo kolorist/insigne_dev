@@ -374,7 +374,22 @@ void light_probe_access_vstrip(highp_vec3_t* color, f32* imageData, const s32 re
 	color->z = imageData[pixel_index * 3 + 2];
 }
 
-void sh_project_light_image(f32* imageData, const s32 resolution, const s32 n_samples, const s32 n_coeffs, const sh_sample* samples, highp_vec3_t* result)
+void light_probe_access_latlong(highp_vec3_t* color, f32* imageData, const s32 resolution, highp_vec3_t direction)
+{
+	f64 tex_coord[2];
+	convert_cartesian_to_latlong_coord(direction, tex_coord[0], tex_coord[1]);
+	s32 pixel_coord[2];
+	s32 resX = resolution * 4;
+	s32 resY = resolution * 2;
+	pixel_coord[0] = (s32)(tex_coord[0] * resX);
+	pixel_coord[1] = (s32)(tex_coord[1] * resY);
+	s32 pixel_index = pixel_coord[1] * resX + pixel_coord[0];
+	color->x = imageData[pixel_index * 3];
+	color->y = imageData[pixel_index * 3 + 1];
+	color->z = imageData[pixel_index * 3 + 2];
+}
+
+void sh_project_light_image(f32* imageData, const s32 projection, const s32 resolution, const s32 n_samples, const s32 n_coeffs, const sh_sample* samples, highp_vec3_t* result)
 {
 	for (s32 i = 0; i < n_coeffs; i++)
 	{
@@ -388,9 +403,20 @@ void sh_project_light_image(f32* imageData, const s32 resolution, const s32 n_sa
 		for (s32 j = 0; j < n_coeffs; j++)
 		{
 			highp_vec3_t col;
-			light_probe_access(&col, imageData, resolution, direction);
-			//light_probe_access_hstrip(&col, imageData, resolution, direction);
-			//light_probe_access_vstrip(&col, imageData, resolution, direction);
+			switch (projection)
+			{
+				case 0:
+					light_probe_access(&col, imageData, resolution, direction);
+					break;
+				case 1:
+					light_probe_access_hstrip(&col, imageData, resolution, direction);
+					break;
+				case 2:
+					light_probe_access_latlong(&col, imageData, resolution, direction);
+					break;
+				default:
+					return;
+			}
 			f64 shfunc = samples[i].coeff[j];
 			result[j].x += (col.x * shfunc);
 			result[j].y += (col.y * shfunc);

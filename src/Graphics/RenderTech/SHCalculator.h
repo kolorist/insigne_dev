@@ -34,6 +34,8 @@ private:
 	void										_ComputeSH();
 	void										_ComputeDebugSH(const u32 i_faceIdx);
 
+	void										_LoadHDRImage(const_cstr i_fileName);
+
 private:
 	struct SHComputeData
 	{
@@ -43,6 +45,7 @@ private:
 		f32* OutputIrradianceTex;
 		floral::vec3f OutputCoeffs[9];
 		u32 Resolution;
+		s32 Projection;
 		u32 DebugFaceIndex;
 	};
 
@@ -71,15 +74,35 @@ private:
 	insigne::shader_handle_t					m_ProbeShader;
 	insigne::material_desc_t					m_ProbeMaterial;
 
-	insigne::texture_handle_t					m_Texture;
+	insigne::shader_handle_t					m_PreviewShader[3];
+	insigne::material_desc_t					m_PreviewMaterial[3];
+
+	insigne::vb_handle_t						m_SSVB;
+	insigne::ib_handle_t						m_SSIB;
+	insigne::framebuffer_handle_t				m_PostFXBuffer;
+	insigne::shader_handle_t					m_ToneMapShader;
+	insigne::material_desc_t					m_ToneMapMaterial;
+
+	insigne::texture_handle_t					m_Texture[3];
+	floral::vec2i								m_InputTextureSize;
+	insigne::texture_handle_t					m_CurrentInputTexture;
+	insigne::texture_handle_t					m_CurrentPreviewTexture;
+	insigne::texture_handle_t					m_CurrentInputTexture3D;
 	insigne::texture_handle_t					m_RadianceTexture;
 	insigne::texture_handle_t					m_IrradianceTexture;
 	f32*										m_TextureData;
 	f32*										m_RadTextureData;
 	f32*										m_IrrTextureData;
 	u32											m_TextureResolution;
+	s32											m_Projection;
+	floral::vec3f								m_MinHDR;
+	floral::vec3f								m_MaxHDR;
+
+	bool										m_ImgLoaded;
 	bool										m_ComputingSH;
 	bool										m_SHReady;
+	bool										m_SpecReady;
+	insigne::material_desc_t*					m_CurrentPreviewMat;
 
 	floral::vec3f								m_CamPos;
 
