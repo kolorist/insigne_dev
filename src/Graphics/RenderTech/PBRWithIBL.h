@@ -29,6 +29,9 @@ public:
 	ICameraMotion*								GetCameraMotion() override { return &m_CameraMotion; }
 
 private:
+	const insigne::texture_handle_t _Load2DTexture(const floral::path& i_path);
+
+private:
 	struct SceneData
 	{
 		floral::mat4x4f							XForm;
@@ -36,37 +39,24 @@ private:
 		floral::vec4f							CameraPos;
 	};
 
-	struct IBLBakeSceneData
-	{
-		floral::mat4x4f							WVP;
-		floral::vec4f							CameraPos;
-	};
-
 	struct LightData
 	{
-		floral::vec4f							LightDirection;
-		floral::vec4f							LightIntensity;
+		floral::vec4f							worldLightDirection;			// 4N
+		floral::vec3f							worldLightIntensity;			// this vec3 will be merged with the s32 below
+		s32										pointLightsCount;				// results in a 4N basic unit machine
+		floral::vec4f							pointLightPositions[4];			// 4N * 4
+		floral::vec4f							pointLightAttributes[4];		// 4N * 4
 	};
 
-	struct SurfaceData
+	struct SHData
 	{
-		floral::vec4f							BaseColor;
-		floral::vec4f							Attributes;
-	};
-
-	struct PrefilterConfigs
-	{
-		floral::vec2f							roughness;
+		floral::vec4f							SH[9];
 	};
 
 private:
 	SceneData									m_SceneData;
-	IBLBakeSceneData							m_IBLSceneData;
 	LightData									m_LightData;
-	SurfaceData									m_SurfaceData;
-	PrefilterConfigs							m_PrefilterConfigs;
-	floral::camera_view_t						m_View;
-	floral::camera_persp_t						m_Projection;
+	SHData										m_SHData;
 
 	TrackballCamera								m_CameraMotion;
 
@@ -76,29 +66,38 @@ private:
 	insigne::ib_handle_t						m_IB;
 	insigne::ib_handle_t						m_SphereIB;
 	insigne::ub_handle_t						m_SceneUB;
-	insigne::ub_handle_t						m_IBLBakeSceneUB;
 	insigne::ub_handle_t						m_LightUB;
 	insigne::ub_handle_t						m_SurfaceUB;
-	insigne::ub_handle_t						m_PrefilterUB;
+	insigne::ub_handle_t						m_SHUB;
 
 	insigne::vb_handle_t						m_SSVB;
 	insigne::ib_handle_t						m_SSIB;
 
 	insigne::texture_handle_t					m_CubeMapTex;
+	insigne::texture_handle_t					m_AlbedoTex;
+	insigne::texture_handle_t					m_AttributeTex;
+	insigne::texture_handle_t					m_NormalTex;
 
 	insigne::shader_handle_t					m_Shader;
 	insigne::material_desc_t					m_Material;
 	insigne::shader_handle_t					m_CubeMapShader;
 	insigne::material_desc_t					m_CubeMapMaterial;
-	insigne::shader_handle_t					m_PMREMShader;
-	insigne::material_desc_t					m_PMREMMaterial;
+
+	insigne::shader_handle_t					m_BRDFShader;
+	insigne::material_desc_t					m_BRDFMaterial;
+
+	insigne::shader_handle_t					m_PBRShader;
+	insigne::material_desc_t					m_PBRMaterial;
 
 	insigne::framebuffer_handle_t				m_PostFXBuffer;
-	insigne::framebuffer_handle_t				m_SpecularFB;
+	insigne::framebuffer_handle_t				m_BrdfFB;
+
 	insigne::shader_handle_t					m_ToneMapShader;
 	insigne::material_desc_t					m_ToneMapMaterial;
 
-	bool										m_NeedBakePMREM;
+	bool										m_PBRReady;
+	bool										m_BakingBRDF;
+	bool										m_LoadingTextures;
 
 private:
 	LinearArena*								m_MemoryArena;

@@ -47,6 +47,17 @@ floral::mat4x4f TrackballCamera::GetWVP() const
 	return m_Projection * v;
 }
 
+floral::vec3f TrackballCamera::GetPosition() const
+{
+	floral::quaternionf q = GetRotation();
+
+	floral::camera_view_t cv = m_CamView;
+	floral::vec4f cp = floral::vec4f(cv.position, 1.0f);
+	floral::mat4x4f m = q.to_transform();
+	cp = m * cp;
+	return floral::vec3f(cp.x, cp.y, cp.z);
+}
+
 void TrackballCamera::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
 {
 }

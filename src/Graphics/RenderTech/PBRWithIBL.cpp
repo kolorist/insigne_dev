@@ -16,6 +16,7 @@
 #include "InsigneImGui.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/DebugDrawer.h"
+#include "Graphics/CBFormats.h"
 
 // ---------------------------------------------
 #include "PBRShaders.inl"
@@ -46,17 +47,51 @@ void main() {
 }
 )";
 
-static const_cstr s_CubeMapFS = R"(
-#version 300 es
+static const_cstr s_CubeMapFS = R"(#version 300 es
 
 layout (location = 0) out mediump vec3 o_Color;
 
 uniform mediump samplerCube u_Tex;
 in mediump vec3 v_SampleDir_W;
 
+layout(std140) uniform ub_SH
+{
+	mediump vec3 iu_SH[9];
+};
+
+mediump vec3 eval_sh_irradiance(in mediump vec3 i_normal)
+{
+	const mediump float c0 = 0.2820947918f;		// sqrt(1.0 / (4.0 * pi))
+	const mediump float c1 = 0.4886025119f;		// sqrt(3.0 / (4.0 * pi))
+	const mediump float c2 = 1.092548431f;		// sqrt(15.0 / (4.0 * pi))
+	const mediump float c3 = 0.3153915653f;		// sqrt(5.0 / (16.0 * pi))
+	const mediump float c4 = 0.5462742153f;		// sqrt(15.0 / (16.0 * pi))
+
+	const mediump float a0 = 3.141593f;
+	const mediump float a1 = 2.094395f;
+	const mediump float a2 = 0.785398f;
+
+	//TODO: we can pre-multiply those above factors with SH coeffs before transfering them
+	//to the GPU
+
+	return
+		a0 * c0 * iu_SH[0]
+
+		- a1 * c1 * i_normal.x * iu_SH[1]
+		+ a1 * c1 * i_normal.y * iu_SH[2]
+		- a1 * c1 * i_normal.z * iu_SH[3]
+
+		+ a2 * c2 * i_normal.z * i_normal.x * iu_SH[4]
+		- a2 * c2 * i_normal.x * i_normal.y * iu_SH[5]
+		+ a2 * c3 * (3.0 * i_normal.y * i_normal.y - 1.0) * iu_SH[6]
+		- a2 * c2 * i_normal.y * i_normal.z * iu_SH[7]
+		+ a2 * c4 * (i_normal.z * i_normal.z - i_normal.x * i_normal.x) * iu_SH[8];
+}
+
 void main()
 {
-	mediump vec3 outColor = textureLod(u_Tex, v_SampleDir_W, 0.0).rgb;
+	mediump vec3 outColor = textureLod(u_Tex, v_SampleDir_W, 1.3f).rgb;
+	//mediump vec3 outColor = eval_sh_irradiance(normalize(v_SampleDir_W));
 	o_Color = outColor;
 }
 )";
@@ -97,7 +132,6 @@ PBRWithIBL::PBRWithIBL()
 	: m_CameraMotion(
 		floral::camera_view_t { floral::vec3f(6.0f, 0.0f, 0.0f), floral::vec3f(0.0f, 0.0f, 0.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 		floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
-	, m_NeedBakePMREM(false)
 	, m_MemoryArena(nullptr)
 {
 }
@@ -121,7 +155,7 @@ void PBRWithIBL::OnInitialize()
 	m_RenderBeginStateId = insigne::get_render_resource_state();
 
 	// register surfaces
-	insigne::register_surface_type<SurfaceP>();
+	insigne::register_surface_type<SurfacePNTBT>();
 	insigne::register_surface_type<SurfaceSkybox>();
 	insigne::register_surface_type<SurfacePT>();
 
@@ -131,44 +165,75 @@ void PBRWithIBL::OnInitialize()
 	{
 		m_MemoryArena->free_all();
 		// ico sphere
-		floral::fast_fixed_array<VertexP, LinearArena> sphereVertices;
-		floral::fast_fixed_array<s32, LinearArena> sphereIndices;
+		floral::fast_fixed_array<VertexPNTBT, LinearArena> vtxData(2048, m_MemoryArena);
+		floral::fast_fixed_array<s32, LinearArena> idxData(8192, m_MemoryArena);
+		vtxData.resize(2048);
+		idxData.resize(8192);
 
-		sphereVertices.reserve(4096, m_MemoryArena);
-		sphereIndices.reserve(8192, m_MemoryArena);
+		floral::geo_generate_result_t genResult = floral::generate_unit_uvsphere_3d(
+				0, sizeof(VertexPNTBT),
+				floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal | floral::geo_vertex_format_e::tex_coord,
+				&vtxData[0], &idxData[0]);
 
-		sphereVertices.resize(4096);
-		sphereIndices.resize(8192);
+		vtxData.resize(genResult.vertices_generated);
+		idxData.resize(genResult.indices_generated);
 
-		floral::reset_generation_transforms_stack();
-		floral::geo_generate_result_t genResult = floral::generate_unit_icosphere_3d(
-				2, 0, sizeof(VertexP),
-				floral::geo_vertex_format_e::position,
-				&sphereVertices[0], &sphereIndices[0]);
-		sphereVertices.resize(genResult.vertices_generated);
-		sphereIndices.resize(genResult.indices_generated);
+		size facesCount = idxData.get_size() / 3;
+		for (size i = 0; i < facesCount; i++)
+		{
+			s32 idx0 = idxData[3 * i];
+			s32 idx1 = idxData[3 * i + 1];
+			s32 idx2 = idxData[3 * i + 2];
+			floral::vec3f p0 = vtxData[idx0].Position;
+			floral::vec3f p1 = vtxData[idx1].Position;
+			floral::vec3f p2 = vtxData[idx2].Position;
+			floral::vec2f uv0 = vtxData[idx0].TexCoord;
+			floral::vec2f uv1 = vtxData[idx1].TexCoord;
+			floral::vec2f uv2 = vtxData[idx2].TexCoord;
+			floral::vec3f nm = vtxData[idx0].Normal;
+
+			floral::vec3f e0 = p1 - p0;
+			floral::vec3f e1 = p2 - p0;
+			floral::vec2f deltaUV0 = uv1 - uv0;
+			floral::vec2f deltaUV1 = uv2 - uv0;
+
+			f32 f = 1.0f / (deltaUV0.x * deltaUV1.y - deltaUV0.y * deltaUV1.x);
+
+			floral::vec3f tgt, biTgt;
+			tgt.x = f * (deltaUV1.y * e0.x - deltaUV0.y * e1.x);
+			tgt.y = f * (deltaUV1.y * e0.y - deltaUV0.y * e1.y);
+			tgt.z = f * (deltaUV1.y * e0.z - deltaUV0.y * e1.z);
+			vtxData[idx0].Tangent = floral::normalize(tgt);
+			vtxData[idx1].Tangent = floral::normalize(tgt);
+			vtxData[idx2].Tangent = floral::normalize(tgt);
+
+			biTgt.x = f * (-deltaUV1.x * e0.x + deltaUV0.x * e1.x);
+			biTgt.y = f * (-deltaUV1.x * e0.y + deltaUV0.x * e1.y);
+			biTgt.z = f * (-deltaUV1.x * e0.z + deltaUV0.x * e1.z);
+			vtxData[idx0].Binormal = floral::normalize(biTgt);
+			vtxData[idx1].Binormal = floral::normalize(biTgt);
+			vtxData[idx2].Binormal = floral::normalize(biTgt);
+		}
 
 		{
 			insigne::vbdesc_t desc;
-			desc.region_size = SIZE_KB(32);
-			desc.stride = sizeof(VertexP);
-			desc.data = nullptr;
-			desc.count = 0;
+			desc.region_size = sizeof(VertexPNTBT) * 2048;
+			desc.stride = sizeof(VertexPNTBT);
+			desc.data = &vtxData[0];
+			desc.count = genResult.vertices_generated;
 			desc.usage = insigne::buffer_usage_e::static_draw;
 
-			m_SphereVB = insigne::create_vb(desc);
-			insigne::copy_update_vb(m_SphereVB, &sphereVertices[0], sphereVertices.get_size(), sizeof(VertexP), 0);
+			m_SphereVB = insigne::copy_create_vb(desc);
 		}
 
 		{
 			insigne::ibdesc_t desc;
-			desc.region_size = SIZE_KB(16);
-			desc.data = nullptr;
-			desc.count = 0;
+			desc.region_size = sizeof(s32) * 8192;
+			desc.data = &idxData[0];
+			desc.count = genResult.indices_generated;
 			desc.usage = insigne::buffer_usage_e::static_draw;
 
-			m_SphereIB = insigne::create_ib(desc);
-			insigne::copy_update_ib(m_SphereIB, &sphereIndices[0], sphereIndices.get_size(), 0);
+			m_SphereIB = insigne::copy_create_ib(desc);
 		}
 	}
 
@@ -213,32 +278,25 @@ void PBRWithIBL::OnInitialize()
 
 	{
 		m_MemoryArena->free_all();
-		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/cubeuvchecker.cbskb");
+		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/alexs_appartment.prb");
 		floral::file_stream dataStream;
 
 		dataStream.buffer = (p8)m_MemoryArena->allocate(texFile.file_size);
 		floral::read_all_file(texFile, dataStream);
 		floral::close_file(texFile);
 
-		c8 magicChars[4];
-		dataStream.read_bytes(magicChars, 4);
-
-		s32 colorRange = 0;
-		s32 colorSpace = 0;
-		s32 colorChannel = 0;
-		f32 encodeGamma = 0.0f;
-		s32 mipsCount = 0;
-		u32 resolution = 0;
-		dataStream.read<s32>(&colorRange);
-		dataStream.read<s32>(&colorSpace);
-		dataStream.read<s32>(&colorChannel);
-		dataStream.read<f32>(&encodeGamma);
-		dataStream.read<s32>(&mipsCount);
-		//dataStream.read<u32>(&resolution);
+		floral::vec3f sh[9];
+		dataStream.read(&sh);
+		for (ssize i = 0; i < 9; i++)
+		{
+			m_SHData.SH[i] = floral::vec4f(sh[i], 0.0f);
+		}
+		s32 faceSize = 0;
+		dataStream.read(&faceSize);
 
 		insigne::texture_desc_t demoTexDesc;
-		demoTexDesc.width = 512;
-		demoTexDesc.height = 512;
+		demoTexDesc.width = faceSize;
+		demoTexDesc.height = faceSize;
 		demoTexDesc.format = insigne::texture_format_e::hdr_rgb;
 		demoTexDesc.min_filter = insigne::filtering_e::linear_mipmap_linear;
 		demoTexDesc.mag_filter = insigne::filtering_e::linear;
@@ -272,50 +330,50 @@ void PBRWithIBL::OnInitialize()
 
 		m_SceneData.XForm = floral::mat4x4f(1.0f);
 		m_SceneData.WVP = m_CameraMotion.GetWVP();
-		m_SceneData.CameraPos = floral::vec4f(6.0f, 6.0f, 6.0f, 0.0f);
+		m_SceneData.CameraPos = floral::vec4f(m_CameraMotion.GetPosition(), 0.0f);
 
 		insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
 	}
 
 	{
-		m_Projection.near_plane = 0.01f;
-		m_Projection.far_plane = 100.0f;
-		m_Projection.fov = 90.0f;
-		m_Projection.aspect_ratio = 1.0f;
-
-		m_View.position = floral::vec3f(0.0f, 0.0f, 0.0f);
-		m_View.look_at = floral::vec3f(1.0f, 0.0f, 0.0f);
-		m_View.up_direction = floral::vec3f(0.0f, 1.0f, 0.0f);
-
-		floral::mat4x4f p = floral::construct_perspective(m_Projection);
-		floral::mat4x4f v = floral::construct_lookat_point(m_View);
-		m_IBLSceneData.WVP = p * v;
-		m_IBLSceneData.CameraPos = floral::vec4f(m_View.position, 0.0f);
+		m_LightData.worldLightDirection = floral::vec4f(1.0f, 1.0f, 1.0f, 0.0f); // normalized in shader
+		m_LightData.worldLightDirection = floral::vec4f(2.0f, 2.0f, 2.0f, 0.0f);
+		m_LightData.pointLightsCount = 0;
 
 		insigne::ubdesc_t desc;
-		desc.region_size = 256;
-		desc.data = nullptr;
-		desc.data_size = 0;
+		desc.region_size = 1024;
+		desc.data = &m_LightData;
+		desc.data_size = sizeof(LightData);
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 
-		m_IBLBakeSceneUB = insigne::create_ub(desc);
-		insigne::copy_update_ub(m_IBLBakeSceneUB, &m_IBLSceneData, sizeof(IBLBakeSceneData), 0);
+		m_LightUB = insigne::copy_create_ub(desc);
 	}
 
-	m_PrefilterConfigs.roughness = floral::vec2f(0.8f, 0.0f);
 	{
 		insigne::ubdesc_t desc;
-		desc.region_size = 256;
+		desc.region_size = 2048;
 		desc.data = nullptr;
 		desc.data_size = 0;
-		desc.usage = insigne::buffer_usage_e::dynamic_draw;
-		desc.alignment = 0;
+		desc.usage = insigne::buffer_usage_e::static_draw;
 
-		m_PrefilterUB = insigne::create_ub(desc);
-		insigne::copy_update_ub(m_PrefilterUB, &m_PrefilterConfigs, sizeof(PrefilterConfigs), 0);
+		m_SHUB = insigne::create_ub(desc);
+		insigne::copy_update_ub(m_SHUB, &m_SHData, sizeof(SHData), 0);
 	}
 
 	// Framebuffer
+	{
+		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
+		insigne::color_attachment_t atm;
+		strcpy(atm.name, "main_color");
+		atm.texture_format = insigne::texture_format_e::hdr_rg;
+		atm.texture_dimension = insigne::texture_dimension_e::tex_2d;
+		desc.color_attachments->push_back(atm);
+		desc.width = 512; desc.height = 512;
+		desc.has_depth = false;
+
+		m_BrdfFB = insigne::create_framebuffer(desc);
+	}
+
 	{
 		calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 
@@ -326,20 +384,6 @@ void PBRWithIBL::OnInitialize()
 		desc.height = commonCtx->window_height;
 
 		m_PostFXBuffer = insigne::create_framebuffer(desc);
-	}
-
-	{
-		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
-		insigne::color_attachment_t atm;
-		strcpy(atm.name, "main_color_cube");
-		atm.texture_format = insigne::texture_format_e::hdr_rgb_half;
-		atm.texture_dimension = insigne::texture_dimension_e::tex_cube;
-		desc.color_attachments->push_back(atm);
-		desc.width = 256; desc.height = 256;
-		desc.has_depth = false;
-		desc.color_has_mipmap = true;
-
-		m_SpecularFB = insigne::create_framebuffer(desc);
 	}
 
 	// Tone Mapping
@@ -400,71 +444,61 @@ void PBRWithIBL::OnInitialize()
 
 	{
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
-		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
-		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler_cube));
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler2d));
 
-		strcpy(desc.vs, s_CubeMapVS);
-		strcpy(desc.fs, s_CubeMapFS);
-		desc.vs_path = floral::path("/demo/cubemap_vs");
-		desc.fs_path = floral::path("/demo/cubemap_fs");
+		strcpy(desc.vs, s_BRDF_IntegrationVS);
+		strcpy(desc.fs, s_BRDF_IntegrationFS);
+		desc.vs_path = floral::path("/demo/brdf_vs");
+		desc.fs_path = floral::path("/demo/brdf_fs");
 
-		m_CubeMapShader = insigne::create_shader(desc);
-		insigne::infuse_material(m_CubeMapShader, m_CubeMapMaterial);
-
-		{
-			s32 ubSlot = insigne::get_material_uniform_block_slot(m_CubeMapMaterial, "ub_Scene");
-			m_CubeMapMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_SceneUB };
-		}
-		{
-			s32 texSlot = insigne::get_material_texture_slot(m_CubeMapMaterial, "u_Tex");
-			//m_CubeMapMaterial.textures[texSlot].value = insigne::extract_color_attachment(m_SpecularFB, 0);
-			m_CubeMapMaterial.textures[texSlot].value = m_CubeMapTex;
-		}
+		m_BRDFShader = insigne::create_shader(desc);
+		insigne::infuse_material(m_BRDFShader, m_BRDFMaterial);
 	}
 
 	{
 		insigne::shader_desc_t desc = insigne::create_shader_desc();
 		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
-		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_PrefilterConfigs", insigne::param_data_type_e::param_ub));
-		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler_cube));
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Light", insigne::param_data_type_e::param_ub));
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_SH", insigne::param_data_type_e::param_ub));
 
-		strcpy(desc.vs, s_PMREMVS);
-		strcpy(desc.fs, s_PMREMFS);
-		desc.vs_path = floral::path("/demo/pmrem_vs");
-		desc.fs_path = floral::path("/demo/pmrem_fs");
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_SpecMap", insigne::param_data_type_e::param_sampler_cube));
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_SplitSumLUT", insigne::param_data_type_e::param_sampler2d));
 
-		m_PMREMShader = insigne::create_shader(desc);
-		insigne::infuse_material(m_PMREMShader, m_PMREMMaterial);
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_AlbedoTex", insigne::param_data_type_e::param_sampler2d));
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_NormalTex", insigne::param_data_type_e::param_sampler2d));
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_AttributeTex", insigne::param_data_type_e::param_sampler2d));
 
-		{
-			s32 ubSlot = insigne::get_material_uniform_block_slot(m_PMREMMaterial, "ub_Scene");
-			m_PMREMMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_IBLBakeSceneUB };
-		}
-		{
-			s32 ubSlot = insigne::get_material_uniform_block_slot(m_PMREMMaterial, "ub_PrefilterConfigs");
-			m_PMREMMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_PrefilterUB };
-		}
-		{
-			s32 texSlot = insigne::get_material_texture_slot(m_PMREMMaterial, "u_Tex");
-			m_PMREMMaterial.textures[texSlot].value = m_CubeMapTex;
-		}
+		strcpy(desc.vs, s_PBRWithIBLVS);
+		strcpy(desc.fs, s_PBRWithIBLFS);
+		desc.vs_path = floral::path("/demo/pbr_vs");
+		desc.fs_path = floral::path("/demo/pbr_fs");
+
+		m_PBRShader = insigne::create_shader(desc);
+		insigne::infuse_material(m_PBRShader, m_PBRMaterial);
+
+		insigne::helpers::assign_uniform_block(m_PBRMaterial, "ub_Scene", 0, 0, m_SceneUB);
+		insigne::helpers::assign_uniform_block(m_PBRMaterial, "ub_Light", 0, 0, m_LightUB);
+		insigne::helpers::assign_uniform_block(m_PBRMaterial, "ub_SH", 0, 0, m_SHUB);
+
+		insigne::helpers::assign_texture(m_PBRMaterial, "u_SpecMap", m_CubeMapTex);
+		insigne::helpers::assign_texture(m_PBRMaterial, "u_SplitSumLUT", insigne::extract_color_attachment(m_BrdfFB, 0));
 	}
+
+	m_BakingBRDF = true;
+	m_LoadingTextures = false;
+	m_PBRReady = false;
 }
 
 void PBRWithIBL::OnUpdate(const f32 i_deltaMs)
 {
 	// DebugUI
 	ImGui::Begin("Controller");
-	ImGui::Text("ibl");
-	if (ImGui::Button("Generate PMREM"))
-	{
-		m_NeedBakePMREM = true;
-	}
 	ImGui::End();
 
 	// Logic update
 	m_CameraMotion.OnUpdate(i_deltaMs);
 	m_SceneData.WVP = m_CameraMotion.GetWVP();
+	m_SceneData.CameraPos = floral::vec4f(m_CameraMotion.GetPosition(), 0.0f);
 
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(2.0f, 0.0f, 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 2.0f, 0.0f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
@@ -473,37 +507,37 @@ void PBRWithIBL::OnUpdate(const f32 i_deltaMs)
 
 void PBRWithIBL::OnRender(const f32 i_deltaMs)
 {
-	if (m_NeedBakePMREM)
+	if (m_BakingBRDF)
 	{
-		for (s32 m = 0; m < 9; m++)
-		{
-			f32 r = (f32)m / 4.0f;
-			m_PrefilterConfigs.roughness = floral::vec2f(r, 0.0f);
-			insigne::copy_update_ub(m_PrefilterUB, &m_PrefilterConfigs, sizeof(PrefilterConfigs), 0);
-			for (size i = 0; i < 6; i++)
-			{
-				m_View.look_at = s_lookAts[i];
-				m_View.up_direction = s_upDirs[i];
-				floral::mat4x4f p = floral::construct_perspective(m_Projection);
-				floral::mat4x4f v = floral::construct_lookat_point(m_View);
-				m_IBLSceneData.WVP = p * v;
-				insigne::copy_update_ub(m_IBLBakeSceneUB, &m_IBLSceneData, sizeof(IBLBakeSceneData), 0);
-
-				insigne::begin_render_pass(m_SpecularFB, s_faces[i], m);
-				insigne::draw_surface<SurfaceSkybox>(m_VB, m_IB, m_PMREMMaterial);
-				insigne::end_render_pass(m_SpecularFB);
-				insigne::dispatch_render_pass();
-			}
-		}
-		m_NeedBakePMREM = false;
+		insigne::begin_render_pass(m_BrdfFB);
+		insigne::draw_surface<SurfacePT>(m_SSVB, m_SSIB, m_BRDFMaterial);
+		insigne::end_render_pass(m_BrdfFB);
+		insigne::dispatch_render_pass();
+		m_BakingBRDF = false;
+		m_LoadingTextures = true;
 	}
 
-	insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
-	insigne::begin_render_pass(m_PostFXBuffer);
-	insigne::draw_surface<SurfaceP>(m_SphereVB, m_SphereIB, m_CubeMapMaterial);
-	debugdraw::Render(m_SceneData.WVP);
-	insigne::end_render_pass(m_PostFXBuffer);
-	insigne::dispatch_render_pass();
+	if (m_LoadingTextures)
+	{
+		m_AlbedoTex = _Load2DTexture(floral::path("gfx/go/textures/demo/test_metal_albedo.cbtex"));
+		m_AttributeTex = _Load2DTexture(floral::path("gfx/go/textures/demo/test_metal_attribute.cbtex"));
+		m_NormalTex = _Load2DTexture(floral::path("gfx/go/textures/demo/test_metal_normal.cbtex"));
+		insigne::helpers::assign_texture(m_PBRMaterial, "u_AlbedoTex", m_AlbedoTex);
+		insigne::helpers::assign_texture(m_PBRMaterial, "u_AttributeTex", m_AttributeTex);
+		insigne::helpers::assign_texture(m_PBRMaterial, "u_NormalTex", m_NormalTex);
+		m_LoadingTextures = false;
+		m_PBRReady = true;
+	}
+
+	if (m_PBRReady)
+	{
+		insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
+		insigne::begin_render_pass(m_PostFXBuffer);
+		insigne::draw_surface<SurfacePNTBT>(m_SphereVB, m_SphereIB, m_PBRMaterial);
+		debugdraw::Render(m_SceneData.WVP);
+		insigne::end_render_pass(m_PostFXBuffer);
+		insigne::dispatch_render_pass();
+	}
 
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::draw_surface<SurfacePT>(m_SSVB, m_SSIB, m_ToneMapMaterial);
@@ -532,6 +566,56 @@ void PBRWithIBL::OnCleanUp()
 
 	insigne::dispatch_render_pass();
 	insigne::wait_finish_dispatching();
+}
+
+// ---------------------------------------------
+
+const insigne::texture_handle_t PBRWithIBL::_Load2DTexture(const floral::path& i_path)
+{
+	m_MemoryArena->free_all();
+	floral::file_info f = floral::open_file(i_path);
+	floral::file_stream fs;
+	fs.buffer = (p8)m_MemoryArena->allocate(f.file_size);
+	floral::read_all_file(f, fs);
+	floral::close_file(f);
+
+	cymbi::CBTexture2DHeader header;
+	fs.read<cymbi::CBTexture2DHeader>(&header);
+
+	header.resolution = 1u << (header.mipsCount - 1);
+
+	insigne::texture_desc_t desc;
+	desc.width = header.resolution;
+	desc.height = header.resolution;
+	if (header.colorRange == cymbi::ColorRange::LDR)
+	{
+		if (header.colorChannel == cymbi::ColorChannel::RGBA)
+		{
+			desc.format = insigne::texture_format_e::rgba;
+		}
+		else
+		{
+			desc.format = insigne::texture_format_e::rgb;
+		}
+	}
+	else
+	{
+		desc.format = insigne::texture_format_e::hdr_rgb;
+	}
+	desc.min_filter = insigne::filtering_e::linear_mipmap_linear;
+	desc.mag_filter = insigne::filtering_e::linear;
+	desc.dimension = insigne::texture_dimension_e::tex_2d;
+	desc.has_mipmap = true;
+	const size dataSize = insigne::prepare_texture_desc(desc);
+	p8 pData = (p8)desc.data;
+	// > This is where it get interesting
+	// > When displaying image in the screen, the usual coordinate origin for us is in upper left corner
+	// 	and the data stored in disk *may* in scanlines from top to bottom
+	// > But the texture coordinate origin of OpenGL starts from bottom left corner
+	// 	and the data stored will be read and displayed in a order from bottom to top
+	// Thus, we have to store our texture data in disk in the order of bottom to top scanlines
+	fs.read_bytes((p8)desc.data, dataSize);
+	return insigne::create_texture(desc);
 }
 
 }

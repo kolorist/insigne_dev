@@ -20,6 +20,7 @@ public:
 	void										OnUpdate(const f32 i_deltaMs) override;
 
 	floral::mat4x4f								GetWVP() const;
+	floral::vec3f								GetPosition() const;
 
 public:
 	const bool									IsCursorPressed() const { return m_CursorPressed; }

@@ -13,6 +13,7 @@ ssize DebugSurface::index = -1;
 ssize SurfacePN::index = -1;
 ssize SurfacePNC::index = -1;
 ssize SurfacePNCSH::index = -1;
+ssize SurfacePNTBT::index = -1;
 ssize SurfacePNCC::index = -1;
 ssize ImGuiSurface::index = -1;
 

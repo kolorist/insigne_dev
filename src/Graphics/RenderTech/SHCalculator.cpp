@@ -3,6 +3,7 @@
 #include <floral/containers/array.h>
 #include <floral/comgeo/shapegen.h>
 #include <floral/math/transform.h>
+#include <floral/io/nativeio.h>
 
 #include <clover/Logger.h>
 
@@ -620,6 +621,28 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 	if (m_IsCapturingSpecData && insigne::get_current_frame_idx() >= m_SpecPromisedFrame)
 	{
 		f32* pData = m_SpecImgData;
+		floral::file_info oFile = floral::open_output_file("out.prb");
+		floral::output_file_stream oStream;
+		floral::map_output_file(oFile, oStream);
+
+		for (s32 i = 0; i < 9; i++)
+		{
+			const floral::vec3f& coeff = m_SHComputeTaskData.OutputCoeffs[i];
+			oStream.write(coeff);
+		}
+
+		s32 faceSize = 256;
+		oStream.write(faceSize);
+
+		insigne::texture_desc_t texDesc;
+		texDesc.width = 256;
+		texDesc.height = 256;
+		texDesc.format = insigne::texture_format_e::hdr_rgb;
+		texDesc.dimension = insigne::texture_dimension_e::tex_cube;
+		texDesc.has_mipmap = true;
+		const size dataSize = insigne::prepare_texture_desc(texDesc);
+		oStream.write_bytes(pData, dataSize);
+#if 0
 		for (s32 f = 0; f < 6; f++)
 		{
 			s32 texSize = 256;
@@ -632,6 +655,10 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 				texSize >>= 1;
 			}
 		}
+#endif
+
+		floral::close_file(oFile);
+
 		m_TemporalArena->free(m_SpecImgData);
 		m_SpecImgData = nullptr;
 		m_IsCapturingSpecData = false;
