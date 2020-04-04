@@ -18,6 +18,7 @@ namespace stone {
 	extern LinearArena							g_TemporalLinearArena;
 	extern FreelistArena						g_TemporalFreeArena;
 	extern FreelistArena						g_STBArena;
+	extern FreelistArena						g_StringArena;
 
 	void										SnapshotAllocatorInfos();
 }

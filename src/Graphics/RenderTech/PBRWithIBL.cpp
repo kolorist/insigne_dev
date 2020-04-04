@@ -215,26 +215,10 @@ void PBRWithIBL::OnInitialize()
 			vtxData[idx2].Binormal = floral::normalize(biTgt);
 		}
 
-		{
-			insigne::vbdesc_t desc;
-			desc.region_size = sizeof(VertexPNTBT) * 2048;
-			desc.stride = sizeof(VertexPNTBT);
-			desc.data = &vtxData[0];
-			desc.count = genResult.vertices_generated;
-			desc.usage = insigne::buffer_usage_e::static_draw;
-
-			m_SphereVB = insigne::copy_create_vb(desc);
-		}
-
-		{
-			insigne::ibdesc_t desc;
-			desc.region_size = sizeof(s32) * 8192;
-			desc.data = &idxData[0];
-			desc.count = genResult.indices_generated;
-			desc.usage = insigne::buffer_usage_e::static_draw;
-
-			m_SphereIB = insigne::copy_create_ib(desc);
-		}
+		m_SphereSurface =
+			helpers::CreateSurfaceGPU(&vtxData[0], genResult.vertices_generated, sizeof(VertexPNTBT),
+					&idxData[0], genResult.indices_generated,
+					insigne::buffer_usage_e::static_draw);
 	}
 
 	{
@@ -533,7 +517,7 @@ void PBRWithIBL::OnRender(const f32 i_deltaMs)
 	{
 		insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
 		insigne::begin_render_pass(m_PostFXBuffer);
-		insigne::draw_surface<SurfacePNTBT>(m_SphereVB, m_SphereIB, m_PBRMaterial);
+		insigne::draw_surface<SurfacePNTBT>(m_SphereSurface.vb, m_SphereSurface.ib, m_PBRMaterial);
 		debugdraw::Render(m_SceneData.WVP);
 		insigne::end_render_pass(m_PostFXBuffer);
 		insigne::dispatch_render_pass();

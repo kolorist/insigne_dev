@@ -45,6 +45,7 @@ namespace stone {
 	LinearArena									g_TemporalLinearArena;
 	FreelistArena								g_TemporalFreeArena;
 	FreelistArena								g_STBArena;
+	FreelistArena								g_StringArena;
 }
 
 namespace helich {
@@ -73,7 +74,8 @@ void init_memory_system()
 			memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(64),	&stone::g_StreammingAllocator },
 			memory_region<stone::LinearArena>			{ "stone/temporal_lin",			SIZE_MB(64),	&stone::g_TemporalLinearArena },
 			memory_region<stone::FreelistArena>			{ "stone/temporal_free",		SIZE_MB(64),	&stone::g_TemporalFreeArena },
-			memory_region<stone::FreelistArena>			{ "stone/stb_arena",			SIZE_MB(64),	&stone::g_STBArena }
+			memory_region<stone::FreelistArena>			{ "stone/stb_arena",			SIZE_MB(64),	&stone::g_STBArena },
+			memory_region<stone::FreelistArena>			{ "stone/string_arena",			SIZE_MB(4),		&stone::g_StringArena }
 			);
 }
 

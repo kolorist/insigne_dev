@@ -4,6 +4,7 @@
 
 #include <insigne/commons.h>
 
+#include "Graphics/InsigneHelpers.h"
 #include "Graphics/Tests/ITestSuite.h"
 #include "Graphics/TrackballCamera.h"
 #include "Memory/MemorySystem.h"
@@ -61,10 +62,10 @@ private:
 	TrackballCamera								m_CameraMotion;
 
 private:
+	helpers::SurfaceGPU							m_SphereSurface;
+
 	insigne::vb_handle_t						m_VB;
-	insigne::vb_handle_t						m_SphereVB;
 	insigne::ib_handle_t						m_IB;
-	insigne::ib_handle_t						m_SphereIB;
 	insigne::ub_handle_t						m_SceneUB;
 	insigne::ub_handle_t						m_LightUB;
 	insigne::ub_handle_t						m_SurfaceUB;

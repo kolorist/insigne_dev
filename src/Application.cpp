@@ -16,38 +16,10 @@
 #include "Graphics/ICameraMotion.h"
 #include "Graphics/IDebugUI.h"
 
-#include "Graphics/Tests/ITestSuite.h"
-#include "Graphics/Tests/PlainQuad.h"
-#include "Graphics/Tests/SHBaking.h"
-#include "Graphics/Tests/FormFactorsValidating.h"
-#include "Graphics/Tests/CornelBox.h"
-#include "Graphics/Tests/OctreePartition.h"
-#include "Graphics/Tests/LightProbePlacement.h"
-#include "Graphics/Tests/CbFormats.h"
-#include "Graphics/Tests/DebugUITest.h"
-#include "Graphics/Tests/GILightProbe.h"
-#include "Graphics/Tests/SHTest.h"
-#include "Graphics/Tests/UnshadowedPRT.h"
-#include "Graphics/Tests/ShapeGen.h"
-#include "Graphics/Tests/ShadowedPRT.h"
-#include "Graphics/Tests/InterreflectPRT.h"
-#include "Graphics/Tests/AccurateFormFactor.h"
-#include "Graphics/Tests/Quad2DRasterize.h"
-#include "Graphics/Tests/GPUQuad2DRasterize.h"
-#include "Graphics/Tests/Skeletal.h"
-#if 0
-#include "Graphics/Tests/FormFactorsBaking.h"
-#include "Graphics/Tests/PlainTextureQuad.h"
-#include "Graphics/Tests/CubeMapTexture.h"
-#include "Graphics/Tests/VectorMath.h"
-#include "Graphics/Tests/GPUVectorMath.h"
-#include "Graphics/Tests/OmniShadow.h"
-#include "Graphics/Tests/SHMath.h"
-#include "Graphics/Tests/GlobalIllumination.h"
-#endif
 #include "DemoHub.h"
 
-namespace stone {
+namespace stone
+{
 
 Application::Application(Controller* i_controller)
 	: m_Initialized(false)
