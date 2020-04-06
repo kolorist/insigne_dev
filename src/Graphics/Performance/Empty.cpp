@@ -31,10 +31,10 @@ void Empty::OnInitialize()
 	FreelistArena* localArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(1));
 	const_cstr matDescStr =
 	R"(_shader
-		_vs	gfx/shader/pbr_cook_torrance.vs
-		_fs gfx/shader/pbr_cook_torrance.fs
-		_enable_feature	DEBUG_FEATURE0
-		_enable_feature	DEBUG_FEATURE1
+		vs	gfx/shader/pbr_cook_torrance.vs
+		fs	gfx/shader/pbr_cook_torrance.fs
+		enable_feature	DEBUG_FEATURE0
+		enable_feature	DEBUG_FEATURE1
 	_end_shader
 
 	_params
@@ -49,22 +49,22 @@ void Empty::OnInitialize()
 		_p_ub_holder	ub_LateBindMaterial
 
 		_p_tex u_PMREM
-			_dim		texcube
-			_min_filter	linear_mipmap_linear
-			_mag_filter	linear
-			_wrap_s		clamp_to_edge
-			_wrap_t		clamp_to_edge
-			_wrap_r		clamp_to_edge
-			_data		gfx/go/textures/demo/test_albedo.prb
+			dim			texcube
+			min_filter	linear_mipmap_linear
+			mag_filter	linear
+			wrap_s		clamp_to_edge
+			wrap_t		clamp_to_edge
+			wrap_r		clamp_to_edge
+			path		gfx/go/textures/demo/test_albedo.prb
 		_end_p_tex
 
 		_p_tex u_AlbedoTex
-			_dim		tex2d
-			_min_filter	linear_mipmap_linear
-			_mag_filter	linear
-			_wrap_s		clamp_to_edge
-			_wrap_t		clamp_to_edge
-			_data		gfx/go/textures/demo/test_albedo.cbtex
+			dim			tex2d
+			min_filter	linear_mipmap_linear
+			mag_filter	linear
+			wrap_s		clamp_to_edge
+			wrap_t		clamp_to_edge
+			path		gfx/go/textures/demo/test_albedo.cbtex
 		_end_p_tex
 
 		_p_tex_holder	u_LateBindTex

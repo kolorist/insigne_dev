@@ -31,6 +31,7 @@ struct UBParam
 
 struct UBDescription
 {
+	const_cstr									identifier;
 	bool										isPlaceholder;
 	size										membersCount;
 	UBParam*									members;
@@ -67,6 +68,7 @@ enum class TextureWrap
 
 struct TextureDescription
 {
+	const_cstr									identifier;
 	bool										isPlaceholder;
 	TextureDimension							dimension;
 	TextureFilter								minFilter;
@@ -118,6 +120,7 @@ enum class TokenType
 	Int, Float, Vec2, Vec3, Vec4, Mat3, Mat4,
 	Tex, EndTex, TexHolder,
 	TexDim, TexMinFilter, TexMagFilter, TexWrapS, TexWrapT, TexWrapR, TexPath,
+	EndOfTokenStream,
 	Count,
 };
 
@@ -132,9 +135,9 @@ struct Token
 		const_cstr								strValue;
 		s32										intValue;
 		f32										floatValue;
-		TextureDimension						texDimValue;
-		TextureFilter							texFilterValue;
-		TextureWrap								texWrapValue;
+		//TextureDimension						texDimValue;
+		//TextureFilter							texFilterValue;
+		//TextureWrap							texWrapValue;
 	};
 
 	Token()
@@ -155,6 +158,8 @@ public:
 
 private:
 	void										_SkipBlanks();
+	const bool									_IsInt(const char* i_str, const size i_strLen);
+	const bool									_IsFloat(const char* i_str, const size i_strLen);
 	const size									_GetRawString(const_cstr* o_outputStr);
 	const_cstr									_DuplicateStringRange(const_cstr i_inputStr, const size i_strLen);
 
@@ -170,6 +175,27 @@ using TokenArray = floral::fast_dynamic_array<Token, TAllocator>;
 
 template <class TMemoryArena>
 const_cstr MaterialLexer(const_cstr i_descBuffer, TokenArray<TMemoryArena>* o_tokenArray, TMemoryArena* i_memoryArena);
+
+template <class TMemoryArena>
+const_cstr MaterialParser(const TokenArray<TMemoryArena>& i_tokenArray, MaterialDescription* o_material, TMemoryArena* i_memoryArena);
+
+template <class TMemoryArena>
+const_cstr _ParseShader(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, MaterialDescription* o_material, TMemoryArena* i_memoryArena);
+
+template <class TMemoryArena>
+const_cstr _ParseParams(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, MaterialDescription* o_material, TMemoryArena* i_memoryArena);
+
+template <class TMemoryArena>
+const_cstr _ParseUB(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, UBDescription* o_ubDescription, TMemoryArena* i_memoryArena);
+
+template <class TMemoryArena>
+const_cstr _ParseTexture(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, TextureDescription* o_texDescription, TMemoryArena* i_memoryArena);
+
+template <class TMemoryArena>
+void _ParseIntValues(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, s32* o_data, const size i_count);
+
+template <class TMemoryArena>
+void _ParseFloatValues(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, f32* o_data, const size i_count);
 
 // ----------------------------------------------------------------------------
 }
