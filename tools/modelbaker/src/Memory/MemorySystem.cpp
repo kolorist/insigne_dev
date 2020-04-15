@@ -5,18 +5,21 @@
 helich::memory_manager							g_MemoryManager;
 
 // allocators for clover
-namespace clover {
+namespace clover
+{
 	LinearAllocator								g_LinearAllocator;
 }
 
-namespace baker {
+namespace baker
+{
 	LinearAllocator								g_PersistanceAllocator;
 	FreelistAllocator							g_TemporalAllocator;
 	FreelistAllocator							g_ParserAllocator;
 	FreelistArena								g_TemporalArena;
 }
 
-namespace helich {
+namespace helich
+{
 
 void init_memory_system()
 {
