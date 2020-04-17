@@ -17,7 +17,6 @@
 #include "Graphics/GLTFLoader.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/CbModelLoader.h"
-
 #include "Graphics/DebugDrawer.h"
 
 namespace stone
@@ -133,18 +132,18 @@ void Vault::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// register surfaces
-	insigne::register_surface_type<Surface3DPT>();
+	insigne::register_surface_type<geo3d::SurfacePNT>();
 
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(1));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_KB(256));
 	m_ModelDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
 
 	m_MemoryArena->free_all();
-	cbmodel::Model<Vertex3DPT> model = cbmodel::LoadModelData<Vertex3DPT>(floral::path("gfx/go/models/demo/damaged_helmet.cbmodel"),
-			cbmodel::VertexAttribute::Position | cbmodel::VertexAttribute::TexCoord,
+	cbmodel::Model<geo3d::VertexPNT> model = cbmodel::LoadModelData<geo3d::VertexPNT>(floral::path("gfx/go/models/demo/damaged_helmet.cbmodel"),
+			cbmodel::VertexAttribute::Position | cbmodel::VertexAttribute::Normal | cbmodel::VertexAttribute::TexCoord,
 			m_MemoryArena, m_ModelDataArena);
 
-	m_SurfaceGPU = helpers::CreateSurfaceGPU(model.verticesData, model.verticesCount, sizeof(Vertex3DPT),
+	m_SurfaceGPU = helpers::CreateSurfaceGPU(model.verticesData, model.verticesCount, sizeof(geo3d::VertexPNT),
 			model.indicesData, model.indicesCount, insigne::buffer_usage_e::static_draw, false);
 
 	//floral::mat4x4f view = CreateViewMatrixLH(floral::vec3f(3.0f, 3.0f, 3.0f),
@@ -153,6 +152,7 @@ void Vault::_OnInitialize()
 			floral::vec3f(0.0f, 0.0f, 1.0f));
 	//floral::mat4x4f projection = CreatePerspectiveLH(16.0f / 9.0f, 45.0f, 0.01f, 100.0f);
 	floral::mat4x4f projection = CreatePerspectiveRH(16.0f / 9.0f, 45.0f, 0.01f, 100.0f);
+	m_SceneData.cameraPos = floral::vec4f(2.0f, 2.0f, 2.0f, 0.0f);
 	m_SceneData.viewProjectionMatrix = projection * view;
 
 	insigne::ubdesc_t desc;
@@ -164,7 +164,7 @@ void Vault::_OnInitialize()
 
 	m_MemoryArena->free_all();
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
-			floral::path("gfx/mat/uv_solid.mat"), m_MemoryArena);
+			floral::path("gfx/mat/pbr.mat"), m_MemoryArena);
 
 	const bool result = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
 	FLORAL_ASSERT(result == true);
@@ -183,7 +183,7 @@ void Vault::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
-	insigne::draw_surface<Surface3DPT>(m_SurfaceGPU.vb, m_SurfaceGPU.ib, m_MSPair.material);
+	insigne::draw_surface<geo3d::SurfacePNT>(m_SurfaceGPU.vb, m_SurfaceGPU.ib, m_MSPair.material);
 	debugdraw::Render(m_SceneData.viewProjectionMatrix);
 	RenderImGui();
 
@@ -198,7 +198,7 @@ void Vault::_OnCleanUp()
 	g_StreammingAllocator.free(m_ModelDataArena);
 	g_StreammingAllocator.free(m_MaterialDataArena);
 	g_StreammingAllocator.free(m_MemoryArena);
-	insigne::unregister_surface_type<Surface3DPT>();
+	insigne::unregister_surface_type<geo3d::SurfacePNT>();
 }
 
 }

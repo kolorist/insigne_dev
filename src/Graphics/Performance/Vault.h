@@ -23,6 +23,7 @@ public:
 private:
 	struct SceneData
 	{
+		floral::vec4f							cameraPos;
 		floral::mat4x4f							viewProjectionMatrix;
 	};
 
