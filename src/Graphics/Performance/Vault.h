@@ -2,9 +2,11 @@
 
 #include <floral/stdaliases.h>
 
-#include <insigne/commons.h>
-
 #include "Graphics/TestSuite.h"
+
+#include "Graphics/InsigneHelpers.h"
+#include "Graphics/MaterialLoader.h"
+
 #include "Memory/MemorySystem.h"
 
 namespace stone
@@ -13,14 +15,20 @@ namespace perf
 {
 // ------------------------------------------------------------------
 
-class Triangle : public TestSuite
+class Vault : public TestSuite
 {
 public:
-	static constexpr const_cstr k_name			= "triangle";
+	static constexpr const_cstr k_name			= "vault";
+
+private:
+	struct SceneData
+	{
+		floral::mat4x4f							viewProjectionMatrix;
+	};
 
 public:
-	Triangle();
-	~Triangle();
+	Vault();
+	~Vault();
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;
@@ -31,12 +39,18 @@ private:
 	void										_OnRender(const f32 i_deltaMs) override;
 	void										_OnCleanUp() override;
 
-private:
-	insigne::vb_handle_t						m_VB;
-	insigne::ib_handle_t						m_IB;
 
-	insigne::shader_handle_t					m_Shader;
-	insigne::material_desc_t					m_Material;
+private:
+	helpers::SurfaceGPU							m_SurfaceGPU;
+	mat_loader::MaterialShaderPair				m_MSPair;
+
+	SceneData									m_SceneData;
+	insigne::ub_handle_t						m_SceneUB;
+
+private:
+	FreelistArena*								m_MemoryArena;
+	LinearArena*								m_MaterialDataArena;
+	LinearArena*								m_ModelDataArena;
 };
 
 // ------------------------------------------------------------------

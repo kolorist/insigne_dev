@@ -9,9 +9,13 @@ namespace stone
 {
 namespace perf
 {
+// ------------------------------------------------------------------
 
 class Empty : public ITestSuite
 {
+public:
+	static constexpr const_cstr k_name			= "empty";
+
 public:
 	Empty();
 	~Empty();
@@ -26,5 +30,6 @@ public:
 	ICameraMotion*								GetCameraMotion() override { return nullptr; }
 };
 
+// ------------------------------------------------------------------
 }
 }

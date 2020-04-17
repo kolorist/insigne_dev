@@ -9,18 +9,18 @@
 
 namespace stone
 {
-namespace perf
+namespace misc
 {
 // ------------------------------------------------------------------
 
-class Triangle : public TestSuite
+class CameraWork : public TestSuite
 {
 public:
-	static constexpr const_cstr k_name			= "triangle";
+	static constexpr const_cstr k_name			= "camera work";
 
 public:
-	Triangle();
-	~Triangle();
+	CameraWork();
+	~CameraWork();
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;

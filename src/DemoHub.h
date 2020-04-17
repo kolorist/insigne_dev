@@ -3,14 +3,38 @@
 #include "IDemoHub.h"
 
 #include <floral/containers/array.h>
+#include <floral/containers/fast_array.h>
+#include <floral/function/simple_callback.h>
+
+#include "Memory/MemorySystem.h"
 
 namespace stone
 {
+// ------------------------------------------------------------------
 
 class ITestSuite;
 
+template <class TSuite>
+struct SuiteCreator
+{
+	static ITestSuite* Create()
+	{
+		return g_PersistanceAllocator.allocate<TSuite>();
+	}
+};
+
+// ------------------------------------------------------------------
+
 class DemoHub : public IDemoHub
 {
+private:
+	struct SuiteRegistry
+	{
+		s32										id;
+		const_cstr								name;
+		floral::simple_callback<ITestSuite*>	createFunction;
+	};
+
 public:
 	DemoHub();
 	~DemoHub();
@@ -27,35 +51,52 @@ public:
 	void										RenderFrame(const f32 i_deltaMs);
 
 private:
-	void										_SwitchTestSuite(ITestSuite* i_to);
+	void										_SwitchTestSuite(SuiteRegistry& i_to);
+	void										_ClearAllSuite();
+
+	template <class T>
+	void _EmplacePlaygroundSuite()
+	{
+		SuiteRegistry registry;
+		registry.id = m_NextSuiteId;
+		registry.name = T::k_name;
+		registry.createFunction.bind<&SuiteCreator<T>::Create>();
+		m_PlaygroundSuite.push_back(registry);
+		m_NextSuiteId++;
+	}
 
 	template <class T>
 	void _EmplacePerformanceSuite()
 	{
-		ITestSuite* newSuite = g_PersistanceAllocator.allocate<T>();
-		m_PerformanceSuite.push_back(newSuite);
+		SuiteRegistry registry;
+		registry.id = m_NextSuiteId;
+		registry.name = T::k_name;
+		registry.createFunction.bind<&SuiteCreator<T>::Create>();
+		m_PerformanceSuite.push_back(registry);
+		m_NextSuiteId++;
 	}
 
 	template <class T>
-	void _EmplaceRenderTechSuite()
+	void _EmplaceImGuiSuite()
 	{
-		ITestSuite* newSuite = g_PersistanceAllocator.allocate<T>();
-		m_RenderTechSuite.push_back(newSuite);
-	}
-
-	template <class T>
-	void _EmplaceToolSuite()
-	{
-		ITestSuite* newSuite = g_PersistanceAllocator.allocate<T>();
-		m_ToolSuite.push_back(newSuite);
+		SuiteRegistry registry;
+		registry.id = m_NextSuiteId;
+		registry.name = T::k_name;
+		registry.createFunction.bind<&SuiteCreator<T>::Create>();
+		m_ImGuiSuite.push_back(registry);
+		m_NextSuiteId++;
 	}
 
 private:
-	floral::inplace_array<ITestSuite*, 8>		m_PerformanceSuite;
-	floral::inplace_array<ITestSuite*, 8>		m_RenderTechSuite;
-	floral::inplace_array<ITestSuite*, 8>		m_ToolSuite;
+	s32											m_NextSuiteId;
+	s32											m_CurrentTestSuiteId;
+	ITestSuite*									m_Suite;
 
-	ITestSuite*									m_CurrentTestSuite;
+private:
+	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_PlaygroundSuite;
+	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_PerformanceSuite;
+	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_ImGuiSuite;
 };
 
+// ------------------------------------------------------------------
 }

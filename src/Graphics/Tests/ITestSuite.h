@@ -2,12 +2,16 @@
 
 #include <floral.h>
 
-namespace stone {
+namespace stone
+{
 
 class ICameraMotion;
 
-class ITestSuite {
+class ITestSuite
+{
 public:
+	virtual ~ITestSuite() = default;
+
 	virtual const_cstr							GetName() const { return nullptr; }
 
 	virtual void								OnInitialize() = 0;

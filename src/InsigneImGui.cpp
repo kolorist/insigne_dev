@@ -2,8 +2,6 @@
 
 #include <clover/Logger.h>
 
-#include <imgui.h>
-
 #include <calyx/context.h>
 
 #include <insigne/counters.h>
@@ -276,19 +274,182 @@ void ImGuiCharacterInput(const c8 i_charCode)
 	io.AddInputCharacter(i_charCode);
 }
 
-void ImGuiCursorMove(const u32 i_x, const u32 i_y)
+const bool ImGuiCursorMove(const u32 i_x, const u32 i_y)
 {
+	ImGuiIO& io = ImGui::GetIO();
 	s_CursorPos = floral::vec2f((f32)i_x, (f32)i_y);
+	return io.WantCaptureMouse;
 }
 
-void ImGuiCursorInteract(const bool i_pressed)
+const bool ImGuiCursorInteract(const bool i_pressed)
 {
+	ImGuiIO& io = ImGui::GetIO();
 	s_CursorPressed = i_pressed;
 	if (i_pressed)
 	{
 		s_CursorHeldThisFrame = true;
 	}
+	return io.WantCaptureMouse;
 }
+
+// -----------------------------------------------------------------------------
+
+bool DebugVec2f(const char* i_label, floral::vec2f* i_vec, const char* i_fmt /* = "%2.3f" */, ImGuiInputTextFlags i_flags /* = 0 */)
+{
+	return ImGui::InputFloat2(i_label, &(i_vec->x), i_fmt, i_flags);
+}
+
+bool DebugVec3f(const char* i_label, floral::vec3f* i_vec, const char* i_fmt /* = "%2.3f" */, ImGuiInputTextFlags i_flags /* = 0 */)
+{
+	return ImGui::InputFloat3(i_label, &(i_vec->x), i_fmt, i_flags);
+}
+
+bool DebugVec4f(const char* i_label, floral::vec4f* i_vec, const char* i_fmt /* = "%2.3f" */, ImGuiInputTextFlags i_flags /* = 0 */)
+{
+	return ImGui::InputFloat4(i_label, &(i_vec->x), i_fmt, i_flags);
+}
+
+bool DebugMat3fColumnOrder(const char* i_label, floral::mat3x3f* i_mat)
+{
+	ImGui::Text("%s", i_label);
+	ImGui::PushID(i_label);
+
+	ImGui::SameLine();
+	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[?]");
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+		ImGui::Text("Here, matrix of size 3x3 is displayed in column by column order. Memory storage order is left-to-right and top-to-bottom");
+        ImGui::PopTextWrapPos();
+		ImGui::EndTooltip();
+	}
+
+	ImGui::InputFloat3("c0", &(*i_mat)[0][0], "%2.3f");
+	ImGui::InputFloat3("c1", &(*i_mat)[1][0], "%2.3f");
+	ImGui::InputFloat3("c2", &(*i_mat)[2][0], "%2.3f");
+	ImGui::PopID();
+	return false;
+}
+
+bool DebugMat4fColumnOrder(const char* i_label, floral::mat4x4f* i_mat)
+{
+	ImGui::Text("%s", i_label);
+	ImGui::PushID(i_label);
+
+	ImGui::SameLine();
+	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[?]");
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+		ImGui::Text("Here, matrix of size 4x4 is displayed in column by column order. Memory storage order is left-to-right and top-to-bottom");
+        ImGui::PopTextWrapPos();
+		ImGui::EndTooltip();
+	}
+
+	ImGui::InputFloat4("c0", &(*i_mat)[0][0], "%2.3f");
+	ImGui::InputFloat4("c1", &(*i_mat)[1][0], "%2.3f");
+	ImGui::InputFloat4("c2", &(*i_mat)[2][0], "%2.3f");
+	ImGui::InputFloat4("c3", &(*i_mat)[3][0], "%2.3f");
+	ImGui::PopID();
+	return false;
+}
+
+bool DebugMat3fRowOrder(const char* i_label, floral::mat3x3f* i_mat)
+{
+	ImGui::Text("%s", i_label);
+
+	ImGuiStyle& style = ImGui::GetStyle();
+	f32 fullWidth = ImGui::CalcItemWidth();
+	const f32 wItemOne = floral::max(1.0f, (f32)(s32)((fullWidth - style.ItemInnerSpacing.x * 2.0f) / 3.0f));
+	const f32 wItemLast = floral::max(1.0f, (f32)(s32)(fullWidth - (wItemOne + style.ItemInnerSpacing.x) * 2.0f));
+
+	ImGui::PushID(i_label);
+
+	ImGui::SameLine();
+	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[?]");
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+		ImGui::Text("Here, matrix of size 3x3 is displayed in row by row order. Memory storage order is top-to-bottom and left-to-right");
+        ImGui::PopTextWrapPos();
+		ImGui::EndTooltip();
+	}
+
+	for (size r = 0; r < 3; r++)
+	{
+		for (size c = 0; c < 3; c++)
+		{
+			ImGui::PushID(r * 3 + c);
+			if (c == 2)
+			{
+				ImGui::SetNextItemWidth(wItemLast);
+			}
+			else
+			{
+				ImGui::SetNextItemWidth(wItemOne);
+			}
+			ImGui::InputScalar("", ImGuiDataType_Float, &(*i_mat)[c][r], nullptr, nullptr, "%2.3f");
+			ImGui::SameLine(0, style.ItemInnerSpacing.x);
+			ImGui::PopID();
+		}
+		ImGui::Text("r%llu", r);
+	}
+
+	ImGui::PopID();
+	return false;
+}
+
+bool DebugMat4fRowOrder(const char* i_label, floral::mat4x4f* i_mat)
+{
+	ImGui::Text("%s", i_label);
+
+	ImGuiStyle& style = ImGui::GetStyle();
+	f32 fullWidth = ImGui::CalcItemWidth();
+	const f32 wItemOne = floral::max(1.0f, (f32)(s32)((fullWidth - style.ItemInnerSpacing.x * 3.0f) / 4.0f));
+	const f32 wItemLast = floral::max(1.0f, (f32)(s32)(fullWidth - (wItemOne + style.ItemInnerSpacing.x) * 3.0f));
+
+	ImGui::PushID(i_label);
+
+	ImGui::SameLine();
+	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[?]");
+	if (ImGui::IsItemHovered())
+	{
+		ImGui::BeginTooltip();
+		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
+		ImGui::Text("Here, matrix of size 4x4 is displayed in row by row order. Memory storage order is top-to-bottom and left-to-right");
+        ImGui::PopTextWrapPos();
+		ImGui::EndTooltip();
+	}
+
+	for (size r = 0; r < 4; r++)
+	{
+		for (size c = 0; c < 4; c++)
+		{
+			ImGui::PushID(r * 4 + c);
+			if (c == 3)
+			{
+				ImGui::SetNextItemWidth(wItemLast);
+			}
+			else
+			{
+				ImGui::SetNextItemWidth(wItemOne);
+			}
+			ImGui::InputScalar("", ImGuiDataType_Float, &(*i_mat)[c][r], nullptr, nullptr, "%2.3f");
+			ImGui::SameLine(0, style.ItemInnerSpacing.x);
+			ImGui::PopID();
+		}
+		ImGui::SetNextItemWidth(wItemLast);
+		ImGui::Text("r%llu", r);
+	}
+
+	ImGui::PopID();
+	return false;
+}
+
+// -----------------------------------------------------------------------------
 
 const bool DidImGuiConsumeMouse()
 {

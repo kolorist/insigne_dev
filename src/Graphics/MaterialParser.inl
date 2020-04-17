@@ -1,5 +1,22 @@
+#include <floral/io/nativeio.h>
+
 namespace mat_parser
 {
+// ----------------------------------------------------------------------------
+
+template <class TMemoryArena>
+const MaterialDescription ParseMaterial(const floral::path i_path, TMemoryArena* i_memoryArena)
+{
+	floral::file_info inp = floral::open_file(i_path);
+	floral::file_stream inpStream;
+	inpStream.buffer = (p8)i_memoryArena->allocate(inp.file_size + 1);
+	floral::read_all_file(inp, inpStream);
+	floral::close_file(inp);
+
+	inpStream.buffer[inp.file_size] = 0;
+	return ParseMaterial((const_cstr)inpStream.buffer, i_memoryArena);
+}
+
 // ----------------------------------------------------------------------------
 
 template <class TMemoryArena>
@@ -283,11 +300,27 @@ const_cstr _ParseParams(const TokenArray<TMemoryArena>& i_tokenArray, size& io_t
 			else if (token.type == TokenType::TexHolder)
 			{
 				i++;
-				const Token& expectedToken = i_tokenArray[i];
-				FLORAL_ASSERT(expectedToken.type == TokenType::ValueStringLiteral);
-				o_material->textureDescriptions[parsedTextures].identifier = expectedToken.strValue;
+				const Token& expectedDim = i_tokenArray[i];
+				FLORAL_ASSERT(expectedDim.type == TokenType::ValueStringLiteral);
+				if (strcmp(expectedDim.strValue, "tex2d") == 0)
+				{
+					o_material->textureDescriptions[parsedTextures].dimension = TextureDimension::Texture2D;
+				}
+				else if (strcmp(expectedDim.strValue, "texcube") == 0)
+				{
+					o_material->textureDescriptions[parsedTextures].dimension = TextureDimension::TextureCube;
+				}
+				else
+				{
+					FLORAL_ASSERT_MSG(false, "Missing dimension");
+				}
+
+				i++;
+				const Token& expectedId = i_tokenArray[i];
+				FLORAL_ASSERT(expectedId.type == TokenType::ValueStringLiteral);
+
+				o_material->textureDescriptions[parsedTextures].identifier = expectedId.strValue;
 				o_material->textureDescriptions[parsedTextures].isPlaceholder = true;
-				o_material->textureDescriptions[parsedTextures].dimension = TextureDimension::Invalid;
 				o_material->textureDescriptions[parsedTextures].minFilter = TextureFilter::Invalid;
 				o_material->textureDescriptions[parsedTextures].magFilter = TextureFilter::Invalid;
 				o_material->textureDescriptions[parsedTextures].wrapS = TextureWrap::Invalid;

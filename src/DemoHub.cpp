@@ -2,14 +2,18 @@
 
 #include <insigne/ut_render.h>
 
-#include <imgui.h>
-
 #include "InsigneImGui.h"
 #include "Graphics/DebugDrawer.h"
 
+// playground
+#include "Graphics/Misc/CameraWork.h"
+#include "Graphics/Performance/Vault.h"
+
 // performance demo
 #include "Graphics/Performance/Empty.h"
+#include "Graphics/Performance/TextureStreaming.h"
 #include "Graphics/Performance/Triangle.h"
+#include "Graphics/Performance/ImGuiCustomWidgets.h"
 
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
@@ -24,11 +28,16 @@
 #include "Graphics/Tools/SurfelsGenerator.h"
 #include "Graphics/Tools/Samplers.h"
 
+// imgui demo
+#include "Graphics/ImGui/ImGuiDemoWindow.h"
+
 namespace stone
 {
 
 DemoHub::DemoHub()
-	: m_CurrentTestSuite(nullptr)
+	: m_NextSuiteId(0)
+	, m_CurrentTestSuiteId(-1)
+	, m_Suite(nullptr)
 {
 }
 
@@ -38,36 +47,35 @@ DemoHub::~DemoHub()
 
 void DemoHub::Initialize()
 {
+	m_PlaygroundSuite.reserve(4, &g_PersistanceAllocator);
+	m_PerformanceSuite.reserve(16, &g_PersistanceAllocator);
+	m_ImGuiSuite.reserve(8, &g_PersistanceAllocator);
+
 	InitializeImGui();
 	debugdraw::Initialize();
+
+	_EmplacePlaygroundSuite<perf::Vault>();
+	_EmplacePlaygroundSuite<misc::CameraWork>();
 
 	_EmplacePerformanceSuite<perf::Empty>();
 	_EmplacePerformanceSuite<perf::Triangle>();
 
-	_EmplaceRenderTechSuite<tech::FrameBuffer>();
-	_EmplaceRenderTechSuite<tech::PBR>();
-	_EmplaceRenderTechSuite<tech::PBRWithIBL>();
-	_EmplaceRenderTechSuite<tech::SHCalculator>();
-	_EmplaceRenderTechSuite<tech::FragmentPartition>();
-	_EmplaceRenderTechSuite<tech::LightProbeGI>();
-
-	_EmplaceToolSuite<tools::SingleAccurateFormFactor>();
-	_EmplaceToolSuite<tools::SurfelsGenerator>();
-	_EmplaceToolSuite<tools::Samplers>();
+	_EmplaceImGuiSuite<gui::ImGuiDemoWindow>();
 }
 
 void DemoHub::CleanUp()
 {
+	_ClearAllSuite();
 	debugdraw::CleanUp();
 }
 
 void DemoHub::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
 {
-	if (m_CurrentTestSuite)
+	if (m_Suite)
 	{
-		if (m_CurrentTestSuite->GetCameraMotion())
+		if (m_Suite->GetCameraMotion())
 		{
-			m_CurrentTestSuite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
+			m_Suite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
 		}
 	}
 }
@@ -79,24 +87,30 @@ void DemoHub::OnCharacterInput(const c8 i_charCode)
 
 void DemoHub::OnCursorMove(const u32 i_x, const u32 i_y)
 {
-	ImGuiCursorMove(i_x, i_y);
-	if (m_CurrentTestSuite)
+	const bool consumed = ImGuiCursorMove(i_x, i_y);
+	if (!consumed)
 	{
-		if (m_CurrentTestSuite->GetCameraMotion())
+		if (m_Suite)
 		{
-			m_CurrentTestSuite->GetCameraMotion()->OnCursorMove(i_x, i_y);
+			if (m_Suite->GetCameraMotion())
+			{
+				m_Suite->GetCameraMotion()->OnCursorMove(i_x, i_y);
+			}
 		}
 	}
 }
 
 void DemoHub::OnCursorInteract(const bool i_pressed, const u32 i_buttonId)
 {
-	ImGuiCursorInteract(i_pressed);
-	if (m_CurrentTestSuite)
+	const bool consumed = ImGuiCursorInteract(i_pressed);
+	if (!consumed)
 	{
-		if (m_CurrentTestSuite->GetCameraMotion())
+		if (m_Suite)
 		{
-			m_CurrentTestSuite->GetCameraMotion()->OnCursorInteract(i_pressed);
+			if (m_Suite->GetCameraMotion())
+			{
+				m_Suite->GetCameraMotion()->OnCursorInteract(i_pressed);
+			}
 		}
 	}
 }
@@ -110,71 +124,79 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 	{
 		if (ImGui::BeginMenu("TestSuite"))
 		{
+			if (ImGui::BeginMenu("Playground"))
+			{
+				for (ssize i = 0; i < m_PlaygroundSuite.get_size(); i++)
+				{
+					SuiteRegistry& suiteRegistry = m_PlaygroundSuite[i];
+					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+					{
+						_SwitchTestSuite(suiteRegistry);
+					}
+				}
+				ImGui::EndMenu();
+			}
+
 			if (ImGui::BeginMenu("Performance"))
 			{
 				for (ssize i = 0; i < m_PerformanceSuite.get_size(); i++)
 				{
-					ITestSuite* suite = m_PerformanceSuite[i];
-					if (ImGui::MenuItem(suite->GetName(), nullptr))
+					SuiteRegistry& suiteRegistry = m_PerformanceSuite[i];
+					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
 					{
-						_SwitchTestSuite(suite);
+						_SwitchTestSuite(suiteRegistry);
 					}
 				}
 				ImGui::EndMenu();
 			}
+
 			if (ImGui::BeginMenu("Render tech"))
 			{
-				for (ssize i = 0; i < m_RenderTechSuite.get_size(); i++)
-				{
-					ITestSuite* suite = m_RenderTechSuite[i];
-					if (ImGui::MenuItem(suite->GetName(), nullptr))
-					{
-						_SwitchTestSuite(suite);
-					}
-				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("Tools"))
 			{
-				for (ssize i = 0; i < m_ToolSuite.get_size(); i++)
+				ImGui::EndMenu();
+			}
+			if (ImGui::BeginMenu("ImGui"))
+			{
+				for (ssize i = 0; i < m_ImGuiSuite.get_size(); i++)
 				{
-					ITestSuite* suite = m_ToolSuite[i];
-					if (ImGui::MenuItem(suite->GetName(), nullptr))
+					SuiteRegistry& suiteRegistry = m_ImGuiSuite[i];
+					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
 					{
-						_SwitchTestSuite(suite);
+						_SwitchTestSuite(suiteRegistry);
 					}
 				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::MenuItem("Clear all suites"))
 			{
-				_SwitchTestSuite(nullptr);
+				_ClearAllSuite();
 			}
 			ImGui::EndMenu();
 		}
 
-		if (m_CurrentTestSuite)
+		if (m_Suite)
 		{
-			ImGui::MenuItem(m_CurrentTestSuite->GetName(), nullptr, nullptr, false);
+			ImGui::MenuItem(m_Suite->GetName(), nullptr, nullptr, false);
 		}
 		ImGui::EndMainMenuBar();
 	}
 
 	debugdraw::BeginFrame();
-	if (m_CurrentTestSuite)
+	if (m_Suite)
 	{
-		m_CurrentTestSuite->OnUpdate(i_deltaMs);
+		m_Suite->OnUpdate(i_deltaMs);
 	}
 	debugdraw::EndFrame();
-
-	//ImGui::ShowTestWindow();
 }
 
 void DemoHub::RenderFrame(const f32 i_deltaMs)
 {
-	if (m_CurrentTestSuite)
+	if (m_Suite)
 	{
-		m_CurrentTestSuite->OnRender(i_deltaMs);
+		m_Suite->OnRender(i_deltaMs);
 	}
 	else
 	{
@@ -191,20 +213,31 @@ void DemoHub::RenderFrame(const f32 i_deltaMs)
 
 //----------------------------------------------
 
-void DemoHub::_SwitchTestSuite(ITestSuite* i_to)
+void DemoHub::_SwitchTestSuite(SuiteRegistry& i_to)
 {
-	if (i_to != m_CurrentTestSuite)
+	if (i_to.id != m_CurrentTestSuiteId)
 	{
-		if (m_CurrentTestSuite)
+		if (m_Suite)
 		{
-			m_CurrentTestSuite->OnCleanUp();
+			m_Suite->OnCleanUp();
+			g_PersistanceAllocator.free(m_Suite);
+			m_Suite = nullptr;
 		}
 
-		m_CurrentTestSuite = i_to;
-		if (m_CurrentTestSuite)
-		{
-			m_CurrentTestSuite->OnInitialize();
-		}
+		m_CurrentTestSuiteId = i_to.id;
+		m_Suite = i_to.createFunction();
+		m_Suite->OnInitialize();
+	}
+}
+
+void DemoHub::_ClearAllSuite()
+{
+	m_CurrentTestSuiteId = -1;
+	if (m_Suite)
+	{
+		m_Suite->OnCleanUp();
+		g_PersistanceAllocator.free(m_Suite);
+		m_Suite = nullptr;
 	}
 }
 

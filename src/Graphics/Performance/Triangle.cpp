@@ -17,20 +17,17 @@ namespace stone
 {
 namespace perf
 {
-
-static const_cstr k_SuiteName = "triangle";
-
-//----------------------------------------------
+//-------------------------------------------------------------------
 
 static const_cstr s_VertexShaderCode = R"(#version 300 es
-layout (location = 0) in highp vec3 l_Position_L;
+layout (location = 0) in highp vec2 l_Position_L;
 layout (location = 1) in mediump vec4 l_VertColor;
 
 out vec4 o_VertColor;
 
 void main() {
 	o_VertColor = l_VertColor;
-	gl_Position = vec4(l_Position_L, 1.0f);
+	gl_Position = vec4(l_Position_L, 0.0f, 1.0f);
 }
 )";
 
@@ -46,37 +43,44 @@ void main()
 )";
 
 
-//----------------------------------------------
+//-------------------------------------------------------------------
 
 Triangle::Triangle()
 {
 }
 
+//-------------------------------------------------------------------
+
 Triangle::~Triangle()
 {
 }
 
-const_cstr Triangle::GetName() const
+//-------------------------------------------------------------------
+
+ICameraMotion* Triangle::GetCameraMotion()
 {
-	return k_SuiteName;
+	return nullptr;
 }
 
-void Triangle::OnInitialize()
+//-------------------------------------------------------------------
+
+const_cstr Triangle::GetName() const
 {
-	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
-	// snapshot begin state
-	m_BuffersBeginStateId = insigne::get_buffers_resource_state();
-	m_ShadingBeginStateId = insigne::get_shading_resource_state();
-	m_TextureBeginStateId = insigne::get_textures_resource_state();
-	m_RenderBeginStateId = insigne::get_render_resource_state();
+	return k_name;
+}
 
+//-------------------------------------------------------------------
+
+void Triangle::_OnInitialize()
+{
+	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
 	// register surfaces
-	insigne::register_surface_type<SurfacePC>();
+	insigne::register_surface_type<geo2d::SurfacePC>();
 
-	floral::inplace_array<VertexPC, 3> vertices;
-	vertices.push_back(VertexPC { { 0.0f, 0.5f, 0.0f }, { 1.0f, 0.0f, 0.0f, 1.0f } });
-	vertices.push_back(VertexPC { { 0.5f, -0.5f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
-	vertices.push_back(VertexPC { { -0.5f, -0.5f, 0.0f }, { 0.0f, 0.0f, 1.0f, 1.0f } });
+	floral::inplace_array<geo2d::VertexPC, 3> vertices;
+	vertices.push_back(geo2d::VertexPC { { 0.0f, 0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } });
+	vertices.push_back(geo2d::VertexPC { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
+	vertices.push_back(geo2d::VertexPC { { -0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } });
 
 	floral::inplace_array<s32, 3> indices;
 	indices.push_back(0);
@@ -86,13 +90,13 @@ void Triangle::OnInitialize()
 	{
 		insigne::vbdesc_t desc;
 		desc.region_size = SIZE_KB(2);
-		desc.stride = sizeof(VertexPC);
+		desc.stride = sizeof(geo2d::VertexPC);
 		desc.data = nullptr;
 		desc.count = 0;
 		desc.usage = insigne::buffer_usage_e::static_draw;
-		
+
 		m_VB = insigne::create_vb(desc);
-		insigne::copy_update_vb(m_VB, &vertices[0], vertices.get_size(), sizeof(VertexPC), 0);
+		insigne::copy_update_vb(m_VB, &vertices[0], vertices.get_size(), sizeof(geo2d::VertexPC), 0);
 	}
 
 	{
@@ -119,15 +123,19 @@ void Triangle::OnInitialize()
 	}
 }
 
-void Triangle::OnUpdate(const f32 i_deltaMs)
+//-------------------------------------------------------------------
+
+void Triangle::_OnUpdate(const f32 i_deltaMs)
 {
 }
 
-void Triangle::OnRender(const f32 i_deltaMs)
+//-------------------------------------------------------------------
+
+void Triangle::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
-	insigne::draw_surface<SurfacePC>(m_VB, m_IB, m_Material);
+	insigne::draw_surface<geo2d::SurfacePC>(m_VB, m_IB, m_Material);
 
 	RenderImGui();
 
@@ -136,20 +144,14 @@ void Triangle::OnRender(const f32 i_deltaMs)
 	insigne::dispatch_render_pass();
 }
 
-void Triangle::OnCleanUp()
+//-------------------------------------------------------------------
+
+void Triangle::_OnCleanUp()
 {
-	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_SuiteName);
-
-	insigne::unregister_surface_type<SurfacePC>();
-
-	insigne::cleanup_render_resource(m_RenderBeginStateId);
-	insigne::cleanup_textures_resource(m_TextureBeginStateId);
-	insigne::cleanup_shading_resource(m_ShadingBeginStateId);
-	insigne::cleanup_buffers_resource(m_BuffersBeginStateId);
-
-	insigne::dispatch_render_pass();
-	insigne::wait_finish_dispatching();
+	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
+	insigne::unregister_surface_type<geo2d::SurfacePC>();
 }
 
+//-------------------------------------------------------------------
 }
 }
