@@ -25,6 +25,7 @@ private:
 	{
 		floral::vec4f							cameraPos;
 		floral::mat4x4f							viewProjectionMatrix;
+		floral::vec4f							sh[9];
 	};
 
 public:
@@ -43,10 +44,17 @@ private:
 
 private:
 	helpers::SurfaceGPU							m_SurfaceGPU;
+	helpers::SurfaceGPU							m_ScreenQuad;
 	mat_loader::MaterialShaderPair				m_MSPair;
+	mat_loader::MaterialShaderPair				m_SplitSumPair;
 
 	SceneData									m_SceneData;
 	insigne::ub_handle_t						m_SceneUB;
+	insigne::texture_handle_t					m_CubeMapTex;
+
+	insigne::framebuffer_handle_t				m_BrdfFB;
+
+	bool										m_IsBakingSplitSum;
 
 private:
 	FreelistArena*								m_MemoryArena;

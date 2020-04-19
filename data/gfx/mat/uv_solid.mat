@@ -1,0 +1,16 @@
+_shader
+	vs	gfx/shader/uv.vs
+	fs	gfx/shader/uv.fs
+_end_shader
+
+_params
+	_p_ub_holder ub_Scene
+	_p_tex u_AlbedoTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		path			gfx/go/textures/demo/damaged_helmet_albedo.tga
+	_end_p_tex
+_end_params

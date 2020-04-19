@@ -1,0 +1,12 @@
+_shader
+	vs	gfx/shader/texture_streaming.vs
+	fs	gfx/shader/texture_streaming.fs
+_end_shader
+
+_params
+	_p_ub ub_Material
+		vec3		iu_Color		1.0 0.0 0.0
+	_end_p_ub
+	
+	_p_tex_holder tex2d u_Tex
+_end_params

@@ -31,10 +31,12 @@ if (${USE_MSVC_PROJECT})
 	file (GLOB_RECURSE file_list
 		LIST_DIRECTORIES false
 		"${PROJECT_SOURCE_DIR}/src/*.cpp"
+		"${PROJECT_SOURCE_DIR}/src/*.c"
 		"${PROJECT_SOURCE_DIR}/src/*.h")
 else ()
 	file (GLOB_RECURSE file_list
 		LIST_DIRECTORIES false
+		"${PROJECT_SOURCE_DIR}/src/*.c"
 		"${PROJECT_SOURCE_DIR}/src/*.cpp")
 endif ()
 
@@ -112,7 +114,7 @@ else ()
 	# we will c++14 on Windows build as c++11 yields compile errors
 	target_compile_options(${PROJECT_NAME}
 		PUBLIC	$<$<COMPILE_LANGUAGE:CXX>:-std=c++14 -Wall -fno-rtti -fno-exceptions>
-		PUBLIC	$<$<COMPILE_LANGUAGE:C>:-std=c14 -Wall>)
+		PUBLIC	$<$<COMPILE_LANGUAGE:C>:-std=c11 -Wall>)
 endif ()
 
 # 10. misc

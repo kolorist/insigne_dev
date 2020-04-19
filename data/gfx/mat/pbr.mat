@@ -1,0 +1,43 @@
+_shader
+	vs	gfx/shader/pbr.vs
+	fs	gfx/shader/pbr.fs
+_end_shader
+
+_params
+	_p_ub ub_Light
+		vec3			iu_LightDirection		0.0  0.0  1.0
+		vec3			iu_LightIntensity		3.0  3.0  3.0
+	_end_p_ub
+	
+	_p_ub_holder ub_Scene
+	
+	_p_tex u_AlbedoTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		path			gfx/go/textures/demo/damaged_helmet_albedo.tga
+	_end_p_tex
+
+	_p_tex u_MetalRoughnessTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		path			gfx/go/textures/demo/damaged_helmet_metalroughness.tga
+	_end_p_tex
+
+	_p_tex u_EmissionTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		path			gfx/go/textures/demo/damaged_helmet_emissive.tga
+	_end_p_tex
+	
+	_p_tex_holder texcube u_PMREM
+	_p_tex_holder tex2d u_SplitSum
+_end_params

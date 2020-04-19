@@ -56,7 +56,9 @@ static const_cstr k_Images[] = {
 	"arboretum_probe.hdr",
 	"uvchecker_hstrip.hdr",
 	"alexs_appartment_hstrip.hdr",
-	"alexs_appartment_equi.hdr"
+	"alexs_appartment_equi.hdr",
+	"sunflowers_equi.hdr",
+	"sunflowers_hstrip.hdr"
 };
 
 static const floral::vec3f s_lookAts[] =

@@ -132,9 +132,10 @@ void Vault::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// register surfaces
+	insigne::register_surface_type<geo2d::SurfacePT>();
 	insigne::register_surface_type<geo3d::SurfacePNT>();
 
-	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(1));
+	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_KB(256));
 	m_ModelDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
 
@@ -145,6 +146,76 @@ void Vault::_OnInitialize()
 
 	m_SurfaceGPU = helpers::CreateSurfaceGPU(model.verticesData, model.verticesCount, sizeof(geo3d::VertexPNT),
 			model.indicesData, model.indicesCount, insigne::buffer_usage_e::static_draw, false);
+
+	floral::inplace_array<geo2d::VertexPT, 4> ssVertices;
+	ssVertices.push_back({ { -1.0f, -1.0f }, { 0.0f, 0.0f } });
+	ssVertices.push_back({ { 1.0f, -1.0f }, { 1.0f, 0.0f } });
+	ssVertices.push_back({ { 1.0f, 1.0f }, { 1.0f, 1.0f } });
+	ssVertices.push_back({ { -1.0f, 1.0f }, { 0.0f, 1.0f } });
+
+	floral::inplace_array<s32, 6> ssIndices;
+	ssIndices.push_back(0);
+	ssIndices.push_back(1);
+	ssIndices.push_back(2);
+	ssIndices.push_back(2);
+	ssIndices.push_back(3);
+	ssIndices.push_back(0);
+
+	m_ScreenQuad = helpers::CreateSurfaceGPU(&ssVertices[0], 4, sizeof(geo2d::VertexPT),
+			&ssIndices[0], 6, insigne::buffer_usage_e::static_draw, true);
+
+	// load SH and PMREM
+	{
+		m_MemoryArena->free_all();
+		floral::file_info texFile = floral::open_file("gfx/envi/textures/demo/sunflowers.prb");
+		floral::file_stream dataStream;
+
+		dataStream.buffer = (p8)m_MemoryArena->allocate(texFile.file_size);
+		floral::read_all_file(texFile, dataStream);
+		floral::close_file(texFile);
+
+		floral::vec3f sh[9];
+		dataStream.read(&sh);
+		for (ssize i = 0; i < 9; i++)
+		{
+			m_SceneData.sh[i] = floral::vec4f(sh[i], 0.0f);
+		}
+		s32 faceSize = 0;
+		dataStream.read(&faceSize);
+
+		insigne::texture_desc_t demoTexDesc;
+		demoTexDesc.width = faceSize;
+		demoTexDesc.height = faceSize;
+		demoTexDesc.format = insigne::texture_format_e::hdr_rgb;
+		demoTexDesc.min_filter = insigne::filtering_e::linear_mipmap_linear;
+		demoTexDesc.mag_filter = insigne::filtering_e::linear;
+		demoTexDesc.dimension = insigne::texture_dimension_e::tex_cube;
+		demoTexDesc.has_mipmap = true;
+		const size dataSize = insigne::prepare_texture_desc(demoTexDesc);
+		p8 pData = (p8)demoTexDesc.data;
+		// > This is where it get *really* interesting
+		// 	Totally opposite of normal 2D texture mapping, CubeMapping define the origin of the texture sampling coordinate
+		// 	from the lower left corner. OmegaLUL
+		// > Reason: historical reason (from Renderman)
+		dataStream.read_bytes((p8)demoTexDesc.data, dataSize);
+
+		m_CubeMapTex = insigne::create_texture(demoTexDesc);
+	}
+
+	// prebake split sum for BRDF
+	{
+		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
+		insigne::color_attachment_t atm;
+		strcpy(atm.name, "main_color");
+		atm.texture_format = insigne::texture_format_e::hdr_rg;
+		atm.texture_dimension = insigne::texture_dimension_e::tex_2d;
+		desc.color_attachments->push_back(atm);
+		desc.width = 512; desc.height = 512;
+		desc.has_depth = false;
+
+		m_BrdfFB = insigne::create_framebuffer(desc);
+	}
+	m_IsBakingSplitSum = true;
 
 	//floral::mat4x4f view = CreateViewMatrixLH(floral::vec3f(3.0f, 3.0f, 3.0f),
 	floral::mat4x4f view = CreateViewMatrixRH(floral::vec3f(2.0f, 2.0f, 2.0f),
@@ -166,10 +237,18 @@ void Vault::_OnInitialize()
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
 			floral::path("gfx/mat/pbr.mat"), m_MemoryArena);
 
-	const bool result = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
-	FLORAL_ASSERT(result == true);
+	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
+	FLORAL_ASSERT(pbrMaterialResult == true);
 
 	insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Scene", 0, 0, m_SceneUB);
+	insigne::helpers::assign_texture(m_MSPair.material, "u_PMREM", m_CubeMapTex);
+	insigne::helpers::assign_texture(m_MSPair.material, "u_SplitSum", insigne::extract_color_attachment(m_BrdfFB, 0));
+
+	m_MemoryArena->free_all();
+	matDesc = mat_parser::ParseMaterial(floral::path("gfx/mat/pbr_splitsum.mat"), m_MemoryArena);
+
+	const bool ssMaterialResult = mat_loader::CreateMaterial(&m_SplitSumPair, matDesc, m_MaterialDataArena);
+	FLORAL_ASSERT(ssMaterialResult == true);
 }
 
 void Vault::_OnUpdate(const f32 i_deltaMs)
@@ -181,6 +260,15 @@ void Vault::_OnUpdate(const f32 i_deltaMs)
 
 void Vault::_OnRender(const f32 i_deltaMs)
 {
+	if (m_IsBakingSplitSum)
+	{
+		insigne::begin_render_pass(m_BrdfFB);
+		insigne::draw_surface<geo2d::SurfacePT>(m_ScreenQuad.vb, m_ScreenQuad.ib, m_SplitSumPair.material);
+		insigne::end_render_pass(m_BrdfFB);
+		insigne::dispatch_render_pass();
+		m_IsBakingSplitSum = false;
+	}
+
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
 	insigne::draw_surface<geo3d::SurfacePNT>(m_SurfaceGPU.vb, m_SurfaceGPU.ib, m_MSPair.material);
@@ -199,6 +287,7 @@ void Vault::_OnCleanUp()
 	g_StreammingAllocator.free(m_MaterialDataArena);
 	g_StreammingAllocator.free(m_MemoryArena);
 	insigne::unregister_surface_type<geo3d::SurfacePNT>();
+	insigne::unregister_surface_type<geo2d::SurfacePT>();
 }
 
 }

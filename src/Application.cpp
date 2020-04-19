@@ -97,7 +97,7 @@ void Application::OnInitializePlatform()
 	// insigne settings
 	insigne::g_settings.frame_shader_allocator_size_mb = 4;
 	insigne::g_settings.frame_buffers_allocator_size_mb = 16;
-	insigne::g_settings.frame_textures_allocator_size_mb = 32;
+	insigne::g_settings.frame_textures_allocator_size_mb = 48;
 	insigne::g_settings.frame_render_allocator_size_mb = 4;
 	insigne::g_settings.frame_draw_allocator_size_mb = 4;
 

@@ -49,6 +49,7 @@ void DemoHub::Initialize()
 {
 	m_PlaygroundSuite.reserve(4, &g_PersistanceAllocator);
 	m_PerformanceSuite.reserve(16, &g_PersistanceAllocator);
+	m_ToolSuite.reserve(16, &g_PersistanceAllocator);
 	m_ImGuiSuite.reserve(8, &g_PersistanceAllocator);
 
 	InitializeImGui();
@@ -59,6 +60,8 @@ void DemoHub::Initialize()
 
 	_EmplacePerformanceSuite<perf::Empty>();
 	_EmplacePerformanceSuite<perf::Triangle>();
+
+	_EmplaceToolSuite<tech::SHCalculator>();
 
 	_EmplaceImGuiSuite<gui::ImGuiDemoWindow>();
 }
@@ -156,6 +159,14 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 			}
 			if (ImGui::BeginMenu("Tools"))
 			{
+				for (ssize i = 0; i < m_ToolSuite.get_size(); i++)
+				{
+					SuiteRegistry& suiteRegistry = m_ToolSuite[i];
+					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+					{
+						_SwitchTestSuite(suiteRegistry);
+					}
+				}
 				ImGui::EndMenu();
 			}
 			if (ImGui::BeginMenu("ImGui"))

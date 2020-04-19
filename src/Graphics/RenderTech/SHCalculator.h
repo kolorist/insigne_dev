@@ -18,6 +18,9 @@ namespace tech
 class SHCalculator : public ITestSuite
 {
 public:
+	static constexpr const_cstr k_name			= "sh calculator";
+
+public:
 	SHCalculator();
 	~SHCalculator();
 

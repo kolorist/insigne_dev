@@ -1,0 +1,7 @@
+_shader
+	vs	gfx/shader/pbr_splitsum.vs
+	fs	gfx/shader/pbr_splitsum.fs
+_end_shader
+
+_params
+_end_params
