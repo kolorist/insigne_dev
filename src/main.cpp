@@ -146,13 +146,19 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 				{
 					case calyx::interact_event_e::key_input:
 					{
-						if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY)) {
+						if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY))
+						{
 							u32 keyCode = eve.interact_event_data.payload >> 4;
-							if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY_PRESSED)) {
+							if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY_PRESSED))
+							{
 								s_Controller->IOEvents.KeyInput(keyCode, 0);
-							} else if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY_HELD)) {
+							}
+							else if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY_HELD))
+							{
 								s_Controller->IOEvents.KeyInput(keyCode, 1);
-							} else {
+							}
+							else
+							{
 								s_Controller->IOEvents.KeyInput(keyCode, 2);
 							}
 						}

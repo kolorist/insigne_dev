@@ -9,18 +9,18 @@
 
 namespace stone
 {
-namespace perf
+namespace misc
 {
 // ------------------------------------------------------------------
 
-class Empty : public TestSuite
+class GLTFLoader : public TestSuite
 {
 public:
-	static constexpr const_cstr k_name			= "empty";
+	static constexpr const_cstr k_name			= "gltf loader";
 
 public:
-	Empty();
-	~Empty();
+	GLTFLoader();
+	~GLTFLoader();
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;

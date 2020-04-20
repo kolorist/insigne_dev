@@ -1,6 +1,9 @@
 #pragma once
 
 #include <floral/stdaliases.h>
+#include <floral/gpds/vec.h>
+#include <floral/gpds/mat.h>
+#include <floral/gpds/camera.h>
 
 #include <insigne/commons.h>
 
@@ -32,11 +35,26 @@ private:
 	void										_OnCleanUp() override;
 
 private:
-	insigne::vb_handle_t						m_VB;
-	insigne::ib_handle_t						m_IB;
+	void										_CalculateCamera();
+	void										_ResetValues();
 
-	insigne::shader_handle_t					m_Shader;
-	insigne::material_desc_t					m_Material;
+private:
+	bool										m_UseRightHanded;
+	bool										m_UsePerspectiveProjection;
+	f32											m_GridSpacing;
+	s32											m_GridRange;
+
+	floral::vec3f								m_LookAt;
+	floral::vec3f								m_UpDirection;
+	floral::vec3f								m_CameraPosition;
+
+	f32											m_Near, m_Far;
+	f32											m_FovY, m_AspectRatio;
+	f32											m_Left, m_Right, m_Top, m_Bottom;
+
+	floral::mat4x4f								m_ViewMatrix;
+	floral::mat4x4f								m_ProjectionMatrix;
+	floral::mat4x4f								m_ViewProjectionMatrix;
 };
 
 // ------------------------------------------------------------------

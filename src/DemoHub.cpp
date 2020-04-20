@@ -2,12 +2,14 @@
 
 #include <insigne/ut_render.h>
 
+#include <clover/Logger.h>
+
 #include "InsigneImGui.h"
 #include "Graphics/DebugDrawer.h"
 
 // playground
-#include "Graphics/Misc/CameraWork.h"
 #include "Graphics/Performance/Vault.h"
+#include "Graphics/Misc/GLTFLoader.h"
 
 // performance demo
 #include "Graphics/Performance/Empty.h"
@@ -27,6 +29,9 @@
 #include "Graphics/Tools/SingleAccurateFormFactor.h"
 #include "Graphics/Tools/SurfelsGenerator.h"
 #include "Graphics/Tools/Samplers.h"
+
+// misc demo
+#include "Graphics/Misc/CameraWork.h"
 
 // imgui demo
 #include "Graphics/ImGui/ImGuiDemoWindow.h"
@@ -50,18 +55,21 @@ void DemoHub::Initialize()
 	m_PlaygroundSuite.reserve(4, &g_PersistanceAllocator);
 	m_PerformanceSuite.reserve(16, &g_PersistanceAllocator);
 	m_ToolSuite.reserve(16, &g_PersistanceAllocator);
+	m_MiscSuite.reserve(16, &g_PersistanceAllocator);
 	m_ImGuiSuite.reserve(8, &g_PersistanceAllocator);
 
 	InitializeImGui();
 	debugdraw::Initialize();
 
 	_EmplacePlaygroundSuite<perf::Vault>();
-	_EmplacePlaygroundSuite<misc::CameraWork>();
+	_EmplacePlaygroundSuite<misc::GLTFLoader>();
 
 	_EmplacePerformanceSuite<perf::Empty>();
 	_EmplacePerformanceSuite<perf::Triangle>();
 
 	_EmplaceToolSuite<tech::SHCalculator>();
+
+	_EmplaceMiscSuite<misc::CameraWork>();
 
 	_EmplaceImGuiSuite<gui::ImGuiDemoWindow>();
 }
@@ -74,11 +82,24 @@ void DemoHub::CleanUp()
 
 void DemoHub::OnKeyInput(const u32 i_keyCode, const u32 i_keyStatus)
 {
-	if (m_Suite)
+	bool consumed = false;
+	if (i_keyStatus == 0 || i_keyStatus == 1) // pressed or held
 	{
-		if (m_Suite->GetCameraMotion())
+		consumed |= ImGuiKeyInput(i_keyCode, true);
+	}
+	else if (i_keyStatus == 2) // up
+	{
+		consumed |= ImGuiKeyInput(i_keyCode, false);
+	}
+
+	if (!consumed)
+	{
+		if (m_Suite)
 		{
-			m_Suite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
+			if (m_Suite->GetCameraMotion())
+			{
+				m_Suite->GetCameraMotion()->OnKeyInput(i_keyCode, i_keyStatus);
+			}
 		}
 	}
 }
@@ -157,6 +178,7 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 			{
 				ImGui::EndMenu();
 			}
+
 			if (ImGui::BeginMenu("Tools"))
 			{
 				for (ssize i = 0; i < m_ToolSuite.get_size(); i++)
@@ -169,6 +191,20 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 				}
 				ImGui::EndMenu();
 			}
+
+			if (ImGui::BeginMenu("Misc"))
+			{
+				for (ssize i = 0; i < m_MiscSuite.get_size(); i++)
+				{
+					SuiteRegistry& suiteRegistry = m_MiscSuite[i];
+					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+					{
+						_SwitchTestSuite(suiteRegistry);
+					}
+				}
+				ImGui::EndMenu();
+			}
+
 			if (ImGui::BeginMenu("ImGui"))
 			{
 				for (ssize i = 0; i < m_ImGuiSuite.get_size(); i++)

@@ -1,4 +1,4 @@
-#include "Empty.h"
+#include "GLTFLoader.h"
 
 #include <clover/Logger.h>
 #include <insigne/ut_render.h>
@@ -7,38 +7,37 @@
 
 namespace stone
 {
-namespace perf
+namespace misc
 {
 //-------------------------------------------------------------------
 
-
-Empty::Empty()
+GLTFLoader::GLTFLoader()
 {
 }
 
-Empty::~Empty()
+GLTFLoader::~GLTFLoader()
 {
 }
 
-ICameraMotion* Empty::GetCameraMotion()
+ICameraMotion* GLTFLoader::GetCameraMotion()
 {
 	return nullptr;
 }
 
-const_cstr Empty::GetName() const
+const_cstr GLTFLoader::GetName() const
 {
 	return k_name;
 }
 
-void Empty::_OnInitialize()
+void GLTFLoader::_OnInitialize()
 {
 }
 
-void Empty::_OnUpdate(const f32 i_deltaMs)
+void GLTFLoader::_OnUpdate(const f32 i_deltaMs)
 {
 }
 
-void Empty::_OnRender(const f32 i_deltaMs)
+void GLTFLoader::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
@@ -49,7 +48,7 @@ void Empty::_OnRender(const f32 i_deltaMs)
 	insigne::dispatch_render_pass();
 }
 
-void Empty::_OnCleanUp()
+void GLTFLoader::_OnCleanUp()
 {
 }
 

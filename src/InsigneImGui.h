@@ -13,6 +13,7 @@ void											InitializeImGui();
 void											UpdateImGui();
 void											RenderImGui();
 
+const bool										ImGuiKeyInput(const u32 i_keyCode, const bool i_isDown);
 void											ImGuiCharacterInput(const c8 i_charCode);
 const bool										ImGuiCursorMove(const u32 i_x, const u32 i_y);
 const bool										ImGuiCursorInteract(const bool i_pressed);

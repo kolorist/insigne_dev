@@ -3,6 +3,7 @@
 #include <clover/Logger.h>
 
 #include <calyx/context.h>
+#include <calyx/event_defs.h>
 
 #include <insigne/counters.h>
 #include <insigne/ut_textures.h>
@@ -98,6 +99,10 @@ void InitializeImGui()
 	ImGui::StyleColorsClassic();
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui::SetAllocatorFunctions(&ImGuiCustomAlloc, &ImGuiCustomFree, nullptr);
+
+	// key mapping
+	io.KeyMap[ImGuiKey_Backspace] = CLX_BACK;
+	io.KeyMap[ImGuiKey_Enter] = CLX_RETURN;
 
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 
@@ -268,6 +273,13 @@ void RenderImGui()
 	}
 }
 
+const bool ImGuiKeyInput(const u32 i_keyCode, const bool i_isDown)
+{
+	ImGuiIO& io = ImGui::GetIO();
+	io.KeysDown[i_keyCode] = i_isDown;
+	return io.WantCaptureKeyboard;
+}
+
 void ImGuiCharacterInput(const c8 i_charCode)
 {
 	ImGuiIO& io = ImGui::GetIO();
@@ -315,13 +327,13 @@ bool DebugMat3fColumnOrder(const char* i_label, floral::mat3x3f* i_mat)
 	ImGui::PushID(i_label);
 
 	ImGui::SameLine();
-	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[?]");
+	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[c]");
 	if (ImGui::IsItemHovered())
 	{
 		ImGui::BeginTooltip();
 		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
 		ImGui::Text("Here, matrix of size 3x3 is displayed in column by column order. Memory storage order is left-to-right and top-to-bottom");
-        ImGui::PopTextWrapPos();
+		ImGui::PopTextWrapPos();
 		ImGui::EndTooltip();
 	}
 
@@ -338,13 +350,13 @@ bool DebugMat4fColumnOrder(const char* i_label, floral::mat4x4f* i_mat)
 	ImGui::PushID(i_label);
 
 	ImGui::SameLine();
-	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[?]");
+	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[c]");
 	if (ImGui::IsItemHovered())
 	{
 		ImGui::BeginTooltip();
 		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
 		ImGui::Text("Here, matrix of size 4x4 is displayed in column by column order. Memory storage order is left-to-right and top-to-bottom");
-        ImGui::PopTextWrapPos();
+		ImGui::PopTextWrapPos();
 		ImGui::EndTooltip();
 	}
 
@@ -368,13 +380,13 @@ bool DebugMat3fRowOrder(const char* i_label, floral::mat3x3f* i_mat)
 	ImGui::PushID(i_label);
 
 	ImGui::SameLine();
-	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[?]");
+	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[r]");
 	if (ImGui::IsItemHovered())
 	{
 		ImGui::BeginTooltip();
 		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
 		ImGui::Text("Here, matrix of size 3x3 is displayed in row by row order. Memory storage order is top-to-bottom and left-to-right");
-        ImGui::PopTextWrapPos();
+		ImGui::PopTextWrapPos();
 		ImGui::EndTooltip();
 	}
 
@@ -414,13 +426,13 @@ bool DebugMat4fRowOrder(const char* i_label, floral::mat4x4f* i_mat)
 	ImGui::PushID(i_label);
 
 	ImGui::SameLine();
-	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[?]");
+	ImGui::TextColored(ImVec4(1.0f, 0.5f, 0.5f, 1.0f), "[r]");
 	if (ImGui::IsItemHovered())
 	{
 		ImGui::BeginTooltip();
 		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
 		ImGui::Text("Here, matrix of size 4x4 is displayed in row by row order. Memory storage order is top-to-bottom and left-to-right");
-        ImGui::PopTextWrapPos();
+		ImGui::PopTextWrapPos();
 		ImGui::EndTooltip();
 	}
 
