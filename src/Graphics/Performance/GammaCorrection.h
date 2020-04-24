@@ -5,22 +5,25 @@
 #include <insigne/commons.h>
 
 #include "Graphics/TestSuite.h"
+#include "Graphics/InsigneHelpers.h"
+#include "Graphics/MaterialLoader.h"
+
 #include "Memory/MemorySystem.h"
 
 namespace stone
 {
-namespace gui
+namespace perf
 {
 // ------------------------------------------------------------------
 
-class ImGuiDemoWindow : public TestSuite
+class GammaCorrection : public TestSuite
 {
 public:
-	static constexpr const_cstr k_name			= "imgui demo window";
+	static constexpr const_cstr k_name			= "gamma correction";
 
 public:
-	ImGuiDemoWindow();
-	~ImGuiDemoWindow();
+	GammaCorrection();
+	~GammaCorrection();
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;
@@ -30,6 +33,14 @@ private:
 	void										_OnUpdate(const f32 i_deltaMs) override;
 	void										_OnRender(const f32 i_deltaMs) override;
 	void										_OnCleanUp() override;
+
+private:
+	helpers::SurfaceGPU							m_Quad;
+	mat_loader::MaterialShaderPair				m_MSPair;
+
+private:
+	FreelistArena*								m_MemoryArena;
+	LinearArena*								m_MaterialDataArena;
 };
 
 // ------------------------------------------------------------------

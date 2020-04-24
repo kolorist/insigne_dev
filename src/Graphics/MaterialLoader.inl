@@ -35,6 +35,8 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 		default:
 			break;
 		}
+
+		insigne::dispatch_render_pass();
 	}
 
 	shaderDesc.vs_path = floral::path(i_matDesc.vertexShaderPath);
@@ -51,6 +53,73 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 
 	o_mat->shader = insigne::create_shader(shaderDesc);
 	insigne::infuse_material(o_mat->shader, o_mat->material);
+
+	// render state
+	insigne::render_state_t& renderState = o_mat->material.render_state;
+	const u8 k_toggle[] = {
+		1,
+		0,
+		2
+	};
+	const insigne::compare_func_e k_compareFunc[] = {
+		insigne::compare_func_e::func_never,
+		insigne::compare_func_e::func_less,
+		insigne::compare_func_e::func_equal,
+		insigne::compare_func_e::func_less_or_equal,
+		insigne::compare_func_e::func_greater,
+		insigne::compare_func_e::func_not_equal,
+		insigne::compare_func_e::func_greater_or_equal,
+		insigne::compare_func_e::func_always,
+		insigne::compare_func_e::func_undefined
+	};
+	renderState.depth_write = k_toggle[s32(i_matDesc.renderState.depthWrite)];
+	renderState.depth_test = k_toggle[s32(i_matDesc.renderState.depthTest)];
+	renderState.depth_func = k_compareFunc[s32(i_matDesc.renderState.depthFunc)];
+
+	const insigne::face_side_e k_faceSide[] = {
+		insigne::face_side_e::front_side,
+		insigne::face_side_e::back_side,
+		insigne::face_side_e::front_and_back_side,
+		insigne::face_side_e::undefined_side
+	};
+	const insigne::front_face_e k_frontFace[] = {
+		insigne::front_face_e::face_cw,
+		insigne::front_face_e::face_ccw,
+		insigne::front_face_e::face_undefined
+	};
+	renderState.cull_face = k_toggle[s32(i_matDesc.renderState.cullFace)];
+	renderState.face_side = k_faceSide[s32(i_matDesc.renderState.faceSide)];
+	renderState.front_face = k_frontFace[s32(i_matDesc.renderState.frontFace)];
+
+	const insigne::blend_equation_e k_blendEquation[] = {
+		insigne::blend_equation_e::func_add,
+		insigne::blend_equation_e::func_substract,
+		insigne::blend_equation_e::func_reverse_substract,
+		insigne::blend_equation_e::func_min,
+		insigne::blend_equation_e::func_max,
+		insigne::blend_equation_e::func_undefined
+	};
+	const insigne::factor_e k_blendFactor[] = {
+		insigne::factor_e::fact_zero,
+		insigne::factor_e::fact_one,
+		insigne::factor_e::fact_src_color,
+		insigne::factor_e::fact_one_minus_src_color,
+		insigne::factor_e::fact_dst_color,
+		insigne::factor_e::fact_one_minus_dst_color,
+		insigne::factor_e::fact_src_alpha,
+		insigne::factor_e::fact_one_minus_src_alpha,
+		insigne::factor_e::fact_dst_alpha,
+		insigne::factor_e::fact_one_minus_dst_alpha,
+		insigne::factor_e::fact_constant_color,
+		insigne::factor_e::fact_one_minus_constant_color,
+		insigne::factor_e::fact_constant_alpha,
+		insigne::factor_e::fact_one_minus_constant_alpha,
+		insigne::factor_e::fact_undefined
+	};
+	renderState.blending = k_toggle[s32(i_matDesc.renderState.blending)];
+	renderState.blend_equation = k_blendEquation[s32(i_matDesc.renderState.blendEquation)];
+	renderState.blend_func_sfactor = k_blendFactor[s32(i_matDesc.renderState.blendSourceFactor)];
+	renderState.blend_func_dfactor = k_blendFactor[s32(i_matDesc.renderState.blendDestinationFactor)];
 
 	// build uniform buffer
 	for (size i = 0; i < i_matDesc.buffersCount; i++)

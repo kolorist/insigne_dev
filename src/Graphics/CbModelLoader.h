@@ -29,6 +29,7 @@ struct Model
 
 	s32*										indicesData;
 	TVertex*									verticesData;
+	const_cstr									materialName;
 };
 
 enum class VertexAttribute : u32

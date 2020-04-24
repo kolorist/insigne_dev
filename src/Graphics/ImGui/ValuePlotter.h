@@ -13,14 +13,14 @@ namespace gui
 {
 // ------------------------------------------------------------------
 
-class ImGuiDemoWindow : public TestSuite
+class ValuePlotter : public TestSuite
 {
 public:
-	static constexpr const_cstr k_name			= "imgui demo window";
+	static constexpr const_cstr k_name			= "value plotter";
 
 public:
-	ImGuiDemoWindow();
-	~ImGuiDemoWindow();
+	ValuePlotter();
+	~ValuePlotter();
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;

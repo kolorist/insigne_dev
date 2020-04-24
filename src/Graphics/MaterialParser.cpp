@@ -14,6 +14,13 @@ static const_cstr k_KeywordFSPath				= "fs";
 static const_cstr k_KeywordEnableFeature		= "enable_feature";
 static const_cstr k_KeywordEndShader			= "_end_shader";
 
+static const_cstr k_KeywordRenderState			= "_state";
+static const_cstr k_KeywordDepthWrite			= "depth_write";
+static const_cstr k_KeywordDepthTest			= "depth_test";
+static const_cstr k_KeywordCullFace				= "cull_face";
+static const_cstr k_KeywordBlending				= "blending";
+static const_cstr k_KeywordEndRenderState		= "_end_state";
+
 static const_cstr k_KeywordParams				= "_params";
 static const_cstr k_KeywordUB					= "_p_ub";
 static const_cstr k_KeywordInt					= "int";
@@ -40,6 +47,184 @@ static const_cstr k_KeywordEndParams			= "_end_params";
 namespace internal
 {
 // ----------------------------------------------------------------------------
+
+Toggle StringToToggle(const_cstr i_str)
+{
+	if (strcmp(i_str, "on") == 0)
+	{
+		return Toggle::Enable;
+	}
+	else if (strcmp(i_str, "off") == 0)
+	{
+		return Toggle::Disable;
+	}
+
+	FLORAL_ASSERT(false);
+	return Toggle::DontCare;
+}
+
+CompareFunction StringToCompareFunction(const_cstr i_str)
+{
+	if (strcmp(i_str, "never") == 0)
+	{
+		return CompareFunction::Never;
+	}
+	else if (strcmp(i_str, "less") == 0)
+	{
+		return CompareFunction::Less;
+	}
+	else if (strcmp(i_str, "equal") == 0)
+	{
+		return CompareFunction::Equal;
+	}
+	else if (strcmp(i_str, "less_or_equal") == 0)
+	{
+		return CompareFunction::LessOrEqual;
+	}
+	else if (strcmp(i_str, "greater") == 0)
+	{
+		return CompareFunction::Greater;
+	}
+	else if (strcmp(i_str, "not_equal") == 0)
+	{
+		return CompareFunction::NotEqual;
+	}
+	else if (strcmp(i_str, "greater_or_equal") == 0)
+	{
+		return CompareFunction::GreaterOrEqual;
+	}
+	else if (strcmp(i_str, "Always") == 0)
+	{
+		return CompareFunction::Always;
+	}
+
+	FLORAL_ASSERT(false);
+	return CompareFunction::DontCare;
+}
+
+FaceSide StringToFaceSide(const_cstr i_str)
+{
+	if (strcmp(i_str, "front") == 0)
+	{
+		return FaceSide::Front;
+	}
+	else if (strcmp(i_str, "back") == 0)
+	{
+		return FaceSide::Back;
+	}
+	else if (strcmp(i_str, "both") == 0)
+	{
+		return FaceSide::FrontAndBack;
+	}
+
+	FLORAL_ASSERT(false);
+	return FaceSide::DontCare;
+}
+
+FrontFace StringToFrontFace(const_cstr i_str)
+{
+	if (strcmp(i_str, "cw") == 0)
+	{
+		return FrontFace::CW;
+	}
+	else if (strcmp(i_str, "ccw") == 0)
+	{
+		return FrontFace::CCW;
+	}
+
+	FLORAL_ASSERT(false);
+	return FrontFace::DontCare;
+}
+
+BlendEquation StringToBlendEquation(const_cstr i_str)
+{
+	if (strcmp(i_str, "add") == 0)
+	{
+		return BlendEquation::Add;
+	}
+	else if (strcmp(i_str, "substract") == 0)
+	{
+		return BlendEquation::Substract;
+	}
+	else if (strcmp(i_str, "reverse_substract") == 0)
+	{
+		return BlendEquation::ReverseSubstract;
+	}
+	else if (strcmp(i_str, "min") == 0)
+	{
+		return BlendEquation::Min;
+	}
+	else if (strcmp(i_str, "max") == 0)
+	{
+		return BlendEquation::Max;
+	}
+
+	FLORAL_ASSERT(false);
+	return BlendEquation::DontCare;
+}
+
+BlendFactor StringToBlendFactor(const_cstr i_str)
+{
+	if (strcmp(i_str, "zero") == 0)
+	{
+		return BlendFactor::Zero;
+	}
+	else if (strcmp(i_str, "one") == 0)
+	{
+		return BlendFactor::One;
+	}
+	else if (strcmp(i_str, "src_color") == 0)
+	{
+		return BlendFactor::SrcColor;
+	}
+	else if (strcmp(i_str, "one_minus_src_color") == 0)
+	{
+		return BlendFactor::OneMinusSrcColor;
+	}
+	else if (strcmp(i_str, "dst_color") == 0)
+	{
+		return BlendFactor::DstColor;
+	}
+	else if (strcmp(i_str, "one_minus_dst_color") == 0)
+	{
+		return BlendFactor::OneMinusDstColor;
+	}
+	else if (strcmp(i_str, "src_alpha") == 0)
+	{
+		return BlendFactor::SrcAlpha;
+	}
+	else if (strcmp(i_str, "one_minus_src_alpha") == 0)
+	{
+		return BlendFactor::OneMinusSrcAlpha;
+	}
+	else if (strcmp(i_str, "dst_alpha") == 0)
+	{
+		return BlendFactor::DstAlpha;
+	}
+	else if (strcmp(i_str, "one_minus_dst_alpha") == 0)
+	{
+		return BlendFactor::OneMinusDstAlpha;
+	}
+	else if (strcmp(i_str, "const_color") == 0)
+	{
+		return BlendFactor::ConstantColor;
+	}
+	else if (strcmp(i_str, "one_minus_const_color") == 0)
+	{
+		return BlendFactor::OneMinusConstantColor;
+	}
+	else if (strcmp(i_str, "const_alpha") == 0)
+	{
+		return BlendFactor::ConstantAlpha;
+	}
+	else if (strcmp(i_str, "one_minus_const_alpha") == 0)
+	{
+		return BlendFactor::OneMinusConstantAlpha;
+	}
+
+	FLORAL_ASSERT(false);
+	return BlendFactor::DontCare;
+}
 
 Tokenizer::Tokenizer(const_cstr i_strBuffer, AllocFunc i_allocFunc)
 	: m_StrBuffer(i_strBuffer)
@@ -91,6 +276,30 @@ Token Tokenizer::GetNextToken()
 		newToken.type = TokenType::EndShader;
 	}
 
+	else if (strncmp(tokenStr, k_KeywordRenderState, tokenStrLen) == 0)
+	{
+		newToken.type = TokenType::RenderState;
+	}
+	else if (strncmp(tokenStr, k_KeywordDepthWrite, tokenStrLen) == 0)
+	{
+		newToken.type = TokenType::DepthWrite;
+	}
+	else if (strncmp(tokenStr, k_KeywordDepthTest, tokenStrLen) == 0)
+	{
+		newToken.type = TokenType::DepthTest;
+	}
+	else if (strncmp(tokenStr, k_KeywordCullFace, tokenStrLen) == 0)
+	{
+		newToken.type = TokenType::CullFace;
+	}
+	else if (strncmp(tokenStr, k_KeywordBlending, tokenStrLen) == 0)
+	{
+		newToken.type = TokenType::Blending;
+	}
+	else if (strncmp(tokenStr, k_KeywordEndRenderState, tokenStrLen) == 0)
+	{
+		newToken.type = TokenType::EndRenderState;
+	}
 
 	else if (strncmp(tokenStr, k_KeywordParams, tokenStrLen) == 0)
 	{

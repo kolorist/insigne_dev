@@ -93,6 +93,16 @@ const_cstr MaterialParser(const TokenArray<TMemoryArena>& i_tokenArray, Material
 			break;
 		}
 
+		case TokenType::RenderState:
+		{
+			const_cstr parseResult = _ParseRenderState(i_tokenArray, tokenIdx, &(o_material->renderState), i_memoryArena);
+			if (parseResult != nullptr)
+			{
+				return parseResult;
+			}
+			break;
+		}
+
 		case TokenType::Params:
 		{
 			const_cstr parseResult = _ParseParams(i_tokenArray, tokenIdx, o_material, i_memoryArena);
@@ -199,6 +209,106 @@ const_cstr _ParseShader(const TokenArray<TMemoryArena>& i_tokenArray, size& io_t
 		}
 		FLORAL_ASSERT(parsedFeatures == o_material->featuresCount);
 	}
+
+	return nullptr;
+}
+
+template <class TMemoryArena>
+const_cstr _ParseRenderState(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, RenderState* o_renderState, TMemoryArena* i_memoryArena)
+{
+	size i = io_tokenIdx + 1;
+
+	do
+	{
+		const Token& token = i_tokenArray[i];
+		if (token.type == TokenType::EndRenderState || token.type == TokenType::Invalid || token.type == TokenType::EndOfTokenStream)
+		{
+			i++; // consume EndRenderState
+			break;
+		}
+
+		switch (token.type)
+		{
+		case TokenType::DepthWrite:
+		{
+			i++;
+			const Token& expectedToken = i_tokenArray[i];
+			FLORAL_ASSERT(expectedToken.type == TokenType::ValueStringLiteral);
+			o_renderState->depthWrite = StringToToggle(expectedToken.strValue);
+			break;
+		}
+
+		case TokenType::DepthTest:
+		{
+			i++;
+			const Token& expectedToken = i_tokenArray[i];
+			FLORAL_ASSERT(expectedToken.type == TokenType::ValueStringLiteral);
+			o_renderState->depthTest = StringToToggle(expectedToken.strValue);
+			if (o_renderState->depthTest == Toggle::Enable)
+			{
+				i++;
+				const Token& expectedFunc = i_tokenArray[i];
+				FLORAL_ASSERT(expectedFunc.type == TokenType::ValueStringLiteral);
+				o_renderState->depthFunc = StringToCompareFunction(expectedFunc.strValue);
+			}
+			break;
+		}
+
+		case TokenType::CullFace:
+		{
+			i++;
+			const Token& expectedToken = i_tokenArray[i];
+			FLORAL_ASSERT(expectedToken.type == TokenType::ValueStringLiteral);
+			o_renderState->cullFace = StringToToggle(expectedToken.strValue);
+			if (o_renderState->cullFace == Toggle::Enable)
+			{
+				i++;
+				const Token& expectedFaceSide = i_tokenArray[i];
+				FLORAL_ASSERT(expectedFaceSide.type == TokenType::ValueStringLiteral);
+				o_renderState->faceSide = StringToFaceSide(expectedFaceSide.strValue);
+
+				i++;
+				const Token& expectedFrontFace = i_tokenArray[i];
+				FLORAL_ASSERT(expectedFrontFace.type == TokenType::ValueStringLiteral);
+				o_renderState->frontFace = StringToFrontFace(expectedFrontFace.strValue);
+			}
+			break;
+		}
+
+		case TokenType::Blending:
+		{
+			i++;
+			const Token& expectedToken = i_tokenArray[i];
+			FLORAL_ASSERT(expectedToken.type == TokenType::ValueStringLiteral);
+			o_renderState->blending = StringToToggle(expectedToken.strValue);
+			if (o_renderState->blending == Toggle::Enable)
+			{
+				i++;
+				const Token& expectedEquation = i_tokenArray[i];
+				FLORAL_ASSERT(expectedEquation.type == TokenType::ValueStringLiteral);
+				o_renderState->blendEquation = StringToBlendEquation(expectedEquation.strValue);
+
+				i++;
+				const Token& expectedSFactor = i_tokenArray[i];
+				FLORAL_ASSERT(expectedSFactor.type == TokenType::ValueStringLiteral);
+				o_renderState->blendSourceFactor = StringToBlendFactor(expectedSFactor.strValue);
+
+				i++;
+				const Token& expectedDFactor = i_tokenArray[i];
+				FLORAL_ASSERT(expectedDFactor.type == TokenType::ValueStringLiteral);
+				o_renderState->blendDestinationFactor = StringToBlendFactor(expectedDFactor.strValue);
+			}
+			break;
+		}
+
+		default:
+			break;
+		}
+
+		i++;
+	}
+	while (true);
+	io_tokenIdx = i;
 
 	return nullptr;
 }

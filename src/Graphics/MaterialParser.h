@@ -10,6 +10,86 @@ namespace mat_parser
 {
 // ----------------------------------------------------------------------------
 
+enum class Toggle
+{
+	Enable = 0,
+	Disable,
+	DontCare
+};
+
+enum class CompareFunction
+{
+	Never = 0,
+	Less,
+	Equal,
+	LessOrEqual,
+	Greater,
+	NotEqual,
+	GreaterOrEqual,
+	Always,
+	DontCare
+};
+
+enum class FaceSide
+{
+	Front = 0,
+	Back,
+	FrontAndBack,
+	DontCare
+};
+
+enum class FrontFace
+{
+	CW = 0,
+	CCW,
+	DontCare
+};
+
+enum class BlendEquation
+{
+	Add = 0,
+	Substract,
+	ReverseSubstract,
+	Min,
+	Max,
+	DontCare
+};
+
+enum class BlendFactor
+{
+	Zero = 0,
+	One,
+	SrcColor,
+	OneMinusSrcColor,
+	DstColor,
+	OneMinusDstColor,
+	SrcAlpha,
+	OneMinusSrcAlpha,
+	DstAlpha,
+	OneMinusDstAlpha,
+	ConstantColor,
+	OneMinusConstantColor,
+	ConstantAlpha,
+	OneMinusConstantAlpha,
+	DontCare
+};
+
+struct RenderState
+{
+	Toggle										depthWrite					= Toggle::DontCare;
+	Toggle										depthTest					= Toggle::DontCare;
+	CompareFunction								depthFunc					= CompareFunction::DontCare;
+
+	Toggle										cullFace					= Toggle::DontCare;
+	FaceSide									faceSide					= FaceSide::DontCare;
+	FrontFace									frontFace					= FrontFace::DontCare;
+
+	Toggle										blending					= Toggle::DontCare;
+	BlendEquation								blendEquation				= BlendEquation::DontCare;
+	BlendFactor									blendSourceFactor			= BlendFactor::DontCare;
+	BlendFactor									blendDestinationFactor		= BlendFactor::DontCare;
+};
+
 enum class UBParamType
 {
 	Invalid = 0,
@@ -87,6 +167,8 @@ struct MaterialDescription
 	size										featuresCount;
 	const_cstr*									featureList;
 
+	RenderState									renderState;
+
 	size										buffersCount;
 	UBDescription*								bufferDescriptions;
 
@@ -106,6 +188,13 @@ namespace internal
 {
 // ----------------------------------------------------------------------------
 
+Toggle											StringToToggle(const_cstr i_str);
+CompareFunction									StringToCompareFunction(const_cstr i_str);
+FaceSide										StringToFaceSide(const_cstr i_str);
+FrontFace										StringToFrontFace(const_cstr i_str);
+BlendEquation									StringToBlendEquation(const_cstr i_str);
+BlendFactor										StringToBlendFactor(const_cstr i_str);
+
 enum class TokenType
 {
 	Invalid = 0,
@@ -118,6 +207,9 @@ enum class TokenType
 	VertexShaderPath,
 	FragmentShaderPath,
 	EnableFeature,
+
+	RenderState, EndRenderState,
+	DepthWrite, DepthTest, CullFace, Blending,
 
 	Params, EndParams,
 	UniformBuffer, EndUniformBuffer, UniformBufferHolder,
@@ -139,9 +231,6 @@ struct Token
 		const_cstr								strValue;
 		s32										intValue;
 		f32										floatValue;
-		//TextureDimension						texDimValue;
-		//TextureFilter							texFilterValue;
-		//TextureWrap							texWrapValue;
 	};
 
 	Token()
@@ -185,6 +274,9 @@ const_cstr MaterialParser(const TokenArray<TMemoryArena>& i_tokenArray, Material
 
 template <class TMemoryArena>
 const_cstr _ParseShader(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, MaterialDescription* o_material, TMemoryArena* i_memoryArena);
+
+template <class TMemoryArena>
+const_cstr _ParseRenderState(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, RenderState* o_renderState, TMemoryArena* i_memoryArena);
 
 template <class TMemoryArena>
 const_cstr _ParseParams(const TokenArray<TMemoryArena>& i_tokenArray, size& io_tokenIdx, MaterialDescription* o_material, TMemoryArena* i_memoryArena);

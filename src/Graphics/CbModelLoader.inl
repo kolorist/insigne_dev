@@ -18,11 +18,18 @@ const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttri
 	ModelHeader header;
 	inpStream.read(&header);
 
+	s32 materialNameLen = 0;
+	inpStream.read(&materialNameLen);
+	cstr materialName = (cstr)i_dataAllocator->allocate(materialNameLen + 1);
+	memset(materialName, 0, materialNameLen + 1);
+	inpStream.read_bytes((voidptr)materialName, materialNameLen);
+
 	Model<TVertex> modelData;
 	modelData.indicesCount = header.indicesCount;
 	modelData.verticesCount = header.verticesCount;
 	modelData.indicesData = nullptr;
 	modelData.verticesData = nullptr;
+	modelData.materialName = materialName;
 
 	size vtxStride = 0;
 	if (floral::test_bit_mask(i_vtxAttrib, VertexAttribute::Position))

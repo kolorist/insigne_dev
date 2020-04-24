@@ -140,7 +140,7 @@ void Vault::_OnInitialize()
 	m_ModelDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
 
 	m_MemoryArena->free_all();
-	cbmodel::Model<geo3d::VertexPNT> model = cbmodel::LoadModelData<geo3d::VertexPNT>(floral::path("gfx/go/models/demo/damaged_helmet.cbmodel"),
+	cbmodel::Model<geo3d::VertexPNT> model = cbmodel::LoadModelData<geo3d::VertexPNT>(floral::path("gfx/go/models/demo/DamagedHelmet.gltf_mesh_0.cbmodel"),
 			cbmodel::VertexAttribute::Position | cbmodel::VertexAttribute::Normal | cbmodel::VertexAttribute::TexCoord,
 			m_MemoryArena, m_ModelDataArena);
 

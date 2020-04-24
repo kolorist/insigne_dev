@@ -19,32 +19,6 @@ namespace gui
 {
 //-------------------------------------------------------------------
 
-static const_cstr s_VertexShaderCode = R"(#version 300 es
-layout (location = 0) in highp vec2 l_Position_L;
-layout (location = 1) in mediump vec4 l_VertColor;
-
-out vec4 o_VertColor;
-
-void main() {
-	o_VertColor = l_VertColor;
-	gl_Position = vec4(l_Position_L, 0.0f, 1.0f);
-}
-)";
-
-static const_cstr s_FragmentShaderCode = R"(#version 300 es
-layout (location = 0) out mediump vec4 o_Color;
-
-in mediump vec4 o_VertColor;
-
-void main()
-{
-	o_Color = o_VertColor;
-}
-)";
-
-
-//-------------------------------------------------------------------
-
 ImGuiDemoWindow::ImGuiDemoWindow()
 {
 }

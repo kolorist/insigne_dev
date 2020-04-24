@@ -166,6 +166,13 @@ void InitializeImGui()
 
 		s_ImGuiShader = insigne::create_shader(desc);
 		insigne::infuse_material(s_ImGuiShader, s_ImGuiMaterial);
+		s_ImGuiMaterial.render_state.depth_write = false;
+		s_ImGuiMaterial.render_state.depth_test = false;
+		s_ImGuiMaterial.render_state.cull_face = false;
+		s_ImGuiMaterial.render_state.blending = true;
+		s_ImGuiMaterial.render_state.blend_equation = insigne::blend_equation_e::func_add;
+		s_ImGuiMaterial.render_state.blend_func_sfactor = insigne::factor_e::fact_src_alpha;
+		s_ImGuiMaterial.render_state.blend_func_dfactor = insigne::factor_e::fact_one_minus_src_alpha;
 
 		s32 ubSlot = insigne::get_material_uniform_block_slot(s_ImGuiMaterial, "ub_XForm");
 		s_ImGuiMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, s_ImGuiUB };

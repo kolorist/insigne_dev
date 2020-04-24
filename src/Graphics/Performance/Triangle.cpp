@@ -79,8 +79,8 @@ void Triangle::_OnInitialize()
 
 	floral::inplace_array<geo2d::VertexPC, 3> vertices;
 	vertices.push_back(geo2d::VertexPC { { 0.0f, 0.5f }, { 1.0f, 0.0f, 0.0f, 1.0f } });
-	vertices.push_back(geo2d::VertexPC { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
 	vertices.push_back(geo2d::VertexPC { { -0.5f, -0.5f }, { 0.0f, 0.0f, 1.0f, 1.0f } });
+	vertices.push_back(geo2d::VertexPC { { 0.5f, -0.5f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
 
 	floral::inplace_array<s32, 3> indices;
 	indices.push_back(0);
@@ -120,6 +120,13 @@ void Triangle::_OnInitialize()
 
 		m_Shader = insigne::create_shader(desc);
 		insigne::infuse_material(m_Shader, m_Material);
+		m_Material.render_state.depth_write = true;
+		m_Material.render_state.depth_test = true;
+		m_Material.render_state.depth_func = insigne::compare_func_e::func_less_or_equal;
+		m_Material.render_state.blending = false;
+		m_Material.render_state.cull_face = true;
+		m_Material.render_state.face_side = insigne::face_side_e::back_side;
+		m_Material.render_state.front_face = insigne::front_face_e::face_ccw;
 	}
 }
 

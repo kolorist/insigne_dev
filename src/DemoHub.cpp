@@ -16,6 +16,8 @@
 #include "Graphics/Performance/TextureStreaming.h"
 #include "Graphics/Performance/Triangle.h"
 #include "Graphics/Performance/ImGuiCustomWidgets.h"
+#include "Graphics/Performance/SceneLoader.h"
+#include "Graphics/Performance/GammaCorrection.h"
 
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
@@ -35,6 +37,7 @@
 
 // imgui demo
 #include "Graphics/ImGui/ImGuiDemoWindow.h"
+#include "Graphics/ImGui/ValuePlotter.h"
 
 namespace stone
 {
@@ -66,12 +69,15 @@ void DemoHub::Initialize()
 
 	_EmplacePerformanceSuite<perf::Empty>();
 	_EmplacePerformanceSuite<perf::Triangle>();
+	_EmplacePerformanceSuite<perf::SceneLoader>();
+	_EmplacePerformanceSuite<perf::GammaCorrection>();
 
 	_EmplaceToolSuite<tech::SHCalculator>();
 
 	_EmplaceMiscSuite<misc::CameraWork>();
 
 	_EmplaceImGuiSuite<gui::ImGuiDemoWindow>();
+	_EmplaceImGuiSuite<gui::ValuePlotter>();
 }
 
 void DemoHub::CleanUp()
