@@ -1,0 +1,17 @@
+_shader
+	vs	tests/perf/gamma_correction/gamma.vs
+	fs	tests/perf/gamma_correction/gamma.fs
+_end_shader
+
+_state
+	depth_write off
+	depth_test off
+	cull_face on back ccw
+	blending on add src_alpha one_minus_src_alpha
+_end_state
+
+_params
+	_p_ub ub_Material
+		vec3		iu_Color		1.0 0.0 0.0
+	_end_p_ub
+_end_params
