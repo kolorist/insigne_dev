@@ -7,11 +7,11 @@ _state
 	depth_write off
 	depth_test off
 	cull_face on back ccw
-	blending on src_alpha one_minus_src_alpha
+	blending on add src_alpha one_minus_src_alpha
 _end_state
 
 _params
 	_p_ub ub_Material
-		vec3		iu_Color		1.0 0.0 0.0
+		vec4		iu_Color		1.0 0.0 0.0 0.5
 	_end_p_ub
 _end_params

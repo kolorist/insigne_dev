@@ -1,6 +1,11 @@
 #version 300 es
 layout (location = 0) out mediump vec3 o_Color;
 
+layout(std140) uniform ub_Temp
+{
+	mediump float iu_DepthFactor;
+};
+
 uniform mediump sampler2D u_MainTex;
 uniform mediump sampler2D u_DepthTex;
 
@@ -10,5 +15,5 @@ void main()
 {
 	mediump vec3 mainColor = texture2D(u_MainTex, v_TexCoord).rgb;
 	mediump vec3 depthColor = texture2D(u_DepthTex, v_TexCoord).rrr;
-	o_Color = mainColor + depthColor;
+	o_Color = mainColor + depthColor * iu_DepthFactor;
 }

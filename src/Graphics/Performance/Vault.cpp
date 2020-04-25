@@ -6,6 +6,8 @@
 #include <insigne/ut_shading.h>
 #include <insigne/ut_textures.h>
 
+#include <calyx/context.h>
+
 #include <clover/Logger.h>
 
 #include <floral/math/utils.h>
@@ -44,100 +46,17 @@ const_cstr Vault::GetName() const
 	return k_name;
 }
 
-floral::mat4x4f CreateViewMatrixLH(const floral::vec3f& i_position, const floral::vec3f& i_lookAt, const floral::vec3f& i_up)
-{
-	floral::vec3f front = floral::normalize(i_lookAt - i_position);
-	floral::vec3f side = floral::normalize(floral::cross(i_up, front));
-	floral::vec3f up = floral::cross(front, side);
-
-	floral::mat4x4f rotateM(1.0f);
-	rotateM[0][0] = side.x;
-	rotateM[1][0] = side.y;
-	rotateM[2][0] = side.z;
-
-	rotateM[0][1] = up.x;
-	rotateM[1][1] = up.y;
-	rotateM[2][1] = up.z;
-
-	rotateM[0][2] = front.x;
-	rotateM[1][2] = front.y;
-	rotateM[2][2] = front.z;
-
-	floral::mat4x4f translateM(1.0f);
-	translateM[3][0] = -i_position.x;
-	translateM[3][1] = -i_position.y;
-	translateM[3][2] = -i_position.z;
-
-	floral::mat4x4f m = rotateM * translateM;
-	return m;
-}
-
-floral::mat4x4f CreateViewMatrixRH(const floral::vec3f& i_position, const floral::vec3f& i_lookAt, const floral::vec3f& i_up)
-{
-	floral::vec3f front = floral::normalize(i_lookAt - i_position);
-	floral::vec3f side = floral::normalize(floral::cross(front, i_up));
-	floral::vec3f up = floral::cross(side, front);
-
-	floral::mat4x4f rotateM(1.0f);
-	rotateM[0][0] = side.x;
-	rotateM[1][0] = side.y;
-	rotateM[2][0] = side.z;
-
-	rotateM[0][1] = up.x;
-	rotateM[1][1] = up.y;
-	rotateM[2][1] = up.z;
-
-	rotateM[0][2] = -front.x;
-	rotateM[1][2] = -front.y;
-	rotateM[2][2] = -front.z;
-
-	floral::mat4x4f translateM(1.0f);
-	translateM[3][0] = -i_position.x;
-	translateM[3][1] = -i_position.y;
-	translateM[3][2] = -i_position.z;
-
-	floral::mat4x4f m = rotateM * translateM;
-	return m;
-}
-
-floral::mat4x4f CreatePerspectiveLH(const f32 i_aspectRatio, const f32 i_fovy, const f32 i_near, const f32 i_far)
-{
-	const f32 tanHalfFovY = tanf(floral::to_radians(i_fovy / 2.0f));
-
-	floral::mat4x4f m;
-	m[0][0] = 1.0f / (i_aspectRatio * tanHalfFovY);
-	m[1][1] = 1.0f / tanHalfFovY;
-	m[2][2] = (i_far + i_near) / (i_far - i_near);
-	m[2][3] = 1.0f;
-	m[3][2] = -2.0f * i_far * i_near / (i_far - i_near);
-
-	return m;
-}
-
-floral::mat4x4f CreatePerspectiveRH(const f32 i_aspectRatio, const f32 i_fovy, const f32 i_near, const f32 i_far)
-{
-	const f32 tanHalfFovY = tanf(floral::to_radians(i_fovy / 2.0f));
-
-	floral::mat4x4f m;
-	m[0][0] = 1.0f / (i_aspectRatio * tanHalfFovY);
-	m[1][1] = 1.0f / tanHalfFovY;
-	m[2][2] = -(i_far + i_near) / (i_far - i_near);
-	m[2][3] = -1.0f;
-	m[3][2] = -2.0f * i_far * i_near / (i_far - i_near);
-
-	return m;
-}
-
 void Vault::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// register surfaces
-	insigne::register_surface_type<geo2d::SurfacePT>();
 	insigne::register_surface_type<geo3d::SurfacePNT>();
+	insigne::register_surface_type<geo2d::SurfacePT>();
 
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_KB(256));
 	m_ModelDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
+	m_PostFXArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
 
 	m_MemoryArena->free_all();
 	cbmodel::Model<geo3d::VertexPNT> model = cbmodel::LoadModelData<geo3d::VertexPNT>(floral::path("gfx/go/models/demo/DamagedHelmet.gltf_mesh_0.cbmodel"),
@@ -217,13 +136,13 @@ void Vault::_OnInitialize()
 	}
 	m_IsBakingSplitSum = true;
 
-	//floral::mat4x4f view = CreateViewMatrixLH(floral::vec3f(3.0f, 3.0f, 3.0f),
-	floral::mat4x4f view = CreateViewMatrixRH(floral::vec3f(2.0f, 2.0f, 2.0f),
-			floral::vec3f(0.0f, 0.0f, 0.0f),
-			floral::vec3f(0.0f, 0.0f, 1.0f));
-	//floral::mat4x4f projection = CreatePerspectiveLH(16.0f / 9.0f, 45.0f, 0.01f, 100.0f);
-	floral::mat4x4f projection = CreatePerspectiveRH(16.0f / 9.0f, 45.0f, 0.01f, 100.0f);
-	m_SceneData.cameraPos = floral::vec4f(2.0f, 2.0f, 2.0f, 0.0f);
+	floral::mat4x4f view = floral::construct_lookat_point(
+			floral::vec3f(0.0f, 0.0f, 1.0f),
+			floral::vec3f(4.3f, -5.4f, 5.1f),
+			floral::vec3f(0.0f, 0.0f, 0.0f));
+	floral::mat4x4f projection = floral::construct_perspective(
+			0.01f, 100.0f, 25.3125f, 16.0f / 9.0f);
+	m_SceneData.cameraPos = floral::vec4f(4.3f, -5.4f, 5.1f, 0.0f);
 	m_SceneData.viewProjectionMatrix = projection * view;
 
 	insigne::ubdesc_t desc;
@@ -235,7 +154,7 @@ void Vault::_OnInitialize()
 
 	m_MemoryArena->free_all();
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
-			floral::path("gfx/mat/pbr.mat"), m_MemoryArena);
+			floral::path("tests/tech/pbr/pbr_helmet.mat"), m_MemoryArena);
 
 	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
 	FLORAL_ASSERT(pbrMaterialResult == true);
@@ -245,10 +164,17 @@ void Vault::_OnInitialize()
 	insigne::helpers::assign_texture(m_MSPair.material, "u_SplitSum", insigne::extract_color_attachment(m_BrdfFB, 0));
 
 	m_MemoryArena->free_all();
-	matDesc = mat_parser::ParseMaterial(floral::path("gfx/mat/pbr_splitsum.mat"), m_MemoryArena);
+	matDesc = mat_parser::ParseMaterial(floral::path("tests/tech/pbr/pbr_splitsum.mat"), m_MemoryArena);
 
 	const bool ssMaterialResult = mat_loader::CreateMaterial(&m_SplitSumPair, matDesc, m_MaterialDataArena);
 	FLORAL_ASSERT(ssMaterialResult == true);
+
+	m_MemoryArena->free_all();
+	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(
+			floral::path("tests/tech/pbr/helmet_pfx.pfx"),
+			m_MemoryArena);
+	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
+	m_PostFXChain.Initialize(pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 }
 
 void Vault::_OnUpdate(const f32 i_deltaMs)
@@ -269,10 +195,16 @@ void Vault::_OnRender(const f32 i_deltaMs)
 		m_IsBakingSplitSum = false;
 	}
 
-	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-
+	m_PostFXChain.BeginMainOutput();
 	insigne::draw_surface<geo3d::SurfacePNT>(m_SurfaceGPU.vb, m_SurfaceGPU.ib, m_MSPair.material);
 	debugdraw::Render(m_SceneData.viewProjectionMatrix);
+	m_PostFXChain.EndMainOutput();
+
+	m_PostFXChain.Process();
+
+	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
+
+	m_PostFXChain.Present();
 	RenderImGui();
 
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
@@ -283,11 +215,15 @@ void Vault::_OnRender(const f32 i_deltaMs)
 void Vault::_OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_SuiteName);
+	m_PostFXChain.CleanUp();
+
+	insigne::unregister_surface_type<geo2d::SurfacePT>();
+	insigne::unregister_surface_type<geo3d::SurfacePNT>();
+
+	g_StreammingAllocator.free(m_PostFXArena);
 	g_StreammingAllocator.free(m_ModelDataArena);
 	g_StreammingAllocator.free(m_MaterialDataArena);
 	g_StreammingAllocator.free(m_MemoryArena);
-	insigne::unregister_surface_type<geo3d::SurfacePNT>();
-	insigne::unregister_surface_type<geo2d::SurfacePT>();
 }
 
 }

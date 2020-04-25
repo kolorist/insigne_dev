@@ -11,6 +11,10 @@ _state
 _end_state
 
 _params
+	_p_ub ub_Temp
+		float		iu_DepthFactor		1.0
+	_end_p_ub
+	
 	_p_tex_holder tex2d u_MainTex
 	_p_tex_holder tex2d u_DepthTex
 _end_params

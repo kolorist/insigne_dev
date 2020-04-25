@@ -1,0 +1,17 @@
+_shader
+	vs	tests/perf/blending/solid.vs
+	fs	tests/perf/blending/solid.fs
+_end_shader
+
+_state
+	depth_write off
+	depth_test off
+	cull_face on back ccw
+	blending off
+_end_state
+
+_params
+	_p_ub ub_Material
+		vec4		iu_Color		0.0 1.0 0.0 1.0
+	_end_p_ub
+_end_params

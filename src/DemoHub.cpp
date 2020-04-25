@@ -19,6 +19,7 @@
 #include "Graphics/Performance/ImGuiCustomWidgets.h"
 #include "Graphics/Performance/SceneLoader.h"
 #include "Graphics/Performance/GammaCorrection.h"
+#include "Graphics/Performance/Blending.h"
 
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
@@ -73,6 +74,7 @@ void DemoHub::Initialize()
 	_EmplacePerformanceSuite<perf::Triangle>();
 	_EmplacePerformanceSuite<perf::SceneLoader>();
 	_EmplacePerformanceSuite<perf::GammaCorrection>();
+	_EmplacePerformanceSuite<perf::Blending>();
 
 	_EmplaceToolSuite<tech::SHCalculator>();
 

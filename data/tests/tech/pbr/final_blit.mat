@@ -1,6 +1,6 @@
 _shader
-	vs	tests/perf/post_effects/ssquad.vs
-	fs	tests/perf/post_effects/blit.fs
+	vs	tests/tech/pbr/ssquad.vs
+	fs	tests/tech/pbr/final_blit.fs
 _end_shader
 
 _state
@@ -11,9 +11,5 @@ _state
 _end_state
 
 _params
-	_p_ub ub_Blit
-		vec3		iu_OverlayColor		0.0 1.0 0.0
-	_end_p_ub
-	
 	_p_tex_holder tex2d u_MainTex
 _end_params

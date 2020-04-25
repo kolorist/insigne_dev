@@ -5,6 +5,7 @@
 #include "Graphics/TestSuite.h"
 
 #include "Graphics/InsigneHelpers.h"
+#include "Graphics/PostFXChain.h"
 #include "Graphics/MaterialLoader.h"
 
 #include "Memory/MemorySystem.h"
@@ -54,12 +55,15 @@ private:
 
 	insigne::framebuffer_handle_t				m_BrdfFB;
 
+	pfx_chain::PostFXChain<LinearArena, FreelistArena>	m_PostFXChain;
+
 	bool										m_IsBakingSplitSum;
 
 private:
 	FreelistArena*								m_MemoryArena;
 	LinearArena*								m_MaterialDataArena;
 	LinearArena*								m_ModelDataArena;
+	LinearArena*								m_PostFXArena;
 };
 
 // ------------------------------------------------------------------

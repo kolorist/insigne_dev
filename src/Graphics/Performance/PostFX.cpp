@@ -83,6 +83,9 @@ void PostFX::_OnInitialize()
 
 void PostFX::_OnUpdate(const f32 i_deltaMs)
 {
+	static f32 elapsedTimeMs = 0;
+	elapsedTimeMs += i_deltaMs;
+	m_PostFXChain.SetValueVec3("ub_Blit.iu_OverlayColor", floral::vec3f(0.0f, fabs(sinf(elapsedTimeMs / 1000.0f)), 0.0f));
 }
 
 void PostFX::_OnRender(const f32 i_deltaMs)

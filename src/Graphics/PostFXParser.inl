@@ -134,7 +134,14 @@ const_cstr PostFXParser(const TokenArray<TMemoryArena>& i_tokenArray, PostEffect
 	while (!finished);
 
 	o_pfxDesc->fbsCount = fbDescArray.get_size();
-	o_pfxDesc->fbList = &fbDescArray[0];
+	if (o_pfxDesc->fbsCount > 0)
+	{
+		o_pfxDesc->fbList = &fbDescArray[0];
+	}
+	else
+	{
+		o_pfxDesc->fbList = nullptr;
+	}
 
 	o_pfxDesc->presetsCount = presetArray.get_size();
 	o_pfxDesc->presetList = &presetArray[0];

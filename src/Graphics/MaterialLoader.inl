@@ -35,8 +35,6 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 		default:
 			break;
 		}
-
-		insigne::dispatch_render_pass();
 	}
 
 	shaderDesc.vs_path = floral::path(i_matDesc.vertexShaderPath);
@@ -121,12 +119,15 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 	renderState.blend_func_sfactor = k_blendFactor[s32(i_matDesc.renderState.blendSourceFactor)];
 	renderState.blend_func_dfactor = k_blendFactor[s32(i_matDesc.renderState.blendDestinationFactor)];
 
-	// build uniform buffer
-	for (size i = 0; i < i_matDesc.buffersCount; i++)
+	if (i_dataAllocator)
 	{
-		const insigne::ub_handle_t ub = internal::BuildUniformBuffer(i_matDesc.bufferDescriptions[i], i_dataAllocator);
-		insigne::helpers::assign_uniform_block(o_mat->material,
-				i_matDesc.bufferDescriptions[i].identifier, 0, 0, ub);
+		// build uniform buffer
+		for (size i = 0; i < i_matDesc.buffersCount; i++)
+		{
+			const insigne::ub_handle_t ub = internal::BuildUniformBuffer(i_matDesc.bufferDescriptions[i], i_dataAllocator);
+			insigne::helpers::assign_uniform_block(o_mat->material,
+					i_matDesc.bufferDescriptions[i].identifier, 0, 0, ub);
+		}
 	}
 
 	// build textures
@@ -177,6 +178,7 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 			case mat_parser::TextureDimension::Texture2D:
 			{
 				insigne::texture_handle_t tex = tex_loader::LoadLDRTexture2D(floral::path(desc.texturePath), texDesc, true);
+				insigne::dispatch_render_pass(); // to prevent overflow texture data allocator
 				insigne::helpers::assign_texture(o_mat->material, desc.identifier, tex);
 				break;
 			}
