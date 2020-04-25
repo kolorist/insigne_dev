@@ -1,8 +1,6 @@
 #pragma once
 #include <insigne/commons.h>
 
-namespace stone
-{
 namespace helpers
 {
 // ---------------------------------------------
@@ -20,5 +18,4 @@ SurfaceGPU										CreateSurfaceGPU(voidptr i_vtxData, const u32 i_vtxCount, co
 													insigne::buffer_usage_e i_usage, const bool i_makeCopy = true);
 
 // ---------------------------------------------
-}
 }

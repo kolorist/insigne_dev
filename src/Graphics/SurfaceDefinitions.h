@@ -17,10 +17,6 @@
  * - we have to disable unused attribute binding points because some of GPUs will perform funny without it
  */
 
-namespace stone
-{
-// ------------------------------------------------------------------
-
 namespace geo2d
 {
 // ------------------------------------------------------------------
@@ -143,6 +139,10 @@ struct SurfacePNT
 
 // ------------------------------------------------------------------
 }
+
+namespace stone
+{
+// ------------------------------------------------------------------
 
 struct GeoQuad {
 	floral::vec3f								Vertices[4];

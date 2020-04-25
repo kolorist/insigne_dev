@@ -217,7 +217,7 @@ enum class TokenType
 	Tex, EndTex, TexHolder,
 	TexDim, TexMinFilter, TexMagFilter, TexWrapS, TexWrapT, TexWrapR, TexPath,
 	EndOfTokenStream,
-	Count,
+	Count
 };
 
 struct Token

@@ -10,6 +10,7 @@
 // playground
 #include "Graphics/Performance/Vault.h"
 #include "Graphics/Misc/GLTFLoader.h"
+#include "Graphics/Performance/PostFX.h"
 
 // performance demo
 #include "Graphics/Performance/Empty.h"
@@ -66,6 +67,7 @@ void DemoHub::Initialize()
 
 	_EmplacePlaygroundSuite<perf::Vault>();
 	_EmplacePlaygroundSuite<misc::GLTFLoader>();
+	_EmplacePlaygroundSuite<perf::PostFX>();
 
 	_EmplacePerformanceSuite<perf::Empty>();
 	_EmplacePerformanceSuite<perf::Triangle>();

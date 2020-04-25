@@ -8,8 +8,6 @@
 
 #include <math.h>
 
-namespace stone
-{
 namespace helpers
 {
 // ---------------------------------------------
@@ -57,5 +55,4 @@ SurfaceGPU CreateSurfaceGPU(voidptr i_vtxData, const u32 i_vtxCount, const size 
 }
 
 // ---------------------------------------------
-}
 }
