@@ -76,7 +76,7 @@ void Blending::_OnInitialize()
 		mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
 				floral::path("tests/perf/blending/solid.mat"), m_MemoryArena);
 
-		const bool createResult = mat_loader::CreateMaterial(&m_MSPair0, matDesc, m_MaterialDataArena);
+		const bool createResult = mat_loader::CreateMaterial(&m_MSPair0, matDesc, nullptr, m_MaterialDataArena);
 		FLORAL_ASSERT(createResult == true);
 	}
 
@@ -101,7 +101,7 @@ void Blending::_OnInitialize()
 		mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
 				floral::path("tests/perf/blending/transparent_50.mat"), m_MemoryArena);
 
-		const bool createResult = mat_loader::CreateMaterial(&m_TMSPair0, matDesc, m_MaterialDataArena);
+		const bool createResult = mat_loader::CreateMaterial(&m_TMSPair0, matDesc, nullptr, m_MaterialDataArena);
 		FLORAL_ASSERT(createResult == true);
 	}
 	// TODO: gamma correction

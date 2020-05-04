@@ -1,4 +1,6 @@
-#include "GammaCorrection.h"
+#include "Textures.h"
+
+#include <calyx/context.h>
 
 #include <floral/containers/array.h>
 
@@ -20,46 +22,50 @@ namespace perf
 {
 //-------------------------------------------------------------------
 
-GammaCorrection::GammaCorrection()
+Textures::Textures()
 {
 }
 
 //-------------------------------------------------------------------
 
-GammaCorrection::~GammaCorrection()
+Textures::~Textures()
 {
 }
 
 //-------------------------------------------------------------------
 
-ICameraMotion* GammaCorrection::GetCameraMotion()
+ICameraMotion* Textures::GetCameraMotion()
 {
 	return nullptr;
 }
 
 //-------------------------------------------------------------------
 
-const_cstr GammaCorrection::GetName() const
+const_cstr Textures::GetName() const
 {
 	return k_name;
 }
 
 //-------------------------------------------------------------------
 
-void GammaCorrection::_OnInitialize()
+void Textures::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
-	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(2));
+	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_KB(256));
+
+	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
+	f32 aspectRatio = (f32)commonCtx->window_height / (f32)commonCtx->window_width;
 
 	// register surfaces
 	insigne::register_surface_type<geo2d::SurfacePT>();
 
+	const f32 k_size = 0.8f;
 	floral::inplace_array<geo2d::VertexPT, 4> vertices;
-	vertices.push_back({ { -0.5f, 0.5f }, { 0.0f, 1.0f } });
-	vertices.push_back({ { -0.5f, -0.5f }, { 0.0f, 0.0f } });
-	vertices.push_back({ { 0.5f, -0.5f }, { 1.0f, 0.0f } });
-	vertices.push_back({ { 0.5f, 0.5f }, { 1.0f, 1.0f } });
+	vertices.push_back({ { -k_size * aspectRatio, k_size }, { 0.0f, 1.0f } });
+	vertices.push_back({ { -k_size * aspectRatio, -k_size }, { 0.0f, 0.0f } });
+	vertices.push_back({ { k_size * aspectRatio, -k_size }, { 1.0f, 0.0f } });
+	vertices.push_back({ { k_size * aspectRatio, k_size }, { 1.0f, 1.0f } });
 
 	floral::inplace_array<s32, 6> indices;
 	indices.push_back(0);
@@ -74,21 +80,21 @@ void GammaCorrection::_OnInitialize()
 
 	m_MemoryArena->free_all();
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
-			floral::path("tests/perf/gamma_correction/gamma.mat"), m_MemoryArena);
+			floral::path("tests/perf/textures/quad.mat"), m_MemoryArena);
 
-	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, nullptr, m_MaterialDataArena);
+	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(pbrMaterialResult == true);
 }
 
 //-------------------------------------------------------------------
 
-void GammaCorrection::_OnUpdate(const f32 i_deltaMs)
+void Textures::_OnUpdate(const f32 i_deltaMs)
 {
 }
 
 //-------------------------------------------------------------------
 
-void GammaCorrection::_OnRender(const f32 i_deltaMs)
+void Textures::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
@@ -103,7 +109,7 @@ void GammaCorrection::_OnRender(const f32 i_deltaMs)
 
 //-------------------------------------------------------------------
 
-void GammaCorrection::_OnCleanUp()
+void Textures::_OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
 	insigne::unregister_surface_type<geo2d::SurfacePT>();

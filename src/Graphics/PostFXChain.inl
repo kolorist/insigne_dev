@@ -316,7 +316,7 @@ mat_loader::MaterialShaderPair PostFXChain<TLinearAllocator, TFreelistAllocator>
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(floral::path(i_fileName), m_TemporalArena);
 
 	// we will create the uniform buffer ourself
-	const bool pbrMaterialResult = mat_loader::CreateMaterial<TLinearAllocator>(&retPair, matDesc, nullptr);
+	const bool pbrMaterialResult = mat_loader::CreateMaterial<TLinearAllocator>(&retPair, matDesc, nullptr, nullptr);
 	FLORAL_ASSERT(pbrMaterialResult == true);
 
 	FLORAL_ASSERT(matDesc.buffersCount <= 1);

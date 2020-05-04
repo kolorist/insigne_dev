@@ -20,6 +20,8 @@
 #include "Graphics/Performance/SceneLoader.h"
 #include "Graphics/Performance/GammaCorrection.h"
 #include "Graphics/Performance/Blending.h"
+#include "Graphics/Performance/Textures.h"
+#include "Graphics/Performance/CubeMap.h"
 
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
@@ -75,6 +77,8 @@ void DemoHub::Initialize()
 	_EmplacePerformanceSuite<perf::SceneLoader>();
 	_EmplacePerformanceSuite<perf::GammaCorrection>();
 	_EmplacePerformanceSuite<perf::Blending>();
+	_EmplacePerformanceSuite<perf::Textures>();
+	_EmplacePerformanceSuite<perf::CubeMapTextures>();
 
 	_EmplaceToolSuite<tech::SHCalculator>();
 

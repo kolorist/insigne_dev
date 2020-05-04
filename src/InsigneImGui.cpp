@@ -74,7 +74,7 @@ static FreelistArena* s_MemoryArena = nullptr;
 
 //----------------------------------------------
 
-const ssize AllocateNewBuffer();
+static const ssize AllocateNewBuffer();
 
 static inline void* ImGuiCustomAlloc(const size_t sz, voidptr userData)
 {
@@ -124,6 +124,7 @@ void InitializeImGui()
 	uiTexDesc.min_filter = insigne::filtering_e::nearest;
 	uiTexDesc.mag_filter = insigne::filtering_e::nearest;
 	uiTexDesc.dimension = insigne::texture_dimension_e::tex_2d;
+	uiTexDesc.compression = insigne::texture_compression_e::no_compression;
 	uiTexDesc.has_mipmap = false;
 
 	const size dataSize = insigne::prepare_texture_desc(uiTexDesc);

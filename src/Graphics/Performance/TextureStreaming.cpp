@@ -115,7 +115,7 @@ void TextureStreaming::OnInitialize()
 
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
 			floral::path("gfx/mat/texture_streaming.mat"), m_MemoryArena);
-	const bool result = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
+	const bool result = mat_loader::CreateMaterial(&m_MSPair, matDesc, nullptr, m_MaterialDataArena);
 
 	insigne::helpers::assign_texture(m_MSPair.material, "u_Tex", m_Texture);
 

@@ -68,7 +68,7 @@ void PostFX::_OnInitialize()
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
 			floral::path("tests/perf/post_effects/sample.mat"), m_MemoryArena);
 
-	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
+	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, nullptr, m_MaterialDataArena);
 	FLORAL_ASSERT(pbrMaterialResult == true);
 
 	m_MemoryArena->free_all();

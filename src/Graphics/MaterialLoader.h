@@ -16,8 +16,10 @@ struct MaterialShaderPair
 	insigne::material_desc_t					material;
 };
 
+template <class TIOAllocator, class TMemoryAllocator>
+const bool										CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, TMemoryAllocator* i_ioAllocator, TMemoryAllocator* i_dataAllocator);
 template <class TMemoryAllocator>
-const bool										CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, TMemoryAllocator* i_dataAllocator);
+const bool										CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, nullptr_t i_ioAllocator, TMemoryAllocator* i_dataAllocator);
 
 namespace internal
 {

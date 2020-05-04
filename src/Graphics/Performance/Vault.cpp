@@ -25,6 +25,7 @@ namespace stone
 {
 namespace perf
 {
+// -------------------------------------------------------------------
 
 static const_cstr k_SuiteName = "test_vault";
 
@@ -146,7 +147,7 @@ void Vault::_OnInitialize()
 	m_SceneData.viewProjectionMatrix = projection * view;
 
 	insigne::ubdesc_t desc;
-	desc.region_size = floral::next_pow2(sizeof(SceneData));
+	desc.region_size = floral::next_pow2(size(sizeof(SceneData)));
 	desc.data = &m_SceneData;
 	desc.data_size = sizeof(SceneData);
 	desc.usage = insigne::buffer_usage_e::dynamic_draw;
@@ -156,7 +157,7 @@ void Vault::_OnInitialize()
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
 			floral::path("tests/tech/pbr/pbr_helmet.mat"), m_MemoryArena);
 
-	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
+	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, nullptr, m_MaterialDataArena);
 	FLORAL_ASSERT(pbrMaterialResult == true);
 
 	insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Scene", 0, 0, m_SceneUB);
@@ -166,7 +167,7 @@ void Vault::_OnInitialize()
 	m_MemoryArena->free_all();
 	matDesc = mat_parser::ParseMaterial(floral::path("tests/tech/pbr/pbr_splitsum.mat"), m_MemoryArena);
 
-	const bool ssMaterialResult = mat_loader::CreateMaterial(&m_SplitSumPair, matDesc, m_MaterialDataArena);
+	const bool ssMaterialResult = mat_loader::CreateMaterial(&m_SplitSumPair, matDesc, nullptr, m_MaterialDataArena);
 	FLORAL_ASSERT(ssMaterialResult == true);
 
 	m_MemoryArena->free_all();
@@ -226,5 +227,6 @@ void Vault::_OnCleanUp()
 	g_StreammingAllocator.free(m_MemoryArena);
 }
 
+// -------------------------------------------------------------------
 }
 }

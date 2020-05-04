@@ -1,3 +1,4 @@
+#include <insigne/ut_render.h>
 #include <insigne/ut_buffers.h>
 #include <insigne/ut_shading.h>
 #include <insigne/ut_textures.h>
@@ -8,8 +9,8 @@ namespace mat_loader
 {
 // ----------------------------------------------------------------------------
 
-template <class TMemoryAllocator>
-const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, TMemoryAllocator* i_dataAllocator)
+template <class TIOAllocator, class TMemoryAllocator>
+const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, TIOAllocator* i_ioAllocator, TMemoryAllocator* i_dataAllocator)
 {
 	// create shader
 	insigne::shader_desc_t shaderDesc = insigne::create_shader_desc();
@@ -136,6 +137,7 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 		const mat_parser::TextureDescription& desc = i_matDesc.textureDescriptions[i];
 		if (!desc.isPlaceholder)
 		{
+			FLORAL_ASSERT(i_ioAllocator != nullptr);
 			insigne::texture_desc_t texDesc;
 			switch (desc.minFilter)
 			{
@@ -175,9 +177,10 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 
 			switch (desc.dimension)
 			{
+			case mat_parser::TextureDimension::TextureCube:
 			case mat_parser::TextureDimension::Texture2D:
 			{
-				insigne::texture_handle_t tex = tex_loader::LoadLDRTexture2D(floral::path(desc.texturePath), texDesc, true);
+				insigne::texture_handle_t tex = tex_loader::LoadCBTexture(floral::path(desc.texturePath), texDesc, i_ioAllocator, true);
 				insigne::dispatch_render_pass(); // to prevent overflow texture data allocator
 				insigne::helpers::assign_texture(o_mat->material, desc.identifier, tex);
 				break;
@@ -189,6 +192,12 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 	}
 
 	return true;
+}
+
+template <class TMemoryAllocator>
+const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, nullptr_t i_ioAllocator, TMemoryAllocator* i_dataAllocator)
+{
+	return CreateMaterial(o_mat, i_matDesc, (TMemoryAllocator*)nullptr, i_dataAllocator);
 }
 
 namespace internal

@@ -1,5 +1,7 @@
 #include "SHCalculator.h"
 
+#include <math.h>
+
 #include <floral/containers/array.h>
 #include <floral/comgeo/shapegen.h>
 #include <floral/math/transform.h>
@@ -24,23 +26,13 @@
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/DebugDrawer.h"
 #include "Graphics/CBTexDefinitions.h"
-
-// ---------------------------------------------
-#include "SHCalculatorShaders.inl"
-// ---------------------------------------------
+#include "Graphics/MaterialParser.h"
 
 namespace stone
 {
 namespace tech
 {
-
-enum class ProjectionScheme
-{
-	LightProbe,
-	HStrip,
-	Equirectangular,
-	Invalid
-};
+//--------------------------------------------------------------------
 
 static const_cstr k_ProjectionSchemeStr[] = {
 	"light probe",
@@ -91,48 +83,48 @@ static const insigne::cubemap_face_e s_faces[] =
 	insigne::cubemap_face_e::negative_z
 };
 
-static const_cstr k_SuiteName = "ibl calculator";
+static constexpr s32 k_faceSize = 256;
+static constexpr s32 k_previewFaceSize = 100;
 
-//----------------------------------------------
+//--------------------------------------------------------------------
 
 const ProjectionScheme get_projection_from_size(const s32 i_width, const s32 i_height)
 {
 	const f32 aspectRatio = (f32)i_width / (f32)i_height;
 	if (i_width == i_height)
 	{
-		// faceSize = 512;
-		FLORAL_ASSERT(i_width == 512);
+		FLORAL_ASSERT(i_width == k_faceSize * 2);
 		return ProjectionScheme::LightProbe;
 	}
 	else if (i_height * 6 == i_width)
 	{
-		// faceSize = 256 * 256
-		FLORAL_ASSERT(i_height == 256);
+		FLORAL_ASSERT(i_height == k_faceSize);
 		return ProjectionScheme::HStrip;
 	}
 	else if (fabs(aspectRatio - 2.0) < 0.0001)
 	{
-		// faceSize = 256* 256
-		FLORAL_ASSERT(i_height == 512);
+		FLORAL_ASSERT(i_height == k_faceSize * 2);
 		return ProjectionScheme::Equirectangular;
 	}
 	return ProjectionScheme::Invalid;
 }
 
+//--------------------------------------------------------------------
+
 void trim_image(f32* i_imgData, f32* o_outData, const s32 i_x, const s32 i_y, const s32 i_width, const s32 i_height,
 		const s32 i_imgWidth, const s32 i_imgHeight, const s32 i_channelCount)
 {
 	s32 outScanline = 0;
-	for (s32 i = i_y; i < (i_y + i_height); i++) {
-		memcpy(
-				&o_outData[outScanline * i_width * i_channelCount],
+	for (s32 i = i_y; i < (i_y + i_height); i++)
+	{
+		memcpy(&o_outData[outScanline * i_width * i_channelCount],
 				&i_imgData[(i * i_imgWidth + i_x) * i_channelCount],
-				i_height * i_channelCount * sizeof(f32));
+				i_width * i_channelCount * sizeof(f32));
 		outScanline++;
 	}
 }
 
-//----------------------------------------------
+//--------------------------------------------------------------------
 
 SHCalculator::SHCalculator()
 	: m_CameraMotion(
@@ -141,120 +133,83 @@ SHCalculator::SHCalculator()
 	, m_TemporalArena(nullptr)
 	, m_ComputingSH(false)
 	, m_SHReady(false)
-	, m_SpecReady(false)
+	, m_PMREMReady(false)
 	, m_IsCapturingSpecData(false)
 	, m_Counter(0)
 	, m_CamPos(2.0f, 0.0f, 0.0f)
 {
 }
 
+//--------------------------------------------------------------------
+
 SHCalculator::~SHCalculator()
 {
 }
 
-const_cstr SHCalculator::GetName() const
+//--------------------------------------------------------------------
+
+ICameraMotion* SHCalculator::GetCameraMotion()
 {
-	return k_SuiteName;
+	return &m_CameraMotion;
 }
 
-void SHCalculator::OnInitialize()
+//--------------------------------------------------------------------
+
+const_cstr SHCalculator::GetName() const
 {
-	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
-	// snapshot begin state
-	m_BuffersBeginStateId = insigne::get_buffers_resource_state();
-	m_ShadingBeginStateId = insigne::get_shading_resource_state();
-	m_TextureBeginStateId = insigne::get_textures_resource_state();
-	m_RenderBeginStateId = insigne::get_render_resource_state();
+	return k_name;
+}
+
+//--------------------------------------------------------------------
+
+void SHCalculator::_OnInitialize()
+{
+	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
+	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 
 	// register surfaces
-	insigne::register_surface_type<SurfaceP>();
-	insigne::register_surface_type<SurfaceSkybox>();
-	insigne::register_surface_type<SurfacePT>();
+	insigne::register_surface_type<geo3d::SurfaceP>();
+	insigne::register_surface_type<geo2d::SurfacePT>();
 
 	// memory arena
 	m_TemporalArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(48));
+	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
+	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
+	m_PostFXArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
 
-	{
-		// ico sphere
-		floral::fixed_array<VertexP, FreelistArena> sphereVertices;
-		floral::fixed_array<s32, FreelistArena> sphereIndices;
+	// ico sphere
+	floral::fixed_array<geo3d::VertexP, FreelistArena> vtxData;
+	floral::fixed_array<s32, FreelistArena> idxData;
 
-		sphereVertices.reserve(4096, m_TemporalArena);
-		sphereIndices.reserve(8192, m_TemporalArena);
+	vtxData.reserve(4096, m_TemporalArena);
+	idxData.reserve(8192, m_TemporalArena);
+	vtxData.resize(4096);
+	idxData.resize(8192);
 
-		sphereVertices.resize(4096);
-		sphereIndices.resize(8192);
+	floral::reset_generation_transforms_stack();
+	floral::geo_generate_result_t genResult = floral::generate_unit_icosphere_3d(
+			3, 0, sizeof(geo3d::VertexP),
+			floral::geo_vertex_format_e::position,
+			&vtxData[0], &idxData[0]);
+	m_Sphere = helpers::CreateSurfaceGPU(&vtxData[0], genResult.vertices_generated, sizeof(geo3d::VertexP),
+			&idxData[0], genResult.indices_generated, insigne::buffer_usage_e::static_draw, true);
 
-		floral::reset_generation_transforms_stack();
-		floral::geo_generate_result_t genResult = floral::generate_unit_icosphere_3d(
-				3, 0, sizeof(VertexP),
-				floral::geo_vertex_format_e::position,
-				&sphereVertices[0], &sphereIndices[0]);
-		sphereVertices.resize(genResult.vertices_generated);
-		sphereIndices.resize(genResult.indices_generated);
+	floral::reset_generation_transforms_stack();
+	genResult = floral::generate_unit_icosphere_3d(
+			2, 0, sizeof(geo3d::VertexP),
+			floral::geo_vertex_format_e::position,
+			&vtxData[0], &idxData[0]);
+	m_Skysphere = helpers::CreateSurfaceGPU(&vtxData[0], genResult.vertices_generated, sizeof(geo3d::VertexP),
+			&idxData[0], genResult.indices_generated, insigne::buffer_usage_e::static_draw, true);
 
-		{
-			insigne::vbdesc_t desc;
-			desc.region_size = SIZE_KB(32);
-			desc.stride = sizeof(VertexP);
-			desc.data = nullptr;
-			desc.count = 0;
-			desc.usage = insigne::buffer_usage_e::static_draw;
+	floral::reset_generation_transforms_stack();
+	genResult = floral::generate_unit_box_3d(
+			0, sizeof(geo3d::VertexP),
+			floral::geo_vertex_format_e::position,
+			&vtxData[0], &idxData[0]);
 
-			m_ProbeVB = insigne::create_vb(desc);
-			insigne::copy_update_vb(m_ProbeVB, &sphereVertices[0], sphereVertices.get_size(), sizeof(VertexP), 0);
-		}
-
-		{
-			insigne::ibdesc_t desc;
-			desc.region_size = SIZE_KB(16);
-			desc.data = nullptr;
-			desc.count = 0;
-			desc.usage = insigne::buffer_usage_e::static_draw;
-
-			m_ProbeIB = insigne::create_ib(desc);
-			insigne::copy_update_ib(m_ProbeIB, &sphereIndices[0], sphereIndices.get_size(), 0);
-		}
-	}
-
-	{
-		m_TemporalArena->free_all();
-		floral::fast_fixed_array<VertexP, FreelistArena> vtxData(1024, m_TemporalArena);
-		floral::fast_fixed_array<s32, FreelistArena> idxData(1024, m_TemporalArena);
-		vtxData.resize(1024);
-		idxData.resize(1024);
-
-		floral::reset_generation_transforms_stack();
-
-		floral::geo_generate_result_t genResult = floral::generate_unit_box_3d(
-				0, sizeof(VertexP),
-				floral::geo_vertex_format_e::position,
-				&vtxData[0], &idxData[0]);
-
-		vtxData.resize(genResult.vertices_generated);
-		idxData.resize(genResult.indices_generated);
-
-		// upload
-		{
-			insigne::vbdesc_t desc;
-			desc.region_size = SIZE_KB(1);
-			desc.stride = sizeof(VertexP);
-			desc.data = &vtxData[0];
-			desc.count = genResult.vertices_generated;
-			desc.usage = insigne::buffer_usage_e::static_draw;
-
-			m_SkyboxVB = insigne::copy_create_vb(desc);
-		}
-		{
-			insigne::ibdesc_t desc;
-			desc.region_size = SIZE_KB(1);
-			desc.data = &idxData[0];
-			desc.count = genResult.indices_generated;
-			desc.usage = insigne::buffer_usage_e::static_draw;
-
-			m_SkyboxIB = insigne::copy_create_ib(desc);
-		}
-	}
+	m_PMREMSkybox = helpers::CreateSurfaceGPU(&vtxData[0], genResult.vertices_generated, sizeof(geo3d::VertexP),
+			&idxData[0], genResult.indices_generated, insigne::buffer_usage_e::static_draw, true);
 
 	{
 		insigne::ubdesc_t desc;
@@ -265,10 +220,10 @@ void SHCalculator::OnInitialize()
 
 		m_UB = insigne::create_ub(desc);
 
-		calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 		m_CameraMotion.SetScreenResolution(commonCtx->window_width, commonCtx->window_height);
 
-		m_SceneData.WVP = m_CameraMotion.GetWVP();
+		m_SceneData.viewProjectionMatrix = m_CameraMotion.GetWVP();
+		m_SceneData.cameraPosition = floral::vec4f(m_CameraMotion.GetPosition(), 0.0f);
 		memset(m_SceneData.SH, 0, sizeof(m_SceneData.SH));
 		insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
 	}
@@ -322,9 +277,9 @@ void SHCalculator::OnInitialize()
 		desc.alignment = 0;
 
 		m_PreviewUB = insigne::create_ub(desc);
-		m_PreviewSpecUB = insigne::create_ub(desc);
+		m_PreviewPMREMUB = insigne::create_ub(desc);
 		insigne::copy_update_ub(m_PreviewUB, &m_PreviewConfigs, sizeof(PreviewConfigs), 0);
-		insigne::copy_update_ub(m_PreviewSpecUB, &m_PreviewSpecConfigs, sizeof(PreviewConfigs), 0);
+		insigne::copy_update_ub(m_PreviewPMREMUB, &m_PreviewSpecConfigs, sizeof(PreviewConfigs), 0);
 	}
 
 	{
@@ -334,7 +289,7 @@ void SHCalculator::OnInitialize()
 		atm.texture_format = insigne::texture_format_e::hdr_rgb;
 		atm.texture_dimension = insigne::texture_dimension_e::tex_cube;
 		desc.color_attachments->push_back(atm);
-		desc.width = 256; desc.height = 256;
+		desc.width = k_faceSize; desc.height = k_faceSize;
 		desc.has_depth = false;
 		desc.color_has_mipmap = true;
 
@@ -342,201 +297,97 @@ void SHCalculator::OnInitialize()
 	}
 
 	{
-		insigne::shader_desc_t desc = insigne::create_shader_desc();
-		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
+		m_SHInputTexData = (f32*)g_PersistanceResourceAllocator.allocate(SIZE_MB(6));
+		m_SHRadTexData = (f32*)g_PersistanceResourceAllocator.allocate(SIZE_KB(200));
+		m_SHIrrTexData = (f32*)g_PersistanceResourceAllocator.allocate(SIZE_KB(200));
 
-		strcpy(desc.vs, s_ProbeVS);
-		strcpy(desc.fs, s_ProbeFS);
-		desc.vs_path = floral::path("/demo/probe_vs");
-		desc.fs_path = floral::path("/demo/probe_fs");
-
-		m_ProbeShader = insigne::create_shader(desc);
-		insigne::infuse_material(m_ProbeShader, m_ProbeMaterial);
-
-		{
-			s32 ubSlot = insigne::get_material_uniform_block_slot(m_ProbeMaterial, "ub_Scene");
-			m_ProbeMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 256, m_UB };
-		}
-	}
-
-	{
-		m_TextureData = (f32*)g_PersistanceResourceAllocator.allocate(SIZE_MB(6));
-		m_RadTextureData = (f32*)g_PersistanceResourceAllocator.allocate(SIZE_KB(200));
-		m_IrrTextureData = (f32*)g_PersistanceResourceAllocator.allocate(SIZE_KB(200));
-
-		insigne::texture_desc_t texDesc;
-		texDesc.width = 128;
-		texDesc.height = 128;
-		texDesc.format = insigne::texture_format_e::hdr_rgb;
-		texDesc.min_filter = insigne::filtering_e::linear;
-		texDesc.mag_filter = insigne::filtering_e::linear;
-		texDesc.dimension = insigne::texture_dimension_e::tex_2d;
-		texDesc.has_mipmap = false;
-		texDesc.data = nullptr;
-
-		m_IrradianceTexture = insigne::create_texture(texDesc);
-		m_RadianceTexture = insigne::create_texture(texDesc);
-
-		texDesc.width = 512;
-		texDesc.height = 512;
-		m_Texture[0] = insigne::create_texture(texDesc);
-
-		texDesc.width = 256 * 6;
-		texDesc.height = 256;
-		m_Texture[1] = insigne::create_texture(texDesc);
-
-		texDesc.width = 1024;
-		texDesc.height = 512;
-		m_Texture[2] = insigne::create_texture(texDesc);
-		m_CurrentInputTexture = m_Texture[0];
-		m_CurrentPreviewTexture = m_CurrentInputTexture;
-
-		texDesc.width = 256;
-		texDesc.height = 256;
-		texDesc.min_filter = insigne::filtering_e::linear_mipmap_linear;
-		texDesc.dimension = insigne::texture_dimension_e::tex_cube;
-		texDesc.has_mipmap = true;
-		m_CurrentInputTexture3D = insigne::create_texture(texDesc);
-	}
-
-	// tonemap
-	{
-		calyx::context_attribs* commonCtx = calyx::get_context_attribs();
-
-		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
-		desc.color_attachments->push_back(insigne::color_attachment_t("main_color", insigne::texture_format_e::hdr_rgb));
-
-		desc.width = commonCtx->window_width;
-		desc.height = commonCtx->window_height;
-
-		m_PostFXBuffer = insigne::create_framebuffer(desc);
-	}
-
-	floral::inplace_array<VertexPT, 4> ssVertices;
-	ssVertices.push_back(VertexPT { { -1.0f, -1.0f }, { 0.0f, 0.0f } });
-	ssVertices.push_back(VertexPT { { 1.0f, -1.0f }, { 1.0f, 0.0f } });
-	ssVertices.push_back(VertexPT { { 1.0f, 1.0f }, { 1.0f, 1.0f } });
-	ssVertices.push_back(VertexPT { { -1.0f, 1.0f }, { 0.0f, 1.0f } });
-
-	floral::inplace_array<s32, 6> ssIndices;
-	ssIndices.push_back(0);
-	ssIndices.push_back(1);
-	ssIndices.push_back(2);
-	ssIndices.push_back(2);
-	ssIndices.push_back(3);
-	ssIndices.push_back(0);
-
-	{
-		insigne::vbdesc_t desc;
-		desc.region_size = SIZE_KB(2);
-		desc.stride = sizeof(VertexPT);
+		insigne::texture_desc_t desc;
+		desc.width = k_previewFaceSize;
+		desc.height = k_previewFaceSize;
+		desc.format = insigne::texture_format_e::hdr_rgb_high;
+		desc.min_filter = insigne::filtering_e::linear;
+		desc.mag_filter = insigne::filtering_e::linear;
+		desc.dimension = insigne::texture_dimension_e::tex_2d;
+		desc.compression = insigne::texture_compression_e::no_compression;
+		desc.has_mipmap = false;
 		desc.data = nullptr;
-		desc.count = 0;
-		desc.usage = insigne::buffer_usage_e::static_draw;
 
-		m_SSVB = insigne::create_vb(desc);
-		insigne::copy_update_vb(m_SSVB, &ssVertices[0], ssVertices.get_size(), sizeof(VertexPT), 0);
-	}
+		m_SHPreviewRadianceTex = insigne::create_texture(desc);
+		m_SHPreviewIrradianceTex = insigne::create_texture(desc);
 
-	{
-		insigne::ibdesc_t desc;
-		desc.region_size = SIZE_KB(1);
+		desc.width = k_faceSize * 2;
+		desc.height = k_faceSize * 2;
+		m_PreviewTexture[size(ProjectionScheme::LightProbe)] = insigne::create_texture(desc);
+		m_InputTexture[size(ProjectionScheme::LightProbe)] = insigne::create_texture(desc);
+
+		desc.width = k_faceSize * 3;
+		desc.height = k_faceSize * 2;
+		m_PreviewTexture[size(ProjectionScheme::HStrip)] = insigne::create_texture(desc);
+
+		desc.width = k_faceSize * 4;
+		desc.height = k_faceSize * 2;
+		m_PreviewTexture[size(ProjectionScheme::Equirectangular)] = insigne::create_texture(desc);
+		m_InputTexture[size(ProjectionScheme::Equirectangular)] = insigne::create_texture(desc);
+
+		desc.width = k_faceSize;
+		desc.height = k_faceSize;
+		desc.min_filter = insigne::filtering_e::linear_mipmap_linear;
+		desc.dimension = insigne::texture_dimension_e::tex_cube;
+		desc.has_mipmap = true;
 		desc.data = nullptr;
-		desc.count = 0;
-		desc.usage = insigne::buffer_usage_e::static_draw;
+		m_InputTexture[size(ProjectionScheme::HStrip)] = insigne::create_texture(desc);
 
-		m_SSIB = insigne::create_ib(desc);
-		insigne::copy_update_ib(m_SSIB, &ssIndices[0], ssIndices.get_size(), 0);
+		m_CurrentPreviewTexture = insigne::k_invalid_handle;
+		m_Current3DPreviewTexture = insigne::k_invalid_handle;
 	}
 
-	{
-		insigne::shader_desc_t desc = insigne::create_shader_desc();
-		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler2d));
+	m_MemoryArena->free_all();
+	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(
+			floral::path("tests/tech/sh_calculator/hdr_pfx.pfx"),
+			m_MemoryArena);
+	m_PostFXChain.Initialize(pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 
-		strcpy(desc.vs, s_ToneMapVS);
-		strcpy(desc.fs, s_ToneMapFS);
-		desc.vs_path = floral::path("/demo/tonemap_vs");
-		desc.fs_path = floral::path("/demo/tonemap_fs");
+	_LoadMaterial(&m_SHPreviewMSPair, floral::path("tests/tech/sh_calculator/probe_preview_sh.mat"));
+	_LoadMaterial(&m_SHSkyPreviewMSPair, floral::path("tests/tech/sh_calculator/sky_preview_sh.mat"));
+	_LoadMaterial(&m_PMREMBakeMSPair, floral::path("tests/tech/sh_calculator/pmrem_bake.mat"));
+	_LoadMaterial(&m_PreviewMSPair[0], floral::path("tests/tech/sh_calculator/probe_preview_lightprobe.mat"));
+	_LoadMaterial(&m_SkyPreviewMSPair[0], floral::path("tests/tech/sh_calculator/sky_preview_lightprobe.mat"));
+	_LoadMaterial(&m_PreviewMSPair[1], floral::path("tests/tech/sh_calculator/probe_preview_hstrip.mat"));
+	_LoadMaterial(&m_SkyPreviewMSPair[1], floral::path("tests/tech/sh_calculator/sky_preview_hstrip.mat"));
+	_LoadMaterial(&m_PreviewMSPair[2], floral::path("tests/tech/sh_calculator/probe_preview_latlong.mat"));
+	_LoadMaterial(&m_SkyPreviewMSPair[2], floral::path("tests/tech/sh_calculator/sky_preview_latlong.mat"));
+	_LoadMaterial(&m_PMREMPreviewMSPair, floral::path("tests/tech/sh_calculator/probe_preview_hstrip.mat"));
+	_LoadMaterial(&m_PMREMSkyPreviewMSPair, floral::path("tests/tech/sh_calculator/sky_preview_hstrip.mat"));
 
-		m_ToneMapShader = insigne::create_shader(desc);
-		insigne::infuse_material(m_ToneMapShader, m_ToneMapMaterial);
+	insigne::helpers::assign_uniform_block(m_SHPreviewMSPair.material, "ub_Scene", 0, 0, m_UB);
+	insigne::helpers::assign_uniform_block(m_SHSkyPreviewMSPair.material, "ub_Scene", 0, 0, m_UB);
 
-		{
-			ssize texSlot = insigne::get_material_texture_slot(m_ToneMapMaterial, "u_Tex");
-			m_ToneMapMaterial.textures[texSlot].value = insigne::extract_color_attachment(m_PostFXBuffer, 0);
-		}
-	}
+	insigne::helpers::assign_uniform_block(m_PMREMBakeMSPair.material, "ub_Scene", 0, 0, m_IBLBakeSceneUB);
+	insigne::helpers::assign_uniform_block(m_PMREMBakeMSPair.material, "ub_PrefilterConfigs", 0, 0, m_PrefilterUB);
 
-	// preview shader and material
-	{
-		insigne::shader_desc_t desc = insigne::create_shader_desc();
-		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
-		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler2d));
+	insigne::helpers::assign_uniform_block(m_PreviewMSPair[0].material, "ub_Scene", 0, 0, m_UB);
+	insigne::helpers::assign_uniform_block(m_SkyPreviewMSPair[0].material, "ub_Scene", 0, 0, m_UB);
+	insigne::helpers::assign_uniform_block(m_PreviewMSPair[1].material, "ub_Scene", 0, 0, m_UB);
+	insigne::helpers::assign_uniform_block(m_SkyPreviewMSPair[1].material, "ub_Scene", 0, 0, m_UB);
+	insigne::helpers::assign_uniform_block(m_PreviewMSPair[1].material, "ub_Preview", 0, 0, m_PreviewUB);
+	insigne::helpers::assign_uniform_block(m_SkyPreviewMSPair[1].material, "ub_Preview", 0, 0, m_UB);
+	insigne::helpers::assign_uniform_block(m_PreviewMSPair[2].material, "ub_Scene", 0, 0, m_UB);
+	insigne::helpers::assign_uniform_block(m_SkyPreviewMSPair[2].material, "ub_Scene", 0, 0, m_UB);
 
-		strcpy(desc.vs, s_ProbeVS);
-		strcpy(desc.fs, s_Preview_LightProbeFS);
-		desc.vs_path = floral::path("/demo/preview_probe_vs");
-		desc.fs_path = floral::path("/demo/preview_lightprobe_fs");
+	insigne::helpers::assign_uniform_block(m_PMREMPreviewMSPair.material, "ub_Scene", 0, 0, m_UB);
+	insigne::helpers::assign_uniform_block(m_PMREMPreviewMSPair.material, "ub_Preview", 0, 0, m_PreviewPMREMUB);
+	insigne::helpers::assign_texture(m_PMREMPreviewMSPair.material, "u_Tex", insigne::extract_color_attachment(m_SpecularFB, 0));
+	insigne::helpers::assign_uniform_block(m_PMREMSkyPreviewMSPair.material, "ub_Scene", 0, 0, m_UB);
+	insigne::helpers::assign_uniform_block(m_PMREMSkyPreviewMSPair.material, "ub_Preview", 0, 0, m_PreviewPMREMUB);
+	insigne::helpers::assign_texture(m_PMREMSkyPreviewMSPair.material, "u_Tex", insigne::extract_color_attachment(m_SpecularFB, 0));
 
-		m_PreviewShader[0] = insigne::create_shader(desc);
-		insigne::infuse_material(m_PreviewShader[0], m_PreviewMaterial[0]);
-		insigne::helpers::assign_uniform_block(m_PreviewMaterial[0], "ub_Scene", 0, 256, m_UB);
-	}
-
-	{
-		insigne::shader_desc_t desc = insigne::create_shader_desc();
-		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
-		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Preview", insigne::param_data_type_e::param_ub));
-		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler_cube));
-
-		strcpy(desc.vs, s_ProbeVS);
-		strcpy(desc.fs, s_Preview_CubeMapHStripFS);
-		desc.vs_path = floral::path("/demo/preview_probe_vs");
-		desc.fs_path = floral::path("/demo/preview_cubemap_fs");
-
-		m_PreviewShader[1] = insigne::create_shader(desc);
-		insigne::infuse_material(m_PreviewShader[1], m_PreviewMaterial[1]);
-		insigne::helpers::assign_uniform_block(m_PreviewMaterial[1], "ub_Scene", 0, 256, m_UB);
-		insigne::helpers::assign_uniform_block(m_PreviewMaterial[1], "ub_Preview", 0, 0, m_PreviewUB);
-	}
-
-	{
-		insigne::shader_desc_t desc = insigne::create_shader_desc();
-		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
-		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler2d));
-
-		strcpy(desc.vs, s_ProbeVS);
-		strcpy(desc.fs, s_Preview_LatLongFS);
-		desc.vs_path = floral::path("/demo/preview_probe_vs");
-		desc.fs_path = floral::path("/demo/preview_latlong_fs");
-
-		m_PreviewShader[2] = insigne::create_shader(desc);
-		insigne::infuse_material(m_PreviewShader[2], m_PreviewMaterial[2]);
-		insigne::helpers::assign_uniform_block(m_PreviewMaterial[2], "ub_Scene", 0, 256, m_UB);
-	}
-
-	m_CurrentPreviewMat = &m_ProbeMaterial;
-
-	{
-		insigne::shader_desc_t desc = insigne::create_shader_desc();
-		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_Scene", insigne::param_data_type_e::param_ub));
-		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_PrefilterConfigs", insigne::param_data_type_e::param_ub));
-		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler_cube));
-
-		strcpy(desc.vs, s_PMREMVS);
-		sprintf(desc.fs, "#version 300 es\n#define USE_LIGHT_PROBE\n%s", s_PMREMFS);
-		desc.vs_path = floral::path("/demo/pmrem_vs");
-		desc.fs_path = floral::path("/demo/pmrem_fs");
-
-		m_PMREMShader = insigne::create_shader(desc);
-		insigne::infuse_material(m_PMREMShader, m_PMREMMaterial);
-
-		insigne::helpers::assign_uniform_block(m_PMREMMaterial, "ub_Scene", 0, 0, m_IBLBakeSceneUB);
-		insigne::helpers::assign_uniform_block(m_PMREMMaterial, "ub_PrefilterConfigs", 0, 0, m_PrefilterUB);
-	}
+	m_CurrentPreviewMSPair = nullptr;
+	m_CurrentSkyPreviewMSPair = nullptr;
 }
 
-void SHCalculator::OnUpdate(const f32 i_deltaMs)
+//--------------------------------------------------------------------
+
+void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 {
 	// DebugUI
 	ImGui::Begin("Controller");
@@ -566,23 +417,45 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 	if (m_ImgLoaded)
 	{
 		ImGui::Text("Image preview (LDR, color clamped to [0..1])");
-		s32 height = 128;
-		s32 width = s32(m_InputTextureSize.x * (f32)height / m_InputTextureSize.y);
-		ImGui::Image(&m_CurrentInputTexture, ImVec2(width, height));
-		ImGui::Text("Projection: %s", k_ProjectionSchemeStr[m_Projection]);
+		s32 width = -1;
+		s32 height = -1;
+		switch (m_CurrentProjectionScheme)
+		{
+		case ProjectionScheme::LightProbe:
+			width = k_previewFaceSize * 2;
+			height = k_previewFaceSize * 2;
+			break;
+		case ProjectionScheme::HStrip:
+			width = k_previewFaceSize * 3;
+			height = k_previewFaceSize * 2;
+			break;
+		case ProjectionScheme::Equirectangular:
+			width = k_previewFaceSize * 4;
+			height = k_previewFaceSize * 2;
+			break;
+		default:
+			FLORAL_ASSERT(false);
+			break;
+		}
+		ImGui::Image(&m_CurrentPreviewTexture, ImVec2(width, height));
+		ImGui::Text("Projection: %s", k_ProjectionSchemeStr[size(m_CurrentProjectionScheme)]);
 		ImGui::Text("HDR range: [%4.2f, %4.2f, %4.2f] - [%4.2f, %4.2f, %4.2f]",
 				m_MinHDR.x, m_MinHDR.y, m_MinHDR.z,
 				m_MaxHDR.x, m_MaxHDR.y, m_MaxHDR.z);
-		if (ImGui::Button("Preview 3D##cube"))
+		if (ImGui::Button("Preview 3D##input"))
 		{
-			insigne::helpers::assign_texture(m_PreviewMaterial[m_Projection], "u_Tex", m_CurrentPreviewTexture);
-			if (m_Projection == 1)
+			m_CurrentPreviewMSPair = &m_PreviewMSPair[size(m_CurrentProjectionScheme)];
+			m_CurrentSkyPreviewMSPair = &m_SkyPreviewMSPair[size(m_CurrentProjectionScheme)];
+			insigne::helpers::assign_texture(m_CurrentPreviewMSPair->material, "u_Tex", m_Current3DPreviewTexture);
+			insigne::helpers::assign_texture(m_CurrentSkyPreviewMSPair->material, "u_Tex", m_Current3DPreviewTexture);
+			if (m_CurrentProjectionScheme == ProjectionScheme::HStrip)
 			{
-				insigne::helpers::assign_uniform_block(m_PreviewMaterial[m_Projection], "ub_Preview", 0, 0, m_PreviewUB);
+				insigne::helpers::assign_uniform_block(m_CurrentPreviewMSPair->material, "ub_Preview", 0, 0, m_PreviewUB);
+				insigne::helpers::assign_uniform_block(m_CurrentSkyPreviewMSPair->material, "ub_Preview", 0, 0, m_PreviewUB);
 			}
-			m_CurrentPreviewMat = &m_PreviewMaterial[m_Projection];
 		}
-		if (m_Projection == 1)
+
+		if (m_CurrentProjectionScheme == ProjectionScheme::HStrip)
 		{
 			if (ImGui::SliderFloat("Texture LOD", &m_PreviewConfigs.texLod.x, 0.0f, 9.0f))
 			{
@@ -594,14 +467,15 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 	if (ImGui::Button("Calculate"))
 	{
 		_ComputeSH();
-		if (m_Projection == 1)
+		if (m_CurrentProjectionScheme == ProjectionScheme::HStrip)
 		{
-			insigne::helpers::assign_texture(m_PMREMMaterial, "u_Tex", m_CurrentInputTexture);
+			insigne::helpers::assign_texture(m_PMREMBakeMSPair.material, "u_Tex", m_InputTexture[size(m_CurrentProjectionScheme)]);
 			m_NeedBakePMREM = true;
 		}
 	}
 	ImGui::Separator();
 
+#if 0
 	if (m_SpecReady && m_SHReady)
 	{
 		if (ImGui::Button("Save to file"))
@@ -644,20 +518,6 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 		texDesc.has_mipmap = true;
 		const size dataSize = insigne::prepare_texture_desc(texDesc);
 		oStream.write_bytes(pData, dataSize);
-#if 0
-		for (s32 f = 0; f < 6; f++)
-		{
-			s32 texSize = 256;
-			for (s32 m = 0; m < 9; m++)
-			{
-				c8 filename[64];
-				sprintf(filename, "out_f%d_m%d.hdr", f, m);
-				stbi_write_hdr(filename, texSize, texSize, 3, pData);
-				pData += texSize * texSize * 3;
-				texSize >>= 1;
-			}
-		}
-#endif
 
 		floral::close_file(oFile);
 
@@ -665,22 +525,22 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 		m_SpecImgData = nullptr;
 		m_IsCapturingSpecData = false;
 	}
+#endif
 
 	ImGui::Separator();
-	if (m_SpecReady)
+	if (m_PMREMReady)
 	{
 		ImGui::Text("PMREM");
-		if (ImGui::Button("Preview 3D##spec"))
+		ImGui::SameLine();
+		if (ImGui::Button("Preview 3D##pmrem"))
 		{
-			insigne::helpers::assign_texture(m_PreviewMaterial[m_Projection], "u_Tex",
-					insigne::extract_color_attachment(m_SpecularFB, 0));
-			insigne::helpers::assign_uniform_block(m_PreviewMaterial[m_Projection], "ub_Preview", 0, 0, m_PreviewSpecUB);
-			m_CurrentPreviewMat = &m_PreviewMaterial[m_Projection];
+			m_CurrentPreviewMSPair = &m_PMREMPreviewMSPair;
+			m_CurrentSkyPreviewMSPair = &m_PMREMSkyPreviewMSPair;
 		}
 
 		if (ImGui::SliderFloat("Specular Texture LOD", &m_PreviewSpecConfigs.texLod.x, 0.0f, 9.0f))
 		{
-			insigne::copy_update_ub(m_PreviewSpecUB, &m_PreviewSpecConfigs, sizeof(PreviewConfigs), 0);
+			insigne::copy_update_ub(m_PreviewPMREMUB, &m_PreviewSpecConfigs, sizeof(PreviewConfigs), 0);
 		}
 	}
 	else
@@ -693,6 +553,13 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 	if (m_SHReady)
 	{
 		ImGui::Text("SH coeffs:");
+		ImGui::SameLine();
+		if (ImGui::Button("Preview 3D##sh"))
+		{
+			m_CurrentPreviewMSPair = &m_SHPreviewMSPair;
+			m_CurrentSkyPreviewMSPair = &m_SHSkyPreviewMSPair;
+		}
+
 		for (u32 i = 0; i < 9; i++)
 		{
 			c8 bandStr[128];
@@ -707,9 +574,10 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 		ImGui::Text("Radiance");
 		ImGui::SameLine(150, 20);
 		ImGui::Text("Irradiance");
-		ImGui::Image(&m_RadianceTexture, ImVec2(128, 128));
+		ImGui::Image(&m_SHPreviewRadianceTex, ImVec2(128, 128));
 		ImGui::SameLine(150, 20);
-		ImGui::Image(&m_IrradianceTexture, ImVec2(128, 128));
+		ImGui::Image(&m_SHPreviewIrradianceTex, ImVec2(128, 128));
+
 	}
 	else
 	{
@@ -719,7 +587,8 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 
 	// Logic update
 	m_CameraMotion.OnUpdate(i_deltaMs);
-	m_SceneData.WVP = m_CameraMotion.GetWVP();
+	m_SceneData.viewProjectionMatrix = m_CameraMotion.GetWVP();
+	m_SceneData.cameraPosition = floral::vec4f(m_CameraMotion.GetPosition(), 0.0f);
 	insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
 
 	if (m_ComputingSH)
@@ -727,20 +596,19 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 		if (refrain2::CheckForCounter(m_Counter, 0))
 		{
 			// upload!!!
-			{
-				insigne::texture_desc_t texDesc;
-				texDesc.width = m_TextureResolution;
-				texDesc.height = m_TextureResolution;
-				texDesc.format = insigne::texture_format_e::hdr_rgb;
-				texDesc.min_filter = insigne::filtering_e::linear;
-				texDesc.mag_filter = insigne::filtering_e::linear;
-				texDesc.dimension = insigne::texture_dimension_e::tex_2d;
-				texDesc.has_mipmap = false;
+			insigne::texture_desc_t desc;
+			desc.width = k_previewFaceSize;
+			desc.height = k_previewFaceSize;
+			desc.format = insigne::texture_format_e::hdr_rgb_high;
+			desc.min_filter = insigne::filtering_e::linear;
+			desc.mag_filter = insigne::filtering_e::linear;
+			desc.dimension = insigne::texture_dimension_e::tex_2d;
+			desc.compression = insigne::texture_compression_e::no_compression;
+			desc.has_mipmap = false;
 
-				const size dataSize = insigne::prepare_texture_desc(texDesc);
-				insigne::copy_update_texture(m_IrradianceTexture, m_IrrTextureData, dataSize);
-				insigne::copy_update_texture(m_RadianceTexture, m_RadTextureData, dataSize);
-			}
+			const size dataSize = insigne::prepare_texture_desc(desc);
+			insigne::copy_update_texture(m_SHPreviewIrradianceTex, m_SHIrrTexData, dataSize);
+			insigne::copy_update_texture(m_SHPreviewRadianceTex, m_SHRadTexData, dataSize);
 
 			m_ComputingSH = false;
 			m_SHReady = true;
@@ -752,11 +620,14 @@ void SHCalculator::OnUpdate(const f32 i_deltaMs)
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 0.0f, 2.0f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
 }
 
-void SHCalculator::OnRender(const f32 i_deltaMs)
+//--------------------------------------------------------------------
+
+void SHCalculator::_OnRender(const f32 i_deltaMs)
 {
 	if (m_NeedBakePMREM)
 	{
-		for (s32 m = 0; m < 9; m++)
+		s32 mipsCount = (s32)log2(k_faceSize) + 1;
+		for (s32 m = 0; m < mipsCount; m++)
 		{
 			f32 r = (f32)m / 4.0f;
 			m_PrefilterConfigs.roughness = floral::vec2f(r, 0.0f);
@@ -771,51 +642,55 @@ void SHCalculator::OnRender(const f32 i_deltaMs)
 				insigne::copy_update_ub(m_IBLBakeSceneUB, &m_IBLBakeSceneData, sizeof(IBLBakeSceneData), 0);
 
 				insigne::begin_render_pass(m_SpecularFB, s_faces[i], m);
-				insigne::draw_surface<SurfaceSkybox>(m_SkyboxVB, m_SkyboxIB, m_PMREMMaterial);
+				insigne::draw_surface<geo3d::SurfaceP>(m_PMREMSkybox.vb, m_PMREMSkybox.ib, m_PMREMBakeMSPair.material);
 				insigne::end_render_pass(m_SpecularFB);
 				insigne::dispatch_render_pass();
 			}
 		}
 		m_NeedBakePMREM = false;
-		m_SpecReady = true;
+		m_PMREMReady = true;
 	}
 
-	insigne::begin_render_pass(m_PostFXBuffer);
-	insigne::draw_surface<SurfaceP>(m_ProbeVB, m_ProbeIB, *m_CurrentPreviewMat);
-	debugdraw::Render(m_SceneData.WVP);
-	insigne::end_render_pass(m_PostFXBuffer);
-	insigne::dispatch_render_pass();
+	m_PostFXChain.BeginMainOutput();
+	if (m_CurrentPreviewMSPair != nullptr)
+	{
+		insigne::draw_surface<geo3d::SurfaceP>(m_Sphere.vb, m_Sphere.ib, m_CurrentPreviewMSPair->material);
+	}
+	if (m_CurrentSkyPreviewMSPair != nullptr)
+	{
+		insigne::draw_surface<geo3d::SurfaceP>(m_Skysphere.vb, m_Skysphere.ib, m_CurrentSkyPreviewMSPair->material);
+	}
+	debugdraw::Render(m_SceneData.viewProjectionMatrix);
+	m_PostFXChain.EndMainOutput();
+
+	m_PostFXChain.Process();
 
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-	insigne::draw_surface<SurfacePT>(m_SSVB, m_SSIB, m_ToneMapMaterial);
+	m_PostFXChain.Present();
 	RenderImGui();
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
-
 	insigne::mark_present_render();
+
 	insigne::dispatch_render_pass();
 }
 
-void SHCalculator::OnCleanUp()
-{
-	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_SuiteName);
+//--------------------------------------------------------------------
 
+void SHCalculator::_OnCleanUp()
+{
+	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
+
+	g_StreammingAllocator.free(m_PostFXArena);
+	g_StreammingAllocator.free(m_MaterialDataArena);
+	g_StreammingAllocator.free(m_MemoryArena);
 	g_StreammingAllocator.free(m_TemporalArena);
 	m_TemporalArena = nullptr;
 
-	insigne::unregister_surface_type<SurfacePT>();
-	insigne::unregister_surface_type<SurfaceSkybox>();
-	insigne::unregister_surface_type<SurfaceP>();
-
-	insigne::cleanup_render_resource(m_RenderBeginStateId);
-	insigne::cleanup_textures_resource(m_TextureBeginStateId);
-	insigne::cleanup_shading_resource(m_ShadingBeginStateId);
-	insigne::cleanup_buffers_resource(m_BuffersBeginStateId);
-
-	insigne::dispatch_render_pass();
-	insigne::wait_finish_dispatching();
+	insigne::unregister_surface_type<geo2d::SurfacePT>();
+	insigne::unregister_surface_type<geo3d::SurfaceP>();
 }
 
-//----------------------------------------------
+//--------------------------------------------------------------------
 
 void SHCalculator::_ComputeSH()
 {
@@ -828,11 +703,11 @@ void SHCalculator::_ComputeSH()
 	m_SHReady = false;
 
 	m_TemporalArena->free_all();
-	m_SHComputeTaskData.InputTexture = m_TextureData;
-	m_SHComputeTaskData.OutputRadianceTex = m_RadTextureData;
-	m_SHComputeTaskData.OutputIrradianceTex = m_IrrTextureData;
-	m_SHComputeTaskData.Resolution = m_TextureResolution;		// face size of the input image
-	m_SHComputeTaskData.Projection = m_Projection;
+	m_SHComputeTaskData.InputTexture = m_SHInputTexData;
+	m_SHComputeTaskData.OutputRadianceTex = m_SHRadTexData;
+	m_SHComputeTaskData.OutputIrradianceTex = m_SHIrrTexData;
+	m_SHComputeTaskData.Resolution = k_faceSize;
+	m_SHComputeTaskData.Projection = s32(m_CurrentProjectionScheme);
 	m_SHComputeTaskData.LocalMemoryArena = m_TemporalArena->allocate_arena<LinearArena>(SIZE_MB(4));
 	m_SHComputeTaskData.DebugFaceIndex = 0;
 
@@ -843,6 +718,8 @@ void SHCalculator::_ComputeSH()
 	newTask.pm_Counter = &m_Counter;
 	refrain2::g_TaskManager->PushTask(newTask);
 }
+
+//--------------------------------------------------------------------
 
 void SHCalculator::_ComputeDebugSH(const u32 i_faceIdx)
 {
@@ -856,9 +733,9 @@ void SHCalculator::_ComputeDebugSH(const u32 i_faceIdx)
 
 	m_TemporalArena->free_all();
 	m_SHComputeTaskData.InputTexture = nullptr;
-	m_SHComputeTaskData.OutputRadianceTex = m_RadTextureData;
-	m_SHComputeTaskData.OutputIrradianceTex = m_IrrTextureData;
-	m_SHComputeTaskData.Resolution = m_TextureResolution;
+	m_SHComputeTaskData.OutputRadianceTex = m_SHRadTexData;
+	m_SHComputeTaskData.OutputIrradianceTex = m_SHIrrTexData;
+	m_SHComputeTaskData.Resolution = k_faceSize;
 	m_SHComputeTaskData.LocalMemoryArena = m_TemporalArena->allocate_arena<LinearArena>(SIZE_MB(4));
 	m_SHComputeTaskData.DebugFaceIndex = i_faceIdx;
 
@@ -870,8 +747,15 @@ void SHCalculator::_ComputeDebugSH(const u32 i_faceIdx)
 	refrain2::g_TaskManager->PushTask(newTask);
 }
 
+//--------------------------------------------------------------------
+
 void SHCalculator::_LoadHDRImage(const_cstr i_fileName)
 {
+	// clear 3d preview
+	m_CurrentPreviewMSPair = nullptr;
+	m_CurrentSkyPreviewMSPair = nullptr;
+	m_PMREMReady = false;
+
 	if (strcmp(i_fileName, "<none>") == 0)
 	{
 		m_ComputingSH = false;
@@ -880,95 +764,17 @@ void SHCalculator::_LoadHDRImage(const_cstr i_fileName)
 		return;
 	}
 
+	m_TemporalArena->free_all();
+
 	c8 imagePath[1024];
-	sprintf(imagePath, "gfx/envi/textures/demo/%s", i_fileName);
+	sprintf(imagePath, "tests/tech/sh_calculator/imgs/%s", i_fileName);
 	CLOVER_DEBUG("Loading image: %s", imagePath);
 	s32 x, y, n;
 	f32* imageData = stbi_loadf(imagePath, &x, &y, &n, 0);
 
-	ProjectionScheme projScheme = get_projection_from_size(x, y);
-	FLORAL_ASSERT(projScheme != ProjectionScheme::Invalid);
-	FLORAL_ASSERT(n == 3);
-
-	switch (projScheme)
-	{
-		case ProjectionScheme::LightProbe:
-			m_Projection = 0;
-			m_TextureResolution = 512;
-			m_InputTextureSize = floral::vec2i(512, 512);
-			break;
-		case ProjectionScheme::HStrip:
-			m_Projection = 1;
-			m_TextureResolution = 256;
-			m_InputTextureSize = floral::vec2i(256 * 6, 256);
-			break;
-		case ProjectionScheme::Equirectangular:
-			m_Projection = 2;
-			m_TextureResolution = 256;
-			m_InputTextureSize = floral::vec2i(1024, 512);
-			break;
-		default:
-			m_TextureResolution = 0;
-			m_InputTextureSize = floral::vec2i(0, 0);
-			FLORAL_ASSERT(false);
-			break;
-	}
-
-	m_CurrentInputTexture = m_Texture[m_Projection];
-	m_CurrentPreviewTexture = m_Texture[m_Projection];
-
-	insigne::texture_desc_t texDesc;
-	// in order to fully display loaded image, we have to transfer all the image data
-	texDesc.width = m_InputTextureSize.x;
-	texDesc.height = m_InputTextureSize.y;
-	texDesc.format = insigne::texture_format_e::hdr_rgb;
-	texDesc.min_filter = insigne::filtering_e::linear;
-	texDesc.mag_filter = insigne::filtering_e::linear;
-	texDesc.dimension = insigne::texture_dimension_e::tex_2d;
-	texDesc.has_mipmap = false;
-
-	const size dataSize = insigne::prepare_texture_desc(texDesc);
-	insigne::copy_update_texture(m_CurrentInputTexture, imageData, dataSize);
-
-	if (m_Projection == 1)
-	{
-		insigne::texture_desc_t texDesc;
-		texDesc.width = 256;
-		texDesc.height = 256;
-		texDesc.format = insigne::texture_format_e::hdr_rgb;
-		texDesc.min_filter = insigne::filtering_e::linear_mipmap_linear;
-		texDesc.mag_filter = insigne::filtering_e::linear;
-		texDesc.dimension = insigne::texture_dimension_e::tex_cube;
-		texDesc.has_mipmap = true;
-
-		const size dataSize = insigne::prepare_texture_desc(texDesc);
-		f32* imgData3D = (f32*)m_TemporalArena->allocate(dataSize);
-		f32* pOutBuffer = imgData3D;
-		for (s32 i = 0; i < 6; i++)
-		{
-			// mip 0
-			CLOVER_DEBUG("Building face %d mip 0 for H-Strip...", i);
-			f32* mip0Data = pOutBuffer;
-			trim_image(imageData, pOutBuffer, i * 256, 0,
-					256, 256,
-					m_InputTextureSize.x, m_InputTextureSize.y, 3);
-			pOutBuffer += (256 * 256 * 3);
-			// rest of the mips chain
-			s32 texSize = 256;
-			for (s32 m = 0; m < 8; m++)
-			{
-				CLOVER_DEBUG("Building face %d mip %d for H-Strip...", i, m + 1);
-				texSize >>= 1;
-				stbir_resize_float(mip0Data, 256, 256, 0,
-						pOutBuffer, texSize, texSize, 0, 3);
-				pOutBuffer += (texSize * texSize * 3);
-			}
-		}
-
-		insigne::copy_update_texture(m_CurrentInputTexture3D, imgData3D, dataSize);
-		m_TemporalArena->free(imgData3D);
-		m_CurrentPreviewTexture = m_CurrentInputTexture3D;
-	}
+	m_CurrentProjectionScheme = get_projection_from_size(x, y);
+	FLORAL_ASSERT_MSG(m_CurrentProjectionScheme != ProjectionScheme::Invalid, "Invalid projection scheme, check image's resolution!");
+	FLORAL_ASSERT_MSG(n == 3, "Invalid channels count, only supports RGB HDR images");
 
 	m_MinHDR = floral::vec3f(9999.0f, 9999.0f, 9999.0f);
 	m_MaxHDR = floral::vec3f(0.0f, 0.0f, 0.0f);
@@ -987,13 +793,107 @@ void SHCalculator::_LoadHDRImage(const_cstr i_fileName)
 		if (imageData[i * 3 + 2] > m_MaxHDR.z) m_MaxHDR.z = imageData[i * 3 + 2];
 	}
 
-	memcpy(m_TextureData, imageData, dataSize);
+	// prepare preview texture and input texture
+	{
+		insigne::texture_handle_t previewTexture = m_PreviewTexture[size(m_CurrentProjectionScheme)];
+		insigne::texture_handle_t inputTexture = m_InputTexture[size(m_CurrentProjectionScheme)];
+		// in order to fully display loaded image, we have to transfer all the image data
+		switch (m_CurrentProjectionScheme)
+		{
+		case ProjectionScheme::LightProbe:
+		case ProjectionScheme::Equirectangular:
+			insigne::copy_update_texture(previewTexture, imageData, x * y * 3 * sizeof(f32));
+			insigne::copy_update_texture(inputTexture, imageData, x * y * 3 * sizeof(f32));
+			break;
+		case ProjectionScheme::HStrip:
+		{
+			// re-arrange hstrip to display preview more effectively
+			{
+				insigne::texture_desc_t desc;
+				desc.format = insigne::texture_format_e::hdr_rgb_high;
+				desc.min_filter = insigne::filtering_e::linear;
+				desc.mag_filter = insigne::filtering_e::linear;
+				desc.dimension = insigne::texture_dimension_e::tex_2d;
+				desc.compression = insigne::texture_compression_e::no_compression;
+				desc.has_mipmap = false;
+				desc.width = k_faceSize * 3;
+				desc.height = k_faceSize * 2;
 
+				insigne::prepare_texture_desc(desc);
+				f32* previewTexData = (f32*)desc.data;
+				trim_image(imageData, previewTexData, 0, 0, k_faceSize * 3, k_faceSize,
+						k_faceSize * 6, k_faceSize, 3);
+				previewTexData += (desc.width * desc.height * 3) / 2;
+				trim_image(imageData, previewTexData, k_faceSize * 3, 0, k_faceSize * 3, k_faceSize,
+						k_faceSize * 6, k_faceSize, 3);
+				insigne::update_texture(previewTexture, desc);
+			}
+
+			// hstrip input texture is a texcube instead of a tex2d and we have to build mipmaps
+			{
+				insigne::texture_desc_t desc;
+				desc.width = k_faceSize;
+				desc.height = k_faceSize;
+				desc.format = insigne::texture_format_e::hdr_rgb_high;
+				desc.min_filter = insigne::filtering_e::linear_mipmap_linear;
+				desc.mag_filter = insigne::filtering_e::linear;
+				desc.dimension = insigne::texture_dimension_e::tex_cube;
+				desc.compression = insigne::texture_compression_e::no_compression;
+				desc.has_mipmap = true;
+
+				insigne::prepare_texture_desc(desc);
+				f32* imgData3D = (f32*)desc.data;
+				f32* pOutBuffer = imgData3D;
+				s32 mipsCount = (s32)log2(k_faceSize) + 1;
+				for (s32 i = 0; i < 6; i++)
+				{
+					// mip 0
+					CLOVER_DEBUG("Building face %d mip 0 for h-strip...", i);
+					f32* mip0Data = pOutBuffer;
+					trim_image(imageData, pOutBuffer, i * k_faceSize, 0, k_faceSize, k_faceSize,
+							k_faceSize * 6, k_faceSize, 3);
+					pOutBuffer += (k_faceSize * k_faceSize * 3);
+
+					// rest of the mips chain
+					s32 texSize = k_faceSize;
+					for (s32 m = 0; m < mipsCount; m++)
+					{
+						CLOVER_DEBUG("Building face %d mip %d for h-strip...", i, m + 1);
+						texSize >>= 1;
+						stbir_resize_float(mip0Data, k_faceSize, k_faceSize, 0, pOutBuffer, texSize, texSize, 0, 3);
+						pOutBuffer += (texSize * texSize * 3);
+					}
+				}
+				insigne::update_texture(inputTexture, desc);
+			}
+			break;
+		}
+		default:
+			FLORAL_ASSERT(false);
+			break;
+		}
+
+		insigne::dispatch_render_pass();
+		m_CurrentPreviewTexture = previewTexture;
+		m_Current3DPreviewTexture = inputTexture;
+	}
+
+	memcpy(m_SHInputTexData, imageData, x * y * 3 * sizeof(f32));
 	stbi_image_free(imageData);
 	m_ImgLoaded = true;
 }
 
-//----------------------------------------------
+// -------------------------------------------------------------------
+
+void SHCalculator::_LoadMaterial(mat_loader::MaterialShaderPair* o_msPair, const floral::path& i_path)
+{
+	m_MemoryArena->free_all();
+	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(i_path, m_MemoryArena);
+	bool matLoadResult = mat_loader::CreateMaterial(o_msPair, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(matLoadResult);
+}
+
+// -------------------------------------------------------------------
 
 refrain2::Task SHCalculator::ComputeSHCoeffs(voidptr i_data)
 {
@@ -1015,12 +915,14 @@ refrain2::Task SHCalculator::ComputeSHCoeffs(voidptr i_data)
 		input->OutputCoeffs[i].z = (f32)shResult[i].z;
 	}
 
-	reconstruct_sh_radiance_light_probe(shResult, input->OutputRadianceTex, 128, 1024);
-	reconstruct_sh_irradiance_light_probe(shResult, input->OutputIrradianceTex, 128, 1024, 0.4f);
+	reconstruct_sh_radiance_light_probe(shResult, input->OutputRadianceTex, k_previewFaceSize, 1024);
+	reconstruct_sh_irradiance_light_probe(shResult, input->OutputIrradianceTex, k_previewFaceSize, 1024);
 
 	CLOVER_VERBOSE("Compute finished");
 	return refrain2::Task();
 }
+
+//--------------------------------------------------------------------
 
 refrain2::Task SHCalculator::ComputeDebugSHCoeffs(voidptr i_data)
 {
@@ -1042,12 +944,12 @@ refrain2::Task SHCalculator::ComputeDebugSHCoeffs(voidptr i_data)
 		input->OutputCoeffs[i].z = (f32)shResult[i].z;
 	}
 
-	reconstruct_sh_radiance_light_probe(shResult, input->OutputRadianceTex, 128, 1024);
-	reconstruct_sh_irradiance_light_probe(shResult, input->OutputIrradianceTex, 128, 1024, 0.4f);
+	reconstruct_sh_radiance_light_probe(shResult, input->OutputRadianceTex, k_previewFaceSize, 1024);
+	reconstruct_sh_irradiance_light_probe(shResult, input->OutputIrradianceTex, k_previewFaceSize, 1024, 1.0f);
 
 	CLOVER_VERBOSE("Compute finished");
 	return refrain2::Task();
 }
-
+//--------------------------------------------------------------------
 }
 }

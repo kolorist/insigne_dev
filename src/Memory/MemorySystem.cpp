@@ -61,7 +61,7 @@ void init_memory_system()
 			memory_region<refrain2::FreelistAllocator>	{ "refrain2/task",				SIZE_MB(4),		&refrain2::g_TaskAllocator },
 			memory_region<refrain2::FreelistAllocator>	{ "refrain2/taskdata",			SIZE_MB(16),	&refrain2::g_TaskDataAllocator },
 
-			memory_region<insigne::linear_allocator_t>	{ "insigne/persist",			SIZE_MB(256),	&insigne::g_persistance_allocator },
+			memory_region<insigne::linear_allocator_t>	{ "insigne/persist",			SIZE_MB(512),	&insigne::g_persistance_allocator },
 			memory_region<insigne::arena_allocator_t>	{ "insigne/arena",				SIZE_MB(64),	&insigne::g_arena_allocator },
 			memory_region<insigne::freelist_allocator_t>{ "insigne/stream",				SIZE_MB(64),	&insigne::g_stream_allocator },
 
@@ -71,9 +71,9 @@ void init_memory_system()
 			memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(32),	&stone::g_PersistanceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(64),	&stone::g_PersistanceResourceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(16),	&stone::g_SceneResourceAllocator },
-			memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(64),	&stone::g_StreammingAllocator },
-			memory_region<stone::LinearArena>			{ "stone/temporal_lin",			SIZE_MB(64),	&stone::g_TemporalLinearArena },
-			memory_region<stone::FreelistArena>			{ "stone/temporal_free",		SIZE_MB(64),	&stone::g_TemporalFreeArena },
+			memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(128),	&stone::g_StreammingAllocator },
+			memory_region<stone::LinearArena>			{ "stone/temporal_lin",			SIZE_MB(4),		&stone::g_TemporalLinearArena },
+			memory_region<stone::FreelistArena>			{ "stone/temporal_free",		SIZE_MB(4),		&stone::g_TemporalFreeArena },
 			memory_region<stone::FreelistArena>			{ "stone/stb_arena",			SIZE_MB(64),	&stone::g_STBArena },
 			memory_region<stone::FreelistArena>			{ "stone/string_arena",			SIZE_MB(4),		&stone::g_StringArena }
 			);
