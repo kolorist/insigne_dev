@@ -1,0 +1,25 @@
+_shader
+	vs	tests/perf/textures/skysphere.vs
+	fs	tests/perf/textures/skysphere.fs
+_end_shader
+
+_state
+	depth_write off
+	depth_test on less_or_equal
+	cull_face on front ccw
+	blending off
+_end_state
+
+_params
+	_p_tex u_MainTex
+		dim				texcube
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		wrap_r			clamp_to_edge
+		path			tests/perf/textures/envmap_autumn_hockey.dxt.cbtex
+	_end_p_tex
+	
+	_p_ub_holder ub_Scene
+_end_params

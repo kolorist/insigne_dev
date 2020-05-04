@@ -155,11 +155,12 @@ void main()
 	kd *= (1.0f - metalRoughness.x);
 	mediump vec3 Lo = (kd * baseColor / 3.14159f + brdf) * iu_LightIntensity.xyz * LoN;
 	
-	mediump vec3 emissionColor = pow(texture(u_EmissionTex, v_TexCoord).rgb, vec3(2.2f));
+	mediump vec3 emissionColor = texture(u_EmissionTex, v_TexCoord).rgb;
 	Lo += emissionColor * 2.0f;
 	
 	Lo += ambientIBL;
 	Lo *= occlusionFactor;
+	Lo = baseColor;
 
 	o_Color = vec4(Lo, 1.0f);
 }

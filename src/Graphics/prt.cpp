@@ -148,6 +148,7 @@ void convert_cartesian_to_hstrip_cubemap_coord(highp_vec3_t vec, f64& u, f64& v)
 	f64 maxAxis = 0.0, uc = 0.0, vc = 0.0;
 	u64 faceIndex = 0;
 
+#if 0
 	// positive X
 	if (isXPositive && absX >= absY && absX >= absZ)
 	{
@@ -208,6 +209,56 @@ void convert_cartesian_to_hstrip_cubemap_coord(highp_vec3_t vec, f64& u, f64& v)
 		vc = vec.y;
 		faceIndex = 5;
 	}
+#else
+	// positive X
+	if (isXPositive && absX >= absY && absX >= absZ)
+	{
+		maxAxis = absX;
+		uc = -vec.z;
+		vc = -vec.y;
+		faceIndex = 0;
+	}
+	// negative X
+	if (!isXPositive && absX >= absY && absX >= absZ)
+	{
+		maxAxis = absX;
+		uc = vec.z;
+		vc = -vec.y;
+		faceIndex = 1;
+	}
+	// positive y
+	if (isYPositive && absY >= absX && absY >= absZ)
+	{
+		maxAxis = absY;
+		uc = vec.x;
+		vc = vec.z;
+		faceIndex = 2;
+	}
+	// negative y
+	if (!isYPositive && absY >= absX && absY >= absZ)
+	{
+		maxAxis = absY;
+		uc = vec.x;
+		vc = -vec.z;
+		faceIndex = 3;
+	}
+	// positive z
+	if (isZPositive && absZ >= absX && absZ >= absY)
+	{
+		maxAxis = absZ;
+		uc = vec.x;
+		vc = -vec.y;
+		faceIndex = 4;
+	}
+	// negative z
+	if (!isZPositive && absZ >= absX && absZ >= absY)
+	{
+		maxAxis = absZ;
+		uc = -vec.x;
+		vc = -vec.y;
+		faceIndex = 5;
+	}
+#endif
 
 	uc = 0.5 * (uc / maxAxis + 1.0);
 	vc = 0.5 * (vc / maxAxis + 1.0);
@@ -242,6 +293,7 @@ const bool convert_lightprobe_to_cartesian_coord(const f64 u, const f64 v, highp
 inline void map_uniform_distributions_to_spherical_coord(const f64 x, const f64 y, f64& theta, f64& phi)
 {
 	theta = 2 * acos((sqrt(1.0 - x)));
+	//theta = acos(2.0 * x - 1.0);
 	phi = 2 * M_PI * y;
 }
 
@@ -340,9 +392,11 @@ void light_probe_access(highp_vec3_t* color, f32* imageData, const s32 resolutio
 	f64 tex_coord[2];
 	convert_cartesian_to_lightprobe_coord(direction, tex_coord[0], tex_coord[1]);
 	s32 pixel_coord[2];
-	pixel_coord[0] = (s32)(tex_coord[0] * resolution);
-	pixel_coord[1] = (s32)(tex_coord[1] * resolution);
-	s32 pixel_index = pixel_coord[1] * resolution + pixel_coord[0];
+	s32 resX = resolution * 2;
+	s32 resY = resolution * 2;
+	pixel_coord[0] = (s32)(tex_coord[0] * resX);
+	pixel_coord[1] = (s32)(tex_coord[1] * resY);
+	s32 pixel_index = pixel_coord[1] * resX + pixel_coord[0];
 	color->x = imageData[pixel_index * 3];
 	color->y = imageData[pixel_index * 3 + 1];
 	color->z = imageData[pixel_index * 3 + 2];

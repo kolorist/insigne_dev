@@ -6,6 +6,17 @@
 *.user
 *.userosscache
 *.sln.docstates
+*.hdr
+*.cbtex
+*.cbskb
+*.cbmodel
+*.cbscene
+*.tga
+*.gltf
+*.bin
+*.prb
+*.png
+imgui.ini
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -30,6 +41,7 @@ bld/
 [Bb]in/
 [Oo]bj/
 data_cooked/
+debug_arm64/
 
 # Visual Studio 2015 cache/options directory
 .vs/

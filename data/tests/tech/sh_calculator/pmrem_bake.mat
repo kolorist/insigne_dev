@@ -1,0 +1,17 @@
+_shader
+	vs	tests/tech/sh_calculator/skybox.vs
+	fs	tests/tech/sh_calculator/pmrem_bake.fs
+_end_shader
+
+_state
+	depth_write on
+	depth_test on less_or_equal
+	cull_face on front ccw
+	blending off
+_end_state
+
+_params
+	_p_tex_holder texcube u_Tex
+	_p_ub_holder ub_Scene
+	_p_ub_holder ub_PrefilterConfigs
+_end_params

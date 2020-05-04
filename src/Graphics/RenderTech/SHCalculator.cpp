@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-#include <floral/containers/array.h>
+#include <floral/containers/fast_array.h>
 #include <floral/comgeo/shapegen.h>
 #include <floral/math/transform.h>
 #include <floral/io/nativeio.h>
@@ -47,10 +47,19 @@ static const_cstr k_Images[] = {
 	"alexs_appartment_probe.hdr",
 	"arboretum_probe.hdr",
 	"uvchecker_hstrip.hdr",
+	"uvchecker_equi.hdr",
+	"uvchecker_pos_x_hstrip.hdr",
+	"uvchecker_neg_x_hstrip.hdr",
+	"uvchecker_pos_y_hstrip.hdr",
+	"uvchecker_neg_y_hstrip.hdr",
+	"uvchecker_pos_z_hstrip.hdr",
+	"uvchecker_neg_z_hstrip.hdr",
+	"uvchecker_pos_x_equi.hdr",
 	"alexs_appartment_hstrip.hdr",
 	"alexs_appartment_equi.hdr",
 	"sunflowers_equi.hdr",
-	"sunflowers_hstrip.hdr"
+	"sunflowers_hstrip.hdr",
+	"sunflowers_probe.hdr",
 };
 
 static const floral::vec3f s_lookAts[] =
@@ -126,17 +135,32 @@ void trim_image(f32* i_imgData, f32* o_outData, const s32 i_x, const s32 i_y, co
 
 //--------------------------------------------------------------------
 
+floral::vec3f hdr_tonemap(const f32* i_hdrRGB)
+{
+	floral::vec3f hdrColor(i_hdrRGB[0], i_hdrRGB[1], i_hdrRGB[2]);
+	f32 maxLuma = floral::max(hdrColor.x, floral::max(hdrColor.y, hdrColor.z));
+	hdrColor.x = hdrColor.x / (1.0f + maxLuma / 35.0f);
+	hdrColor.y = hdrColor.y / (1.0f + maxLuma / 35.0f);
+	hdrColor.z = hdrColor.z / (1.0f + maxLuma / 35.0f);
+	return hdrColor;
+}
+
+//--------------------------------------------------------------------
+
 SHCalculator::SHCalculator()
 	: m_CameraMotion(
 		floral::camera_view_t { floral::vec3f(6.0f, 0.0f, 0.0f), floral::vec3f(0.0f, 0.0f, 0.0f), floral::vec3f(0.0f, 1.0f, 0.0f) },
 		floral::camera_persp_t { 0.01f, 100.0f, 60.0f, 16.0f / 9.0f })
-	, m_TemporalArena(nullptr)
+	, m_ImgLoaded(false)
+
 	, m_ComputingSH(false)
 	, m_SHReady(false)
-	, m_PMREMReady(false)
-	, m_IsCapturingSpecData(false)
 	, m_Counter(0)
-	, m_CamPos(2.0f, 0.0f, 0.0f)
+
+	, m_NeedBakePMREM(false)
+	, m_PMREMReady(false)
+	, m_IsCapturingPMREMData(false)
+	, m_TexFileWritten(false)
 {
 }
 
@@ -173,13 +197,12 @@ void SHCalculator::_OnInitialize()
 
 	// memory arena
 	m_TemporalArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(48));
-	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
 	m_PostFXArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
 
 	// ico sphere
-	floral::fixed_array<geo3d::VertexP, FreelistArena> vtxData;
-	floral::fixed_array<s32, FreelistArena> idxData;
+	floral::fast_fixed_array<geo3d::VertexP, FreelistArena> vtxData;
+	floral::fast_fixed_array<s32, FreelistArena> idxData;
 
 	vtxData.reserve(4096, m_TemporalArena);
 	idxData.reserve(8192, m_TemporalArena);
@@ -341,10 +364,10 @@ void SHCalculator::_OnInitialize()
 		m_Current3DPreviewTexture = insigne::k_invalid_handle;
 	}
 
-	m_MemoryArena->free_all();
+	m_TemporalArena->free_all();
 	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(
 			floral::path("tests/tech/sh_calculator/hdr_pfx.pfx"),
-			m_MemoryArena);
+			m_TemporalArena);
 	m_PostFXChain.Initialize(pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 
 	_LoadMaterial(&m_SHPreviewMSPair, floral::path("tests/tech/sh_calculator/probe_preview_sh.mat"));
@@ -398,20 +421,6 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 		_LoadHDRImage(k_Images[currentImage]);
 	}
 
-#if 0
-	ImGui::Text("debug sh");
-	if (ImGui::Button("PosX")) _ComputeDebugSH(0);
-	ImGui::SameLine();
-	if (ImGui::Button("NegX")) _ComputeDebugSH(1);
-	ImGui::SameLine();
-	if (ImGui::Button("PosY")) _ComputeDebugSH(2);
-	ImGui::SameLine();
-	if (ImGui::Button("NegY")) _ComputeDebugSH(3);
-	ImGui::SameLine();
-	if (ImGui::Button("PosZ")) _ComputeDebugSH(4);
-	ImGui::SameLine();
-	if (ImGui::Button("NegZ")) _ComputeDebugSH(5);
-#endif
 	ImGui::Separator();
 
 	if (m_ImgLoaded)
@@ -439,9 +448,18 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 		}
 		ImGui::Image(&m_CurrentPreviewTexture, ImVec2(width, height));
 		ImGui::Text("Projection: %s", k_ProjectionSchemeStr[size(m_CurrentProjectionScheme)]);
-		ImGui::Text("HDR range: [%4.2f, %4.2f, %4.2f] - [%4.2f, %4.2f, %4.2f]",
-				m_MinHDR.x, m_MinHDR.y, m_MinHDR.z,
-				m_MaxHDR.x, m_MaxHDR.y, m_MaxHDR.z);
+		if (!m_ImgToneMapped)
+		{
+			ImGui::Text("HDR range: [%4.2f, %4.2f, %4.2f] - [%4.2f, %4.2f, %4.2f]",
+					m_MinHDR.x, m_MinHDR.y, m_MinHDR.z,
+					m_MaxHDR.x, m_MaxHDR.y, m_MaxHDR.z);
+		}
+		else
+		{
+			ImGui::Text("HDR range (tone-mapped): [%4.2f, %4.2f, %4.2f] - [%4.2f, %4.2f, %4.2f]",
+					m_MinHDR.x, m_MinHDR.y, m_MinHDR.z,
+					m_MaxHDR.x, m_MaxHDR.y, m_MaxHDR.z);
+		}
 		if (ImGui::Button("Preview 3D##input"))
 		{
 			m_CurrentPreviewMSPair = &m_PreviewMSPair[size(m_CurrentProjectionScheme)];
@@ -454,10 +472,10 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 				insigne::helpers::assign_uniform_block(m_CurrentSkyPreviewMSPair->material, "ub_Preview", 0, 0, m_PreviewUB);
 			}
 		}
-
 		if (m_CurrentProjectionScheme == ProjectionScheme::HStrip)
 		{
-			if (ImGui::SliderFloat("Texture LOD", &m_PreviewConfigs.texLod.x, 0.0f, 9.0f))
+			ImGui::SameLine();
+			if (ImGui::SliderFloat("LOD##input", &m_PreviewConfigs.texLod.x, 0.0f, 9.0f))
 			{
 				insigne::copy_update_ub(m_PreviewUB, &m_PreviewConfigs, sizeof(PreviewConfigs), 0);
 			}
@@ -473,30 +491,35 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 			m_NeedBakePMREM = true;
 		}
 	}
-	ImGui::Separator();
 
-#if 0
-	if (m_SpecReady && m_SHReady)
+	if (m_PMREMReady && m_SHReady)
 	{
+		ImGui::Separator();
 		if (ImGui::Button("Save to file"))
 		{
 			insigne::texture_desc_t texDesc;
-			texDesc.width = 256;
-			texDesc.height = 256;
+			texDesc.width = k_faceSize;
+			texDesc.height = k_faceSize;
 			texDesc.format = insigne::texture_format_e::hdr_rgb;
 			texDesc.dimension = insigne::texture_dimension_e::tex_cube;
+			texDesc.compression = insigne::texture_compression_e::no_compression;
 			texDesc.has_mipmap = true;
-			const size dataSize = insigne::prepare_texture_desc(texDesc);
+			const size dataSize = insigne::calculate_texture_memsize(texDesc);
 
-			m_SpecImgData = m_TemporalArena->allocate_array<f32>(dataSize);
-			m_SpecPromisedFrame = insigne::schedule_framebuffer_capture(m_SpecularFB, m_SpecImgData);
-			m_IsCapturingSpecData = true;
+			m_PMREMImageData = m_TemporalArena->allocate_array<f32>(dataSize);
+			m_PMREMPromisedFrame = insigne::schedule_framebuffer_capture(m_SpecularFB, m_PMREMImageData);
+			m_IsCapturingPMREMData = true;
+		}
+		if (m_TexFileWritten)
+		{
+			ImGui::SameLine();
+			ImGui::Text("Saved!");
 		}
 	}
 
-	if (m_IsCapturingSpecData && insigne::get_current_frame_idx() >= m_SpecPromisedFrame)
+	if (m_IsCapturingPMREMData && insigne::get_current_frame_idx() >= m_PMREMPromisedFrame)
 	{
-		f32* pData = m_SpecImgData;
+		f32* pData = m_PMREMImageData;
 		floral::file_info oFile = floral::open_output_file("out.prb");
 		floral::output_file_stream oStream;
 		floral::map_output_file(oFile, oStream);
@@ -507,38 +530,37 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 			oStream.write(coeff);
 		}
 
-		s32 faceSize = 256;
+		s32 faceSize = k_faceSize;
 		oStream.write(faceSize);
 
 		insigne::texture_desc_t texDesc;
-		texDesc.width = 256;
-		texDesc.height = 256;
+		texDesc.width = k_faceSize;
+		texDesc.height = k_faceSize;
 		texDesc.format = insigne::texture_format_e::hdr_rgb;
 		texDesc.dimension = insigne::texture_dimension_e::tex_cube;
+		texDesc.compression = insigne::texture_compression_e::no_compression;
 		texDesc.has_mipmap = true;
-		const size dataSize = insigne::prepare_texture_desc(texDesc);
+		const size dataSize = insigne::calculate_texture_memsize(texDesc);
 		oStream.write_bytes(pData, dataSize);
-
 		floral::close_file(oFile);
 
-		m_TemporalArena->free(m_SpecImgData);
-		m_SpecImgData = nullptr;
-		m_IsCapturingSpecData = false;
+		m_TemporalArena->free(m_PMREMImageData);
+		m_PMREMImageData = nullptr;
+		m_IsCapturingPMREMData = false;
+		m_TexFileWritten = true;
 	}
-#endif
 
 	ImGui::Separator();
 	if (m_PMREMReady)
 	{
 		ImGui::Text("PMREM");
-		ImGui::SameLine();
 		if (ImGui::Button("Preview 3D##pmrem"))
 		{
 			m_CurrentPreviewMSPair = &m_PMREMPreviewMSPair;
 			m_CurrentSkyPreviewMSPair = &m_PMREMSkyPreviewMSPair;
 		}
-
-		if (ImGui::SliderFloat("Specular Texture LOD", &m_PreviewSpecConfigs.texLod.x, 0.0f, 9.0f))
+		ImGui::SameLine();
+		if (ImGui::SliderFloat("LOD##pmrem", &m_PreviewSpecConfigs.texLod.x, 0.0f, 9.0f))
 		{
 			insigne::copy_update_ub(m_PreviewPMREMUB, &m_PreviewSpecConfigs, sizeof(PreviewConfigs), 0);
 		}
@@ -549,35 +571,31 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 	}
 
 	ImGui::Separator();
-
 	if (m_SHReady)
 	{
-		ImGui::Text("SH coeffs:");
+		ImGui::Text("Results from SH Coeffs:");
 		ImGui::SameLine();
 		if (ImGui::Button("Preview 3D##sh"))
 		{
 			m_CurrentPreviewMSPair = &m_SHPreviewMSPair;
 			m_CurrentSkyPreviewMSPair = &m_SHSkyPreviewMSPair;
 		}
-
-		for (u32 i = 0; i < 9; i++)
-		{
-			c8 bandStr[128];
-			memset(bandStr, 0, 128);
-			sprintf(bandStr, "#%d", i + 1);
-			ImGui::InputFloat3(bandStr, &m_SHComputeTaskData.OutputCoeffs[i].x, 5, ImGuiInputTextFlags_ReadOnly);
-			m_SceneData.SH[i] = floral::vec4f(m_SHComputeTaskData.OutputCoeffs[i], 0.0f);
-		}
-		insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
-
-		ImGui::Text("Results from SH Coeffs:");
 		ImGui::Text("Radiance");
 		ImGui::SameLine(150, 20);
 		ImGui::Text("Irradiance");
-		ImGui::Image(&m_SHPreviewRadianceTex, ImVec2(128, 128));
+		ImGui::Image(&m_SHPreviewRadianceTex, ImVec2(k_previewFaceSize, k_previewFaceSize));
 		ImGui::SameLine(150, 20);
-		ImGui::Image(&m_SHPreviewIrradianceTex, ImVec2(128, 128));
-
+		ImGui::Image(&m_SHPreviewIrradianceTex, ImVec2(k_previewFaceSize, k_previewFaceSize));
+		if (ImGui::CollapsingHeader("SH coeffs"))
+		{
+			for (u32 i = 0; i < 9; i++)
+			{
+				c8 bandStr[128];
+				memset(bandStr, 0, 128);
+				sprintf(bandStr, "#%d", i + 1);
+				ImGui::InputFloat3(bandStr, &m_SHComputeTaskData.OutputCoeffs[i].x, 5, ImGuiInputTextFlags_ReadOnly);
+			}
+		}
 	}
 	else
 	{
@@ -609,6 +627,12 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 			const size dataSize = insigne::prepare_texture_desc(desc);
 			insigne::copy_update_texture(m_SHPreviewIrradianceTex, m_SHIrrTexData, dataSize);
 			insigne::copy_update_texture(m_SHPreviewRadianceTex, m_SHRadTexData, dataSize);
+
+			for (u32 i = 0; i < 9; i++)
+			{
+				m_SceneData.SH[i] = floral::vec4f(m_SHComputeTaskData.OutputCoeffs[i], 0.0f);
+			}
+			insigne::copy_update_ub(m_UB, &m_SceneData, sizeof(SceneData), 0);
 
 			m_ComputingSH = false;
 			m_SHReady = true;
@@ -682,7 +706,6 @@ void SHCalculator::_OnCleanUp()
 
 	g_StreammingAllocator.free(m_PostFXArena);
 	g_StreammingAllocator.free(m_MaterialDataArena);
-	g_StreammingAllocator.free(m_MemoryArena);
 	g_StreammingAllocator.free(m_TemporalArena);
 	m_TemporalArena = nullptr;
 
@@ -721,56 +744,57 @@ void SHCalculator::_ComputeSH()
 
 //--------------------------------------------------------------------
 
-void SHCalculator::_ComputeDebugSH(const u32 i_faceIdx)
-{
-	if (m_ComputingSH)
-	{
-		return;
-	}
-
-	m_ComputingSH = true;
-	m_SHReady = false;
-
-	m_TemporalArena->free_all();
-	m_SHComputeTaskData.InputTexture = nullptr;
-	m_SHComputeTaskData.OutputRadianceTex = m_SHRadTexData;
-	m_SHComputeTaskData.OutputIrradianceTex = m_SHIrrTexData;
-	m_SHComputeTaskData.Resolution = k_faceSize;
-	m_SHComputeTaskData.LocalMemoryArena = m_TemporalArena->allocate_arena<LinearArena>(SIZE_MB(4));
-	m_SHComputeTaskData.DebugFaceIndex = i_faceIdx;
-
-	m_Counter.store(1);
-	refrain2::Task newTask;
-	newTask.pm_Instruction = &SHCalculator::ComputeDebugSHCoeffs;
-	newTask.pm_Data = (voidptr)&m_SHComputeTaskData;
-	newTask.pm_Counter = &m_Counter;
-	refrain2::g_TaskManager->PushTask(newTask);
-}
-
-//--------------------------------------------------------------------
-
 void SHCalculator::_LoadHDRImage(const_cstr i_fileName)
 {
 	// clear 3d preview
 	m_CurrentPreviewMSPair = nullptr;
 	m_CurrentSkyPreviewMSPair = nullptr;
 	m_PMREMReady = false;
+	m_SHReady = false;
+	m_ImgToneMapped = false;
+	m_TexFileWritten = false;
+	m_ComputingSH = false;
+	m_ImgLoaded = false;
+
+	m_TemporalArena->free_all();
 
 	if (strcmp(i_fileName, "<none>") == 0)
 	{
-		m_ComputingSH = false;
-		m_SHReady = false;
-		m_ImgLoaded = false;
 		return;
 	}
-
-	m_TemporalArena->free_all();
 
 	c8 imagePath[1024];
 	sprintf(imagePath, "tests/tech/sh_calculator/imgs/%s", i_fileName);
 	CLOVER_DEBUG("Loading image: %s", imagePath);
 	s32 x, y, n;
 	f32* imageData = stbi_loadf(imagePath, &x, &y, &n, 0);
+
+	f32 maxRange[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	s32 pixelsCount = x * y;
+	for (s32 i = 0; i < pixelsCount; i++)
+	{
+		for (s32 c = 0; c < n; c++)
+		{
+			FLORAL_ASSERT(imageData[i * n + c] >= 0.0f);
+			if (imageData[i * n + c] > maxRange[c])
+			{
+				maxRange[c] = imageData[i * n + c];
+			}
+		}
+	}
+
+	if (maxRange[0] > 36.0f || maxRange[1] > 36.0f || maxRange[2] > 36.0f)
+	{
+		CLOVER_WARNING("Tonemapping the hdr input because the hdr range is outside 36.0f");
+		for (s32 i = 0; i < pixelsCount; i++)
+		{
+			floral::vec3f toneMapHDRColor = hdr_tonemap(&imageData[i * 3]);
+			imageData[i * 3] = toneMapHDRColor.x;
+			imageData[i * 3 + 1] = toneMapHDRColor.y;
+			imageData[i * 3 + 2] = toneMapHDRColor.z;
+		}
+		m_ImgToneMapped = true;
+	}
 
 	m_CurrentProjectionScheme = get_projection_from_size(x, y);
 	FLORAL_ASSERT_MSG(m_CurrentProjectionScheme != ProjectionScheme::Invalid, "Invalid projection scheme, check image's resolution!");
@@ -887,9 +911,9 @@ void SHCalculator::_LoadHDRImage(const_cstr i_fileName)
 
 void SHCalculator::_LoadMaterial(mat_loader::MaterialShaderPair* o_msPair, const floral::path& i_path)
 {
-	m_MemoryArena->free_all();
-	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(i_path, m_MemoryArena);
-	bool matLoadResult = mat_loader::CreateMaterial(o_msPair, matDesc, m_MemoryArena, m_MaterialDataArena);
+	m_TemporalArena->free_all();
+	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(i_path, m_TemporalArena);
+	bool matLoadResult = mat_loader::CreateMaterial(o_msPair, matDesc, m_TemporalArena, m_MaterialDataArena);
 	FLORAL_ASSERT(matLoadResult);
 }
 
@@ -922,34 +946,6 @@ refrain2::Task SHCalculator::ComputeSHCoeffs(voidptr i_data)
 	return refrain2::Task();
 }
 
-//--------------------------------------------------------------------
-
-refrain2::Task SHCalculator::ComputeDebugSHCoeffs(voidptr i_data)
-{
-	SHComputeData* input = (SHComputeData*)i_data;
-	s32 sqrtNSamples = 100;
-	s32 NSamples = sqrtNSamples * sqrtNSamples;
-	sh_sample* samples = (sh_sample*)input->LocalMemoryArena->allocate_array<sh_sample>(NSamples);
-	sh_setup_spherical_samples(samples, sqrtNSamples);
-
-	highp_vec3_t shResult[9];
-	debug_sh_project_light_image(input->DebugFaceIndex, input->Resolution, NSamples, 9, samples, shResult);
-
-	for (s32 i = 0; i < 9; i++)
-	{
-		CLOVER_DEBUG("(%f; %f; %f)", shResult[i].x, shResult[i].y, shResult[i].z);
-
-		input->OutputCoeffs[i].x = (f32)shResult[i].x;
-		input->OutputCoeffs[i].y = (f32)shResult[i].y;
-		input->OutputCoeffs[i].z = (f32)shResult[i].z;
-	}
-
-	reconstruct_sh_radiance_light_probe(shResult, input->OutputRadianceTex, k_previewFaceSize, 1024);
-	reconstruct_sh_irradiance_light_probe(shResult, input->OutputIrradianceTex, k_previewFaceSize, 1024, 1.0f);
-
-	CLOVER_VERBOSE("Compute finished");
-	return refrain2::Task();
-}
 //--------------------------------------------------------------------
 }
 }

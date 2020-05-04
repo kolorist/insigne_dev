@@ -1,233 +1,629 @@
 #include <stdio.h>
 #include <math.h>
-#include <floral.h>
-#include <clover.h>
+
+#include <floral/stdaliases.h>
+#include <floral/math/utils.h>
+#include <floral/gpds/vec.h>
+
+#include <clover/Logger.h>
+#include <clover/SinkTopic.h>
+#include <clover/VSOutputSink.h>
+#include <clover/ConsoleOutputSink.h>
 
 #include "Memory/MemorySystem.h"
 
+#include "CBTexture.h"
+
 #include "stb_image.h"
 #include "stb_image_resize.h"
+#include "stb_dxt.h"
 
-#include "Baker2D.h"
-#include "BakerCube.h"
-#include "BakerHDR2D.h"
-
-namespace texbaker {
-
-struct HDRPixel {
-	f32 r, g, b;
-};
-
-void ExtractPFMHeader(p8* i_buffer, u32& o_faceW, u32& o_faceH, f32& o_endianess)
+namespace texbaker
 {
-	c8 header[512];
-	c8 magicChars[3];
-	u32 i = 0;
-	u32 lfCount = 0;
-	while (lfCount < 3) {
-		if (**i_buffer == 0x0A) lfCount++;
-		header[i] = **i_buffer;
-		(*i_buffer)++;
-		i++;
-	}
-	header[i] = 0;
-	sscanf(header, "%s\n%d %d\n%f", magicChars, &o_faceW, &o_faceH, &o_endianess);
-}
+// -------------------------------------------------------------------
 
-void AdjustHDRPixelBuffer(HDRPixel* i_buffer, const u32 i_fullW, const u32 i_fullH)
+void ConvertToLinear(p8 i_data, p8 o_data, const s32 i_width, const s32 i_height, const s32 i_numChannels, const f32 i_inputGamma)
 {
-	u32 faceW = i_fullW / 3;
-	u32 faceH = i_fullH / 4;
-
-	// flip the image as PFM format list pixels from bottom to top
-	for (u32 i = 0; i < i_fullH / 2; i++) {
-		for (u32 j = 0; j < i_fullW; j++) {
-			HDRPixel tmp = i_buffer[i * i_fullW + j];
-			i_buffer[i * i_fullW + j] = i_buffer[(i_fullH - i - 1) * i_fullW + j];
-			i_buffer[(i_fullH - i - 1) * i_fullW + j] = tmp;
-		}
-	}
-
-	// correct the last image
-	u32 offsetY = 3 * faceW;
-	u32 offsetX = faceH;
-	for (u32 i = 0; i < faceH / 2; i++) {
-		for (u32 j = 0; j < faceW; j++) {
-			u32 srcPos = (i + offsetY) * i_fullW + offsetX + j;
-			u32 dstPos = ((faceH - i - 1) + offsetY) * i_fullW + offsetX + (faceW - j - 1);
-			HDRPixel tmp = i_buffer[srcPos];
-			i_buffer[srcPos] = i_buffer[dstPos];
-			i_buffer[dstPos] = tmp;
-		}
-	}
-}
-
-void AppendHDRPixelBufferToCBFormat(HDRPixel* i_buffer, const u32 i_fullW, const u32 i_fullH, FILE* i_outputFile)
-{
-	u32 faceW = i_fullW / 3;
-	u32 faceH = i_fullH / 4;
-
-	u32 faceOffset[] = {
-			1, 2,
-	1, 0,	0, 1,	2, 1,
-			1, 1,
-			3, 1 };
-
-	for (u32 fidx = 0; fidx < 6; fidx++) {
-		u32 facePosX = i_fullW * faceOffset[fidx * 2] * faceH;
-		u32 facePosY = faceW * faceOffset[fidx * 2 + 1];
-
-		for (u32 i = 0; i < faceH; i++) {
-			fwrite(&i_buffer[facePosX + i * i_fullW + facePosY], sizeof(HDRPixel), faceW, i_outputFile);
-		}
-	}
-}
-
-void ConvertProbe(const_cstr i_firstMip, const_cstr i_outputPath)
-{
-	printf("converting probe '%s'\n", i_firstMip);
-	c8 firstMipFullPath[1024];
-	sprintf(firstMipFullPath, "%s_m%02d.pfm", i_firstMip, 0);
-
-	FILE* fp = fopen(i_outputPath, "wb");
-	// magic number
-	fwrite("CBFM", 1, 4, fp);
-
-	// HDR or LDR?
-	// 1 = HDR
-	// 2 = LDR
-	s32 colorRange = 1;
-	fwrite(&colorRange, sizeof(s32), 1, fp);
-
-	// Color space?
-	// 1 = Linear
-	// 2 = Gamma-corrected
-	s32 colorSpace = 1;
-	fwrite(&colorSpace, sizeof(s32), 1, fp);
-
-	// Color channels?
-	// 1 = R
-	// 2 = RG
-	// 3 = RGB
-	// 4 = RGBA
-	s32 colorChannel = 3;
-	fwrite(&colorChannel, sizeof(s32), 1, fp);
-
-	// Encoded-gamma, if any?
-	f32 encodeGamma = 1.0f;
-	fwrite(&encodeGamma, sizeof(f32), 1, fp);
-
-	s32 mipsCount = 0;
-
-	// get initial information
+	const f32 invGamma = 1.0f / i_inputGamma;
+	for (s32 y = 0; y < i_height; y++)
 	{
-		floral::file_info firstMipFile = floral::open_file(firstMipFullPath);
-
-		g_TemporalArena.free_all();
-		p8 buffer = (p8)g_TemporalArena.allocate(firstMipFile.file_size);
-		floral::read_all_file(firstMipFile, (voidptr)buffer);
-
-		f32 endianess = 0.0f;
-		u32 resX = 0, resY = 0;
-		ExtractPFMHeader(&buffer, resX, resY, endianess);
-
-		// mips count?
-		mipsCount = (s32)log2(resX / 3) + 1;
-		fwrite(&mipsCount, sizeof(s32), 1, fp);
-		printf("mipsCount = %d\n", mipsCount);
-
-		HDRPixel* hdrBuffer = (HDRPixel*)buffer;
-		AdjustHDRPixelBuffer(hdrBuffer, resX, resY);
-
-		// now hdrBuffer is ready
-		AppendHDRPixelBufferToCBFormat(hdrBuffer, resX, resY, fp);
-
-		floral::close_file(firstMipFile);
+		for (s32 x = 0; x < i_width; x++)
+		{
+			for (s32 c = 0; c < i_numChannels; c++)
+			{
+				u8 comp = i_data[(y * i_width + x) * i_numChannels + c];
+				comp = floral::clamp(s32(powf((f32)comp / 255.0f, invGamma) * 255.0f), 0, 255);
+				o_data[(y * i_width + x) * i_numChannels + c] = comp;
+			}
+		}
 	}
+}
 
-	for (s32 i = 1; i < mipsCount; i++)
+p8 CompressDXT(p8 i_input, const s32 i_width, const s32 i_height, const s32 i_numChannels, size* o_compressedSize)
+{
+	// 1 block = 4x4 pixels (with uncompressed size of 64 bytes for rgba textures)
+	size bytesPerBlock = 0;
+	size compressedSize = 0;
+	const size pixelsCount = i_width * i_height;
+
+	if (i_numChannels == 4)
 	{
-		c8 mipFullPath[1024];
-		sprintf(mipFullPath, "%s_m%02d.pfm", i_firstMip, i);
-
-		floral::file_info mipFile = floral::open_file(mipFullPath);
-
-		g_TemporalArena.free_all();
-		p8 buffer = (p8)g_TemporalArena.allocate(mipFile.file_size);
-		floral::read_all_file(mipFile, buffer);
-
-		f32 endianess = 0.0f;
-		u32 resX = 0, resY = 0;
-		ExtractPFMHeader(&buffer, resX, resY, endianess);
-
-		HDRPixel* hdrBuffer = (HDRPixel*)buffer;
-		AdjustHDRPixelBuffer(hdrBuffer, resX, resY);
-
-		// now hdrBuffer is ready, write it back!
-		AppendHDRPixelBufferToCBFormat(hdrBuffer, resX, resY, fp);
-
-		floral::close_file(mipFile);
+		// dxt5
+		bytesPerBlock = 16;
+		compressedSize = floral::max(pixelsCount, 16ull);
+	}
+	else
+	{
+		// dxt1 (only 1 bit for alpha)
+		bytesPerBlock = 8;
+		compressedSize = floral::max(pixelsCount / 2, 8ull);
 	}
 
-	printf("done\n");
+	p8 output = (p8)g_PersistanceAllocator.allocate(compressedSize);
+	p8 targetBlock = output;
+
+	for (s32 y = 0; y < i_height; y += 4)
+	{
+		for (s32 x = 0; x < i_width; x += 4)
+		{
+			u8 rawRGBA[4 * 4 * 4];
+			memset(rawRGBA, 0, sizeof(rawRGBA));
+			p8 targetPixel = rawRGBA;
+			for (s32 py = 0; py < 4; py++)
+			{
+				for (s32 px = 0; px < 4; px++)
+				{
+					size ix = x + px;
+					size iy = y + py;
+
+					if (ix < i_width && iy < i_height)
+					{
+						p8 sourcePixel = &i_input[(iy * i_width + ix) * i_numChannels];
+						// initialize the alpha channel for this pixel
+						targetPixel[3] = 255;
+						for (s32 i = 0; i < i_numChannels; i++)
+						{
+							targetPixel[i] = sourcePixel[i];
+						}
+						targetPixel += 4;
+					}
+					else
+					{
+						targetPixel += 4;
+					}
+				}
+			}
+
+			if (i_numChannels == 4)
+			{
+				stb_compress_dxt_block(targetBlock, rawRGBA, 1, STB_DXT_HIGHQUAL);
+			}
+			else
+			{
+				stb_compress_dxt_block(targetBlock, rawRGBA, 0, STB_DXT_HIGHQUAL);
+			}
+
+			targetBlock += bytesPerBlock;
+		}
+	}
+
+	*(o_compressedSize) = compressedSize;
+	return output;
+}
+
+void ConvertTexture2DLDR(const_cstr i_inputFilename, const_cstr i_outputFilename, const f32 i_inputGamma,
+		const bool i_generateMipmaps, const cbtex::Compression i_compressionMethod)
+{
+	FLORAL_ASSERT(i_inputGamma <= 1.0f); // noone encode image to save in HDD with gamma > 1.0f
+
+	s32 x, y, n;
+	p8 data = stbi_load(i_inputFilename, &x, &y, &n, 3);
+	FLORAL_ASSERT(x == y);
+
+	FILE* fp = fopen(i_outputFilename, "wb");
+
+	s32 mipsCount = (s32)log2(x) + 1;
+
+	cbtex::TextureHeader header;
+	header.textureType = cbtex::Type::Texture2D;
+	header.colorRange = cbtex::ColorRange::LDR;
+	header.mipsCount = mipsCount;
+	header.resolution = x;
+	header.compression = i_compressionMethod;
+
+	switch (header.compression)
+	{
+	case cbtex::Compression::NoCompress:
+	{
+		header.encodedGamma = i_inputGamma;
+		if (header.encodedGamma == 1.0f)
+		{
+			header.colorSpace = cbtex::ColorSpace::Linear;
+		}
+		else
+		{
+			header.colorSpace = cbtex::ColorSpace::GammaCorrected;
+		}
+
+		switch (n)
+		{
+			case 1:
+				header.colorChannel = cbtex::ColorChannel::R;
+				break;
+			case 2:
+				header.colorChannel = cbtex::ColorChannel::RG;
+				break;
+			case 3:
+				header.colorChannel = cbtex::ColorChannel::RGB;
+				break;
+			case 4:
+				header.colorChannel = cbtex::ColorChannel::RGBA;
+				break;
+			default:
+				FLORAL_ASSERT(false);
+				break;
+		}
+
+		break;
+	}
+
+	case cbtex::Compression::DXT:
+	{
+		// when in DXT, we will only use Linear color space, R, RG texture is treated as RGB texture
+		// shader must be reponsible to sample the texture correctly
+		header.colorSpace = cbtex::ColorSpace::Linear;
+		header.encodedGamma = 1.0f;
+		switch (n)
+		{
+			case 1:
+			case 2:
+			case 3:
+				header.colorChannel = cbtex::ColorChannel::RGB;
+				break;
+			case 4:
+				header.colorChannel = cbtex::ColorChannel::RGBA;
+				break;
+			default:
+				FLORAL_ASSERT(false);
+				break;
+		}
+		break;
+	}
+	default:
+		FLORAL_ASSERT(false);
+		break;
+	}
+
+	fwrite(&header, sizeof(cbtex::TextureHeader), 1, fp);
+
+	for (s32 i = 1; i <= mipsCount; i++)
+	{
+		s32 nx = x >> (i - 1);
+		s32 ny = y >> (i - 1);
+		CLOVER_DEBUG("Creating mip #%d at size %dx%d...", i, nx, ny);
+		if (i == 1)
+		{
+			if (i_compressionMethod == cbtex::Compression::DXT)
+			{
+				p8 inpData = data;
+				if (i_inputGamma < 1.0f)
+				{
+					inpData = (p8)g_PersistanceAllocator.allocate(nx * ny * n);
+					ConvertToLinear(data, inpData, nx, ny, n, i_inputGamma);
+				}
+				size compressedSize = 0;
+				p8 compressedData = CompressDXT(inpData, nx, ny, n, &compressedSize);
+				fwrite(compressedData, sizeof(u8), compressedSize, fp);
+				g_PersistanceAllocator.free(compressedData);
+				if (i_inputGamma < 1.0f)
+				{
+					g_PersistanceAllocator.free(inpData);
+				}
+			}
+			else
+			{
+				fwrite(data, sizeof(u8), nx * ny * n, fp);
+			}
+		}
+		else
+		{
+			p8 rzdata = g_PersistanceAllocator.allocate_array<u8>(nx * ny * n);
+			if (i_inputGamma == 1.0f)
+			{
+				stbir_resize_uint8(data, x, y, 0, rzdata, nx, ny, 0, n);
+			}
+			else
+			{
+				if (header.colorChannel == cbtex::ColorChannel::RGBA)
+				{
+					stbir_resize_uint8_srgb(data, x, y, 0, rzdata, nx, ny, 0, n, 0, 0);
+				}
+				else
+				{
+					stbir_resize_uint8_srgb(data, x, y, 0, rzdata, nx, ny, 0, n, STBIR_ALPHA_CHANNEL_NONE, 0);
+				}
+			}
+
+			if (i_compressionMethod == cbtex::Compression::DXT)
+			{
+				p8 inpData = rzdata;
+				if (i_inputGamma < 1.0f)
+				{
+					inpData = (p8)g_PersistanceAllocator.allocate(nx * ny * n);
+					ConvertToLinear(rzdata, inpData, nx, ny, n, i_inputGamma);
+				}
+				size compressedSize = 0;
+				p8 compressedData = CompressDXT(inpData, nx, ny, n, &compressedSize);
+				fwrite(compressedData, sizeof(u8), compressedSize, fp);
+				g_PersistanceAllocator.free(compressedData);
+				if (i_inputGamma < 1.0f)
+				{
+					g_PersistanceAllocator.free(inpData);
+				}
+			}
+			else
+			{
+				fwrite(rzdata, sizeof(u8), nx * ny * n, fp);
+			}
+			g_PersistanceAllocator.free(rzdata);
+		}
+	}
+
 	fclose(fp);
 }
 
-void ConvertSkybox(const_cstr i_filePath, const_cstr i_outputPath)
+void ConvertToHalfFloat(f32* i_data, f16* o_data, const s32 i_width, const s32 i_height, const s32 i_numChannels)
 {
-	printf("converting skybox '%s'\n", i_filePath);
-
-	FILE* fp = fopen(i_outputPath, "wb");
-	// magic number
-	fwrite("CBFM", 1, 4, fp);
-
-	// HDR or LDR?
-	// 1 = HDR
-	// 2 = LDR
-	s32 colorRange = 1;
-	fwrite(&colorRange, sizeof(s32), 1, fp);
-
-	// Color space?
-	// 1 = Linear
-	// 2 = Gamma-corrected
-	s32 colorSpace = 1;
-	fwrite(&colorSpace, sizeof(s32), 1, fp);
-
-	// Color channels?
-	// 1 = R
-	// 2 = RG
-	// 3 = RGB
-	// 4 = RGBA
-	s32 colorChannel = 3;
-	fwrite(&colorChannel, sizeof(s32), 1, fp);
-
-	// Encoded-gamma, if any?
-	f32 encodeGamma = 1.0f;
-	fwrite(&encodeGamma, sizeof(f32), 1, fp);
-
-	floral::file_info skyboxFile = floral::open_file(i_filePath);
-
-	g_TemporalArena.free_all();
-	p8 buffer = (p8)g_TemporalArena.allocate(skyboxFile.file_size);
-	floral::read_all_file(skyboxFile, (voidptr)buffer);
-
-	f32 endianess = 0.0f;
-	u32 resX = 0, resY = 0;
-	ExtractPFMHeader(&buffer, resX, resY, endianess);
-
-	// mips count?
-	s32 mipsCount = 0;
-	fwrite(&mipsCount, sizeof(s32), 1, fp);
-
-	HDRPixel* hdrBuffer = (HDRPixel*)buffer;
-	AdjustHDRPixelBuffer(hdrBuffer, resX, resY);
-
-	// now hdrBuffer is ready
-	AppendHDRPixelBufferToCBFormat(hdrBuffer, resX, resY, fp);
-
-	floral::close_file(skyboxFile);
+	for (s32 y = 0; y < i_height; y++)
+	{
+		for (s32 x = 0; x < i_width; x++)
+		{
+			for (s32 c = 0; c < i_numChannels; c++)
+			{
+				f32 comp32 = i_data[(y * i_width + x) * i_numChannels + c];
+				f16 comp16 = floral::float_to_half_full(comp32);
+				o_data[(y * i_width + x) * i_numChannels + c] = comp16;
+			}
+		}
+	}
 }
 
+floral::vec4f RGBMEncode(const floral::vec3f& i_hdrColor)
+{
+	floral::vec4f rgbm;
+	floral::vec3f color = i_hdrColor / 6.0f;
+	rgbm.w = floral::clamp(floral::max(floral::max(color.x, color.y), floral::max(color.z, 0.000001f)), 0.0f, 1.0f);
+	rgbm.w = ceil(rgbm.w * 255.0f) / 255.0f;
+	rgbm.x = color.x / rgbm.w;
+	rgbm.y = color.y / rgbm.w;
+	rgbm.z = color.z / rgbm.w;
+	return rgbm;
+}
+
+floral::vec3f RGBMDecode(const floral::vec4f& i_rgbmColor)
+{
+	floral::vec3f color(i_rgbmColor.x, i_rgbmColor.y, i_rgbmColor.z);
+	return 6.0f * color * i_rgbmColor.w;
+}
+
+void ConvertToRGBM(f32* i_inpData, p8 o_rgbmData, const s32 i_width, const s32 i_height, const f32 i_gamma)
+{
+	f32 invGamma = 1.0f / i_gamma;
+	for (s32 y = 0; y < i_height; y++)
+	{
+		for (s32 x = 0; x < i_width; x++)
+		{
+			s32 pixelIdx = y * i_width + x;
+			floral::vec3f hdrColor(i_inpData[pixelIdx * 3], i_inpData[pixelIdx * 3 + 1], i_inpData[pixelIdx * 3 + 2]);
+
+			if (hdrColor.x < 0.0f || hdrColor.y < 0.0f || hdrColor.z < 0.0f)
+			{
+				CLOVER_WARNING("clamping pixel at (x, y) = (%d, %d) because it has negative component: (%f, %f, %f)", x, y, hdrColor.x, hdrColor.y, hdrColor.z);
+				hdrColor.x = floral::max(hdrColor.x, 0.0f);
+				hdrColor.y = floral::max(hdrColor.y, 0.0f);
+				hdrColor.z = floral::max(hdrColor.z, 0.0f);
+			}
+
+			floral::vec3f gammaCorrectedHDRColor;
+			gammaCorrectedHDRColor.x = powf(hdrColor.x, i_gamma);
+			gammaCorrectedHDRColor.y = powf(hdrColor.y, i_gamma);
+			gammaCorrectedHDRColor.z = powf(hdrColor.z, i_gamma);
+			floral::vec4f rgbmFloatColor = RGBMEncode(gammaCorrectedHDRColor);
+			FLORAL_ASSERT(rgbmFloatColor.x <= 1.0f);
+			FLORAL_ASSERT(rgbmFloatColor.y <= 1.0f);
+			FLORAL_ASSERT(rgbmFloatColor.z <= 1.0f);
+			FLORAL_ASSERT(rgbmFloatColor.w <= 1.0f);
+			o_rgbmData[pixelIdx * 4] = ceil(rgbmFloatColor.x * 255.0f);
+			o_rgbmData[pixelIdx * 4 + 1] = ceil(rgbmFloatColor.y * 255.0f);
+			o_rgbmData[pixelIdx * 4 + 2] = ceil(rgbmFloatColor.z * 255.0f);
+			o_rgbmData[pixelIdx * 4 + 3] = ceil(rgbmFloatColor.w * 255.0f);
+#if 0
+			floral::vec3f constructedHDRGamma = RGBMDecode(rgbmFloatColor);
+			constructedHDRGamma.x = powf(constructedHDRGamma.x, invGamma);
+			constructedHDRGamma.y = powf(constructedHDRGamma.y, invGamma);
+			constructedHDRGamma.z = powf(constructedHDRGamma.z, invGamma);
+#endif
+		}
+	}
+}
+
+void ConvertTexture2DHDR(const_cstr i_inputFilename, const_cstr i_outputFilename, const bool i_generateMipmaps, const cbtex::Compression i_compressionMethod, const f32 i_gamma)
+{
+	s32 x, y, n;
+	f32* data = stbi_loadf(i_inputFilename, &x, &y, &n, 0);
+	FLORAL_ASSERT(n == 3);
+
+	f32 maxRange[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	s32 pixelsCount = x * y;
+	for (s32 i = 0; i < pixelsCount; i++)
+	{
+		for (s32 c = 0; c < n; c++)
+		{
+			FLORAL_ASSERT(data[i * n + c] >= 0.0f);
+			if (data[i * n + c] > maxRange[c])
+			{
+				maxRange[c] = data[i * n + c];
+			}
+		}
+	}
+	FLORAL_ASSERT(maxRange[0] <= 36.0f); // why? because our rgbm range is 0..6 including 2.0 gamma, and 6^2 = 36
+	FLORAL_ASSERT(maxRange[1] <= 36.0f);
+	FLORAL_ASSERT(maxRange[2] <= 36.0f);
+
+	CLOVER_INFO("%d channels:", n);
+	CLOVER_INFO("max (r, g, b, a): (%4.3f, %4.3f, %4.3f, %4.3f)", maxRange[0], maxRange[1], maxRange[2], maxRange[3]);
+
+	FILE* fp = fopen(i_outputFilename, "wb");
+
+	cbtex::TextureHeader header;
+	header.textureType = cbtex::Type::Texture2D;
+	header.colorRange = cbtex::ColorRange::HDR;
+	header.encodedGamma = i_gamma;
+	header.colorSpace = cbtex::ColorSpace::Linear;
+
+	switch (n)
+	{
+		case 3:
+			header.colorChannel = cbtex::ColorChannel::RGB;
+			break;
+		case 4:
+			header.colorChannel = cbtex::ColorChannel::RGBA;
+			break;
+		default:
+			FLORAL_ASSERT(false);
+			break;
+	}
+
+	s32 mipsCount = (s32)log2(x) + 1;
+	header.mipsCount = mipsCount;
+	header.resolution = x;
+	header.compression = i_compressionMethod;
+
+	fwrite(&header, sizeof(cbtex::TextureHeader), 1, fp);
+
+	for (s32 i = 1; i <= mipsCount; i++)
+	{
+		s32 nx = x >> (i - 1);
+		s32 ny = y >> (i - 1);
+		CLOVER_DEBUG("Creating mip #%d at size %dx%d...", i, nx, ny);
+		if (i == 1)
+		{
+			if (header.compression == cbtex::Compression::NoCompress)
+			{
+				FLORAL_ASSERT(header.encodedGamma == 1.0f);
+				f16* halfFloatData = g_PersistanceAllocator.allocate_array<f16>(nx * ny * n);
+				ConvertToHalfFloat(data, halfFloatData, nx, ny, n);
+				fwrite(halfFloatData, sizeof(f16), nx * ny * n, fp);
+				g_PersistanceAllocator.free(halfFloatData);
+			}
+			else if (header.compression == cbtex::Compression::DXT)
+			{
+				p8 rgbaData = g_PersistanceAllocator.allocate_array<u8>(nx * ny * 4);
+				ConvertToRGBM(data, rgbaData, nx, ny, 0.5f);
+				size compressedSize = 0;
+				p8 compressedData = CompressDXT(rgbaData, nx, ny, 4, &compressedSize);
+				fwrite(compressedData, sizeof(u8), compressedSize, fp);
+				g_PersistanceAllocator.free(compressedData);
+				g_PersistanceAllocator.free(rgbaData);
+			}
+			else
+			{
+				FLORAL_ASSERT(false);
+			}
+		}
+		else
+		{
+			if (header.compression == cbtex::Compression::NoCompress)
+			{
+				FLORAL_ASSERT(header.encodedGamma == 1.0f);
+				f32* rzdata = g_PersistanceAllocator.allocate_array<f32>(nx * ny * n);
+				s32 result = stbir_resize_float(data, x, y, 0, rzdata, nx, ny, 0, n);
+				FLORAL_ASSERT(result);
+
+				f16* halfFloatData = g_PersistanceAllocator.allocate_array<f16>(nx * ny * n);
+				ConvertToHalfFloat(rzdata, halfFloatData, nx, ny, n);
+				fwrite(halfFloatData, sizeof(f16), nx * ny * n, fp);
+				g_PersistanceAllocator.free(halfFloatData);
+				g_PersistanceAllocator.free(rzdata);
+			}
+			else if (header.compression == cbtex::Compression::DXT)
+			{
+				f32* rzdata = g_PersistanceAllocator.allocate_array<f32>(nx * ny * n);
+				s32 result = stbir_resize_float(data, x, y, 0, rzdata, nx, ny, 0, n);
+				FLORAL_ASSERT(result);
+
+				p8 rgbaData = g_PersistanceAllocator.allocate_array<u8>(nx * ny * 4);
+				ConvertToRGBM(rzdata, rgbaData, nx, ny, 0.5f);
+				size compressedSize = 0;
+				p8 compressedData = CompressDXT(rgbaData, nx, ny, 4, &compressedSize);
+				fwrite(compressedData, sizeof(u8), compressedSize, fp);
+				g_PersistanceAllocator.free(compressedData);
+				g_PersistanceAllocator.free(rgbaData);
+
+				g_PersistanceAllocator.free(rzdata);
+			}
+			else
+			{
+				FLORAL_ASSERT(false);
+			}
+		}
+	}
+
+	fclose(fp);
+}
+
+void TrimImage(f32* i_imgData, f32* o_outData, const s32 i_x, const s32 i_y, const s32 i_width, const s32 i_height,
+		const s32 i_imgWidth, const s32 i_imgHeight, const s32 i_channelCount)
+{
+	s32 outScanline = 0;
+	for (s32 i = i_y; i < (i_y + i_height); i++)
+	{
+		memcpy(&o_outData[outScanline * i_width * i_channelCount],
+				&i_imgData[(i * i_imgWidth + i_x) * i_channelCount],
+				i_height * i_channelCount * sizeof(f32));
+		outScanline++;
+	}
+}
+
+floral::vec3f HDRToneMap(const f32* i_hdrRGB)
+{
+	floral::vec3f hdrColor(i_hdrRGB[0], i_hdrRGB[1], i_hdrRGB[2]);
+	f32 maxLuma = floral::max(hdrColor.x, floral::max(hdrColor.y, hdrColor.z));
+	hdrColor.x = hdrColor.x / (1.0f + maxLuma / 35.0f);
+	hdrColor.y = hdrColor.y / (1.0f + maxLuma / 35.0f);
+	hdrColor.z = hdrColor.z / (1.0f + maxLuma / 35.0f);
+	return hdrColor;
+}
+
+void ConvertTextureCubeMapHDR(const_cstr i_inputFilename, const_cstr i_outputFilename, const bool i_generateMipmaps, const cbtex::Compression i_compression, const f32 i_gamma)
+{
+	s32 x, y, n;
+	f32 *data = stbi_loadf(i_inputFilename, &x, &y, &n, 0);
+	FLORAL_ASSERT(n == 3);
+
+	f32 maxRange[] = { 0.0f, 0.0f, 0.0f, 0.0f };
+	s32 pixelsCount = x * y;
+	for (s32 i = 0; i < pixelsCount; i++)
+	{
+		for (s32 c = 0; c < n; c++)
+		{
+			FLORAL_ASSERT(data[i * n + c] >= 0.0f);
+			if (data[i * n + c] > maxRange[c])
+			{
+				maxRange[c] = data[i * n + c];
+			}
+		}
+	}
+
+	if (maxRange[0] > 36.0f || maxRange[1] > 36.0f || maxRange[2] > 36.0f)
+	{
+		CLOVER_WARNING("tonemapping the hdr input because the hdr range is outside 36.0f");
+		for (s32 i = 0; i < pixelsCount; i++)
+		{
+			floral::vec3f toneMapHDRColor = HDRToneMap(&data[i * 3]);
+			data[i * 3] = toneMapHDRColor.x;
+			data[i * 3 + 1] = toneMapHDRColor.y;
+			data[i * 3 + 2] = toneMapHDRColor.z;
+		}
+	}
+
+	CLOVER_INFO("%d channels:", n);
+	CLOVER_INFO("max (r, g, b, a): (%4.3f, %4.3f, %4.3f, %4.3f)", maxRange[0], maxRange[1], maxRange[2], maxRange[3]);
+
+	FILE* fp = fopen(i_outputFilename, "wb");
+
+	s32 faceSize = y;
+
+	cbtex::TextureHeader header;
+	header.textureType = cbtex::Type::CubeMap;
+	header.colorRange = cbtex::ColorRange::HDR;
+	header.encodedGamma = i_gamma;
+	header.colorSpace = cbtex::ColorSpace::Linear;
+	header.colorChannel = cbtex::ColorChannel::RGB;
+
+	s32 mipsCount = (s32)log2(faceSize) + 1;
+	header.mipsCount = mipsCount;
+	header.resolution = faceSize;
+	header.compression = i_compression;
+
+	fwrite(&header, sizeof(cbtex::TextureHeader), 1, fp);
+
+	for (s32 i = 0; i < 6; i++)
+	{
+		CLOVER_DEBUG("Processing face %d:", i);
+		f32* trimData = g_PersistanceAllocator.allocate_array<f32>(faceSize * faceSize * n);
+		TrimImage(data, trimData, i * faceSize, 0, faceSize, faceSize, x, y, n);
+
+		for (s32 m = 1; m <= mipsCount; m++)
+		{
+			s32 mipSize = faceSize >> (m - 1);
+			CLOVER_DEBUG("Creating mip #%d at size %dx%d...", m, mipSize, mipSize);
+			if (mipSize == faceSize)
+			{
+				if (header.compression == cbtex::Compression::NoCompress)
+				{
+					f16* halfFloatData = g_PersistanceAllocator.allocate_array<f16>(mipSize * mipSize * n);
+					ConvertToHalfFloat(trimData, halfFloatData, mipSize, mipSize, n);
+					fwrite(halfFloatData, sizeof(f16), mipSize * mipSize * n, fp);
+					g_PersistanceAllocator.free(halfFloatData);
+				}
+				else if (header.compression == cbtex::Compression::DXT)
+				{
+					p8 rgbaData = g_PersistanceAllocator.allocate_array<u8>(mipSize * mipSize * 4);
+					ConvertToRGBM(trimData, rgbaData, mipSize, mipSize, 0.5f);
+					size compressedSize = 0;
+					p8 compressedData = CompressDXT(rgbaData, mipSize, mipSize, 4, &compressedSize);
+					fwrite(compressedData, sizeof(u8), compressedSize, fp);
+					g_PersistanceAllocator.free(compressedData);
+					g_PersistanceAllocator.free(rgbaData);
+				}
+				else
+				{
+					FLORAL_ASSERT(false);
+				}
+			}
+			else
+			{
+				if (header.compression == cbtex::Compression::NoCompress)
+				{
+					f32* rzData = g_PersistanceAllocator.allocate_array<f32>(mipSize * mipSize * n);
+					stbir_resize_float(trimData, faceSize, faceSize, 0, rzData, mipSize, mipSize, 0, n);
+					f16* halfFloatData = g_PersistanceAllocator.allocate_array<f16>(mipSize * mipSize * n);
+					ConvertToHalfFloat(rzData, halfFloatData, mipSize, mipSize, n);
+					fwrite(halfFloatData, sizeof(f16), mipSize * mipSize * n, fp);
+					g_PersistanceAllocator.free(halfFloatData);
+					g_PersistanceAllocator.free(rzData);
+				}
+				else if (header.compression == cbtex::Compression::DXT)
+				{
+					f32* rzData = g_PersistanceAllocator.allocate_array<f32>(mipSize * mipSize * n);
+					s32 result = stbir_resize_float(trimData, faceSize, faceSize, 0, rzData, mipSize, mipSize, 0, n);
+					FLORAL_ASSERT(result);
+
+					p8 rgbaData = g_PersistanceAllocator.allocate_array<u8>(mipSize * mipSize * 4);
+					ConvertToRGBM(rzData, rgbaData, mipSize, mipSize, 0.5f);
+					size compressedSize = 0;
+					p8 compressedData = CompressDXT(rgbaData, mipSize, mipSize, 4, &compressedSize);
+					fwrite(compressedData, sizeof(u8), compressedSize, fp);
+					g_PersistanceAllocator.free(compressedData);
+					g_PersistanceAllocator.free(rgbaData);
+
+					g_PersistanceAllocator.free(rzData);
+				}
+				else
+				{
+					FLORAL_ASSERT(false);
+				}
+			}
+		}
+
+		g_PersistanceAllocator.free(trimData);
+	}
+
+	fclose(fp);
+}
+
+// -------------------------------------------------------------------
 }
 
 int main(int argc, char** argv)
@@ -241,35 +637,28 @@ int main(int argc, char** argv)
 	clover::InitializeConsoleOutput("console", clover::LogLevel::Verbose);
 
 	CLOVER_INFO("Texture Baker");
-	CLOVER_INFO("Build: 0.3.0a");
+	CLOVER_INFO("Build: 0.4.0a");
 
-	if (argc == 1) {
-		CLOVER_INFO(
-				"Texture Baker Syntax:\n"
-				"	> 2D Texture:            texturebaker.exe -t input_texture.png -m 10 -o output_texture.cbtex\n"
-				"	> PBR Attrib 2D Texture: texturebaker.exe -pbra roughness.png metallic.png emissive.png emission_mask.png -m 10 -o output_texture.cbtex\n"
-				"	> HDR 2D Texture:        texturebaker.exe -hdrt input_texture.hdr -m 10 -o output_texture.cbtex\n"
-				"	> ShadingProbe Texture:  texturebaker.exe -p input_cubemap_no_ext -f pfm -o output_cubemap.cbprb\n"
-				"	> Spherical Harmonics:   texturebaker.exe -sh input_texture.hdr -o output_shdata.cbsh\n"
-				"	> CubeMap Texture:       texturebaker.exe -s input_skybox_no_ext -f pfm -o output_skybox.cbskb");
-		return 0;
-	}
-
-	if (strcmp(argv[1], "-t") == 0) {
-		ConvertTexture2D(argv[2], argv[6], atoi(argv[4]));
-	} else if (strcmp(argv[1], "-pbra") == 0) {
-		ConvertTexture2D_PBRAttrib(argv[2], argv[3], argv[4], argv[5], argv[9], atoi(argv[7]));
-	} else if (strcmp(argv[1], "-hdrt") == 0) {
-		ConvertTexture2DHDR(argv[2], argv[6], atoi(argv[4]));
-	} else if (strcmp(argv[1], "-p") == 0) {
-		ConvertProbe(argv[2], argv[6]);
-	} else if (strcmp(argv[1], "-s") == 0) {
-		// hstrip input, order: +x -x +y -y +z -z
-		ConvertTextureCubeHStrip(argv[2], argv[6], atoi(argv[4]));
-	} else if (strcmp(argv[1], "-sh") == 0) {
-		// hstrip input, order: +x -x +y -y +z -z
-		ComputeSH(argv[2], argv[4]);
-	}
+#if 0
+	f32 encodedGamma = 0.454545f;
+	bool generateMipmaps = true;
+	cbtex::Compression compression = cbtex::Compression::DXT;
+	texbaker::ConvertTexture2DLDR(argv[1], argv[2], encodedGamma, generateMipmaps, compression);
+#endif
+#if 0
+	f32 encodedGamma = 0.5f;
+	bool generateMipmaps = true;
+	cbtex::Compression compression = cbtex::Compression::DXT;
+	//cbtex::Compression compression = cbtex::Compression::NoCompress;
+	texbaker::ConvertTexture2DHDR(argv[1], argv[2], generateMipmaps, compression, encodedGamma);
+#endif
+#if 1
+	f32 encodedGamma = 0.5f;
+	bool generateMipmaps = true;
+	cbtex::Compression compression = cbtex::Compression::DXT;
+	//cbtex::Compression compression = cbtex::Compression::NoCompress;
+	texbaker::ConvertTextureCubeMapHDR(argv[1], argv[2], generateMipmaps, compression, encodedGamma);
+#endif
 
 	return 0;
 }

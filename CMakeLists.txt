@@ -42,7 +42,11 @@ endif ()
 
 # 5.2 exclude file according to platform
 if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
-
+	file (GLOB_RECURSE deprecated_files
+		LIST_DIRECTORIES false
+		"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/*.cpp"
+		"${PROJECT_SOURCE_DIR}/src/ImGuiDebug/*.cpp")
+	list (REMOVE_ITEM file_list ${deprecated_files})
 else ()
 	file (GLOB_RECURSE deprecated_files
 		LIST_DIRECTORIES false

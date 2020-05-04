@@ -50,7 +50,6 @@ private:
 
 private:
 	void										_ComputeSH();
-	void										_ComputeDebugSH(const u32 i_faceIdx);
 
 	void										_LoadHDRImage(const_cstr i_fileName);
 	void										_LoadMaterial(mat_loader::MaterialShaderPair* o_msPair, const floral::path& i_path);
@@ -70,10 +69,8 @@ private:
 
 	SHComputeData								m_SHComputeTaskData;
 	static refrain2::Task						ComputeSHCoeffs(voidptr i_data);
-	static refrain2::Task						ComputeDebugSHCoeffs(voidptr i_data);
 
 private:
-
 	struct SceneData
 	{
 		floral::mat4x4f							viewProjectionMatrix;
@@ -110,21 +107,17 @@ private:
 
 private:
 	FreelistArena*								m_TemporalArena;
-	FreelistArena*								m_MemoryArena;
 	LinearArena*								m_MaterialDataArena;
 	LinearArena*								m_PostFXArena;
 
 private:
-	mat_loader::MaterialShaderPair				m_PMREMBakeMSPair;
-
-	helpers::SurfaceGPU							m_PMREMSkybox;
-
 	pfx_chain::PostFXChain<LinearArena, FreelistArena>	m_PostFXChain;
 
 	ProjectionScheme							m_CurrentProjectionScheme;
 
 	// previewing for imgui
 	bool										m_ImgLoaded;
+	bool										m_ImgToneMapped;
 	insigne::texture_handle_t					m_PreviewTexture[3];
 	insigne::texture_handle_t					m_CurrentPreviewTexture;
 	floral::vec3f								m_MinHDR;
@@ -152,10 +145,16 @@ private:
 	std::atomic<u32>							m_Counter;
 
 	// pmrem calculation
+	mat_loader::MaterialShaderPair				m_PMREMBakeMSPair;
+	helpers::SurfaceGPU							m_PMREMSkybox;
 	mat_loader::MaterialShaderPair				m_PMREMPreviewMSPair;
 	mat_loader::MaterialShaderPair				m_PMREMSkyPreviewMSPair;
 	bool										m_NeedBakePMREM;
 	bool										m_PMREMReady;
+	f32*										m_PMREMImageData;
+	u64											m_PMREMPromisedFrame;
+	bool										m_IsCapturingPMREMData;
+	bool										m_TexFileWritten;
 
 	// for processing
 	insigne::texture_handle_t					m_InputTexture[3];
@@ -167,16 +166,6 @@ private:
 	insigne::ub_handle_t						m_PreviewUB;
 	insigne::ub_handle_t						m_PreviewPMREMUB;
 	insigne::framebuffer_handle_t				m_SpecularFB;
-
-	insigne::texture_handle_t					m_CurrentInputTexture;
-
-	insigne::material_desc_t*					m_CurrentPreviewMat;
-
-	f32*										m_SpecImgData;
-	u64											m_SpecPromisedFrame;
-	bool										m_IsCapturingSpecData;
-
-	floral::vec3f								m_CamPos;
 };
 
 // -------------------------------------------------------------------

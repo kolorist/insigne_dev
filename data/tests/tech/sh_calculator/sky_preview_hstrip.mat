@@ -1,0 +1,17 @@
+_shader
+	vs	tests/tech/sh_calculator/skysphere.vs
+	fs	tests/tech/sh_calculator/probe_preview_hstrip.fs
+_end_shader
+
+_state
+	depth_write off
+	depth_test on less_or_equal
+	cull_face on front ccw
+	blending off
+_end_state
+
+_params
+	_p_tex_holder texcube u_Tex
+	_p_ub_holder ub_Scene
+	_p_ub_holder ub_Preview
+_end_params

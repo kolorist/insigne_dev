@@ -1,0 +1,15 @@
+_shader
+	vs	tests/tech/sh_calculator/ssquad.vs
+	fs	tests/tech/sh_calculator/final_blit.fs
+_end_shader
+
+_state
+	depth_write off
+	depth_test off
+	cull_face off
+	blending off
+_end_state
+
+_params
+	_p_tex_holder tex2d u_MainTex
+_end_params
