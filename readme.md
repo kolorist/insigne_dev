@@ -1,5 +1,1 @@
-# threading model
-[Platform Event Thread]					[main_thread]						[render_thread]
-	[kick off main_thread]
-										[kick off render_thread]
-	[platform event loop]	--send-->		[main_thread event loop]
+![alt text](https://github.com/kolorist/insigne_dev/blob/master/screenshots/sh_calculator.jpg)
