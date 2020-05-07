@@ -1,6 +1,6 @@
 _shader
-	vs	tests/perf/textures/icosphere.vs
-	fs	tests/perf/textures/icosphere.fs
+	vs	tests/perf/scene_loader/sponza/materials/geometry.vs
+	fs	tests/perf/scene_loader/sponza/materials/albedo.fs
 _end_shader
 
 _state
@@ -11,15 +11,14 @@ _state
 _end_state
 
 _params
-	_p_tex u_MainTex
-		dim				texcube
+	_p_ub_holder ub_Scene
+	
+	_p_tex u_AlbedoTex
+		dim				tex2d
 		min_filter		linear_mipmap_linear
 		mag_filter		linear
 		wrap_s			clamp_to_edge
 		wrap_t			clamp_to_edge
-		wrap_r			clamp_to_edge
-		path			tests/perf/textures/pmrem.cbtex
+		path			tests/perf/scene_loader/sponza/materials/textures/white_png.cbtex
 	_end_p_tex
-	
-	_p_ub_holder ub_Scene
 _end_params

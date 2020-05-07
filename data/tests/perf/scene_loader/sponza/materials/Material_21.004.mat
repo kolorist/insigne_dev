@@ -1,0 +1,55 @@
+_shader
+	vs	tests/perf/scene_loader/sponza/materials/geometry.vs
+	fs	tests/perf/scene_loader/sponza/materials/pbr.fs
+_end_shader
+
+_state
+	depth_write on
+	depth_test on less_or_equal
+	cull_face on back ccw
+	blending off
+_end_state
+
+_params
+	_p_ub_holder ub_Scene
+	_p_ub_holder ub_Lighting
+	
+	_p_tex u_AlbedoTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		path			tests/perf/scene_loader/sponza/materials/textures/755318871556304029.cbtex
+	_end_p_tex
+
+	_p_tex u_NormalTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		path			tests/perf/scene_loader/sponza/materials/textures/3827035219084910048.cbtex
+	_end_p_tex
+
+	_p_tex u_AttribTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		path			tests/perf/scene_loader/sponza/materials/textures/2411100444841994089.cbtex
+	_end_p_tex
+	
+	_p_tex u_PMREMTex
+		dim				texcube
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		wrap_r			clamp_to_edge
+		path			tests/perf/scene_loader/sponza/materials/env/venice_sunset.cbtex
+	_end_p_tex
+	
+	_p_tex_holder tex2d u_SplitSumTex
+_end_params

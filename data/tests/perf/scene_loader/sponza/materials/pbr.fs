@@ -3,27 +3,26 @@ layout (location = 0) out mediump vec4 o_Color;
 
 layout(std140) uniform ub_Scene
 {
-	mediump vec3 iu_CameraPos;
 	highp mat4 iu_viewProjectionMatrix;
+	mediump vec3 iu_cameraPos;
 	mediump vec3 iu_sh[9];
 };
 
-layout(std140) uniform ub_Light
+layout(std140) uniform ub_Lighting
 {
 	mediump vec3 iu_LightDirection; // points to the light
 	mediump vec3 iu_LightIntensity;
 };
 
 uniform mediump sampler2D u_AlbedoTex;
-uniform mediump sampler2D u_MetalRoughnessTex;
 uniform mediump sampler2D u_NormalTex;
-uniform mediump sampler2D u_EmissionTex;
-uniform mediump sampler2D u_SplitSumTex;
+uniform mediump sampler2D u_AttribTex;
 uniform mediump samplerCube u_PMREMTex;
+uniform mediump sampler2D u_SplitSumTex;
 
 in mediump mat3 v_TBN;
-in mediump vec3 v_ViewDir_W;
 in mediump vec2 v_TexCoord;
+in mediump vec3 v_ViewDir_W;
 
 mediump vec3 eval_sh_irradiance(in mediump vec3 i_normal)
 {
@@ -83,18 +82,16 @@ void main()
 	mediump float noh = min(max(dot(n, h), 0.0f), 1.0f);
 
 	// textures
-	mediump vec3 baseColor = texture(u_AlbedoTex, v_TexCoord).rgb;
-	mediump vec3 emissionColor = texture(u_EmissionTex, v_TexCoord).rgb;
-	mediump vec3 occlusionRounghessMetal = texture(u_MetalRoughnessTex, v_TexCoord).rgb;
-	mediump float occlusion = clamp(occlusionRounghessMetal.r, 0.0f, 1.0f);
-	mediump float roughness = clamp(occlusionRounghessMetal.g, 0.0f, 1.0f);
-	mediump float metallic = clamp(occlusionRounghessMetal.b, 0.0f, 1.0f);
+	mediump vec4 baseColor = texture(u_AlbedoTex, v_TexCoord);
+	mediump vec2 metalRoughness = texture(u_AttribTex, v_TexCoord).bg;
+	mediump float roughness = clamp(metalRoughness.y, 0.0f, 1.0f);
+	mediump float metallic = clamp(metalRoughness.x, 0.0f, 1.0f);
 
 	// The following implementation is according to https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#appendix-b-brdf-implementation
 	const mediump vec3 dielectricSpecular = vec3(0.04f);
 	// black is vec3(0.0f, 0.0f, 0.0f)
-	mediump vec3 diffuseColor = baseColor * (vec3(1.0f) - dielectricSpecular) * (1.0f - metallic);
-	mediump vec3 F0 = mix(dielectricSpecular, baseColor, metallic); // reflectance color at normal incidence
+	mediump vec3 diffuseColor = baseColor.rgb * (vec3(1.0f) - dielectricSpecular) * (1.0f - metallic);
+	mediump vec3 F0 = mix(dielectricSpecular, baseColor.rgb, metallic); // reflectance color at normal incidence
 	mediump float alpha = roughness * roughness;
 
 	// -begin- ibl
@@ -162,8 +159,6 @@ void main()
 	// -end- direct lighting
 
 	mediump vec3 radiance = iblContrib + directContrib;
-	radiance += emissionColor;
-	radiance *= occlusion;
 
-	o_Color = vec4(radiance, 1.0f);
+	o_Color = vec4(radiance, baseColor.a);
 }

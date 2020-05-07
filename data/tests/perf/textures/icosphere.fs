@@ -20,7 +20,7 @@ mediump vec3 DecodeRGBM(in mediump vec4 i_rgbmColor)
 
 void main()
 {
-	//mediump vec3 color = DecodeRGBM(texture(u_MainTex, v_SampleDir).rgba);
-	mediump vec3 color = texture(u_MainTex, v_SampleDir).rgb;
+	mediump vec3 color = DecodeRGBM(textureLod(u_MainTex, v_SampleDir, 1.3f).rgba);
+	//mediump vec3 color = texture(u_MainTex, v_SampleDir).rgb;
 	o_Color = vec4(color, 1.0f);
 }
