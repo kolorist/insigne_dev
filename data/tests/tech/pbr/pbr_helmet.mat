@@ -12,39 +12,57 @@ _end_state
 
 _params
 	_p_ub ub_Light
-		vec3			iu_LightDirection		0.0  0.0  1.0
-		vec3			iu_LightIntensity		3.0  3.0  3.0
+		vec3			iu_LightDirection		0.7399 0.6428 0.1983
+		vec3			iu_LightIntensity		2.0  2.0  2.0
 	_end_p_ub
 	
 	_p_ub_holder ub_Scene
-	
+
 	_p_tex u_AlbedoTex
 		dim				tex2d
 		min_filter		linear_mipmap_linear
 		mag_filter		linear
-		wrap_s			clamp_to_edge
-		wrap_t			clamp_to_edge
-		path			gfx/go/textures/demo/damaged_helmet_albedo.tga
+		wrap_s			repeat
+		wrap_t			repeat
+		path			tests/tech/pbr/damaged_helmet_albedo.cbtex
 	_end_p_tex
 
 	_p_tex u_MetalRoughnessTex
 		dim				tex2d
 		min_filter		linear_mipmap_linear
 		mag_filter		linear
-		wrap_s			clamp_to_edge
-		wrap_t			clamp_to_edge
-		path			gfx/go/textures/demo/damaged_helmet_metalroughness.tga
+		wrap_s			repeat
+		wrap_t			repeat
+		path			tests/tech/pbr/damaged_helmet_metalroughness.cbtex
+	_end_p_tex
+
+	_p_tex u_NormalTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			repeat
+		wrap_t			repeat
+		path			tests/tech/pbr/damaged_helmet_normal.cbtex
 	_end_p_tex
 
 	_p_tex u_EmissionTex
 		dim				tex2d
 		min_filter		linear_mipmap_linear
 		mag_filter		linear
-		wrap_s			clamp_to_edge
-		wrap_t			clamp_to_edge
-		path			gfx/go/textures/demo/damaged_helmet_emissive.tga
+		wrap_s			repeat
+		wrap_t			repeat
+		path			tests/tech/pbr/damaged_helmet_emissive.cbtex
 	_end_p_tex
 	
-	_p_tex_holder texcube u_PMREM
-	_p_tex_holder tex2d u_SplitSum
+	_p_tex u_PMREMTex
+		dim				texcube
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			clamp_to_edge
+		wrap_t			clamp_to_edge
+		wrap_r			clamp_to_edge
+		path			out.cbtex
+	_end_p_tex
+
+	_p_tex_holder tex2d u_SplitSumTex
 _end_params

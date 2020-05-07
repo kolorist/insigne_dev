@@ -14,19 +14,6 @@ mediump vec3 RRTAndODTFit(in mediump vec3 v)
 
 mediump vec3 ACESFitted(in mediump vec3 color)
 {
-#if 0
-	mediump mat3 ACESInputMat = mat3(
-		0.59719, 0.35458, 0.04823,
-		0.07600, 0.90834, 0.01566,
-		0.02840, 0.13383, 0.83777
-	);
-
-	mediump mat3 ACESOutputMat = mat3(
-		 1.60475, -0.53108, -0.07367,
-		-0.10208,  1.10813, -0.00605,
-		-0.00327, -0.07276,  1.07602
-	);
-#else
 	mediump mat3 ACESInputMat = mat3(
 		0.59719, 0.07600, 0.02840,
 		0.35458, 0.90834, 0.13383,
@@ -38,7 +25,6 @@ mediump vec3 ACESFitted(in mediump vec3 color)
 		-0.53108,  1.10813, -0.07276,
 		-0.07367, -0.00605,  1.07602
 	);
-#endif
 
     color = ACESInputMat * color;
 
@@ -49,10 +35,31 @@ mediump vec3 ACESFitted(in mediump vec3 color)
     return color;
 }
 
+const highp float A = 0.15f;
+const highp float B = 0.50f;
+const highp float C = 0.10f;
+const highp float D = 0.20f;
+const highp float E = 0.02f;
+const highp float F = 0.30f;
+const highp vec3 W = vec3(11.2f, 11.2f, 11.2f);
+
+mediump vec3 Uncharted2Tonemap(in highp vec3 x)
+{
+   return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
 void main()
 {
-	mediump vec3 mainColor = texture2D(u_MainTex, v_TexCoord).rgb;
-	mainColor = ACESFitted(mainColor);
-	mainColor = pow(mainColor, vec3(1.0f / 2.2f));
-	o_Color = vec4(mainColor, 1.0f);
+	mediump vec3 mainColor = texture(u_MainTex, v_TexCoord).rgb;
+#if 0
+	mediump vec3 color = ACESFitted(mainColor);
+#else
+	mainColor *= 1.0f;
+	mainColor = Uncharted2Tonemap(2.0f * mainColor);
+	
+	mediump vec3 whiteScale = 1.0f / Uncharted2Tonemap(W);
+	mediump vec3 color = mainColor * whiteScale;
+#endif
+	color = pow(color, vec3(1.0f / 2.2f));
+	o_Color = vec4(color, 1.0f);
 }
