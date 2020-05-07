@@ -77,6 +77,17 @@ private:
 	}
 
 	template <class T>
+	void _EmplaceRenderTechSuite()
+	{
+		SuiteRegistry registry;
+		registry.id = m_NextSuiteId;
+		registry.name = T::k_name;
+		registry.createFunction.bind<&SuiteCreator<T>::Create>();
+		m_RenderTechSuite.push_back(registry);
+		m_NextSuiteId++;
+	}
+
+	template <class T>
 	void _EmplaceToolSuite()
 	{
 		SuiteRegistry registry;
@@ -117,6 +128,7 @@ private:
 private:
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_PlaygroundSuite;
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_PerformanceSuite;
+	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_RenderTechSuite;
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_ToolSuite;
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_MiscSuite;
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_ImGuiSuite;

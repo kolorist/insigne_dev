@@ -22,15 +22,17 @@
 #include "Graphics/stb_image.h"
 #include "Graphics/stb_image_resize.h"
 #include "Graphics/stb_image_write.h"
+#include "Graphics/stb_dxt.h"
 #include "Graphics/prt.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/DebugDrawer.h"
 #include "Graphics/CBTexDefinitions.h"
 #include "Graphics/MaterialParser.h"
+#include "Graphics/TextureLoader.h"
 
 namespace stone
 {
-namespace tech
+namespace tools
 {
 //--------------------------------------------------------------------
 
@@ -43,23 +45,29 @@ static const_cstr k_ProjectionSchemeStr[] = {
 
 static const_cstr k_Images[] = {
 	"<none>",
-	"grace_probe.hdr",
-	"alexs_appartment_probe.hdr",
-	"arboretum_probe.hdr",
-	"uvchecker_hstrip.hdr",
 	"uvchecker_equi.hdr",
+	"circus_arena_probe.hdr",
+
+	"uvchecker_hstrip.hdr",
 	"uvchecker_pos_x_hstrip.hdr",
 	"uvchecker_neg_x_hstrip.hdr",
 	"uvchecker_pos_y_hstrip.hdr",
 	"uvchecker_neg_y_hstrip.hdr",
 	"uvchecker_pos_z_hstrip.hdr",
 	"uvchecker_neg_z_hstrip.hdr",
-	"uvchecker_pos_x_equi.hdr",
-	"alexs_appartment_hstrip.hdr",
-	"alexs_appartment_equi.hdr",
-	"sunflowers_equi.hdr",
+
+	"autumn_hockey_hstrip.hdr",
+	"circus_arena_hstrip.hdr",
+	"palermo_sidewalk_hstrip.hdr",
+	"pond_bridge_night_hstrip.hdr",
+	"small_cave_hstrip.hdr",
+	"snowy_park_01_hstrip.hdr",
 	"sunflowers_hstrip.hdr",
-	"sunflowers_probe.hdr",
+	"teatro_massimo_hstrip.hdr",
+	"venice_sunset_hstrip.hdr",
+	"viale_giuseppe_garibaldi_hstrip.hdr",
+	"cloudy_vondelpark_hstrip.hdr",
+	"papermill_ruin_hstrip.hdr",
 };
 
 static const floral::vec3f s_lookAts[] =
@@ -92,7 +100,7 @@ static const insigne::cubemap_face_e s_faces[] =
 	insigne::cubemap_face_e::negative_z
 };
 
-static constexpr s32 k_faceSize = 256;
+static constexpr s32 k_faceSize = 512;
 static constexpr s32 k_previewFaceSize = 100;
 
 //--------------------------------------------------------------------
@@ -143,6 +151,131 @@ floral::vec3f hdr_tonemap(const f32* i_hdrRGB)
 	hdrColor.y = hdrColor.y / (1.0f + maxLuma / 35.0f);
 	hdrColor.z = hdrColor.z / (1.0f + maxLuma / 35.0f);
 	return hdrColor;
+}
+
+//--------------------------------------------------------------------
+
+floral::vec4f rgbm_encode(const floral::vec3f& i_hdrColor)
+{
+	floral::vec4f rgbm;
+	floral::vec3f color = i_hdrColor / 6.0f;
+	rgbm.w = floral::clamp(floral::max(floral::max(color.x, color.y), floral::max(color.z, 0.000001f)), 0.0f, 1.0f);
+	rgbm.w = ceil(rgbm.w * 255.0f) / 255.0f;
+	rgbm.x = color.x / rgbm.w;
+	rgbm.y = color.y / rgbm.w;
+	rgbm.z = color.z / rgbm.w;
+	return rgbm;
+}
+
+//--------------------------------------------------------------------
+
+void convert_to_rgbm(f32* i_inpData, p8 o_rgbmData, const s32 i_width, const s32 i_height, const f32 i_gamma)
+{
+	for (s32 y = 0; y < i_height; y++)
+	{
+		for (s32 x = 0; x < i_width; x++)
+		{
+			s32 pixelIdx = y * i_width + x;
+			floral::vec3f hdrColor(i_inpData[pixelIdx * 3], i_inpData[pixelIdx * 3 + 1], i_inpData[pixelIdx * 3 + 2]);
+
+			if (hdrColor.x < 0.0f || hdrColor.y < 0.0f || hdrColor.z < 0.0f)
+			{
+				CLOVER_WARNING("clamping pixel at (x, y) = (%d, %d) because it has negative component: (%f, %f, %f)", x, y, hdrColor.x, hdrColor.y, hdrColor.z);
+				hdrColor.x = floral::max(hdrColor.x, 0.0f);
+				hdrColor.y = floral::max(hdrColor.y, 0.0f);
+				hdrColor.z = floral::max(hdrColor.z, 0.0f);
+			}
+
+			floral::vec3f gammaCorrectedHDRColor;
+			gammaCorrectedHDRColor.x = powf(hdrColor.x, i_gamma);
+			gammaCorrectedHDRColor.y = powf(hdrColor.y, i_gamma);
+			gammaCorrectedHDRColor.z = powf(hdrColor.z, i_gamma);
+			floral::vec4f rgbmFloatColor = rgbm_encode(gammaCorrectedHDRColor);
+			FLORAL_ASSERT(rgbmFloatColor.x <= 1.0f);
+			FLORAL_ASSERT(rgbmFloatColor.y <= 1.0f);
+			FLORAL_ASSERT(rgbmFloatColor.z <= 1.0f);
+			FLORAL_ASSERT(rgbmFloatColor.w <= 1.0f);
+			o_rgbmData[pixelIdx * 4] = ceil(rgbmFloatColor.x * 255.0f);
+			o_rgbmData[pixelIdx * 4 + 1] = ceil(rgbmFloatColor.y * 255.0f);
+			o_rgbmData[pixelIdx * 4 + 2] = ceil(rgbmFloatColor.z * 255.0f);
+			o_rgbmData[pixelIdx * 4 + 3] = ceil(rgbmFloatColor.w * 255.0f);
+		}
+	}
+}
+
+//--------------------------------------------------------------------
+
+template <class TAllocator>
+p8 compress_dxt(p8 i_input, const s32 i_width, const s32 i_height, const s32 i_numChannels, size* o_compressedSize, TAllocator* i_allocator)
+{
+	// 1 block = 4x4 pixels (with uncompressed size of 64 bytes for rgba textures)
+	size bytesPerBlock = 0;
+	size compressedSize = 0;
+	const size pixelsCount = i_width * i_height;
+
+	if (i_numChannels == 4)
+	{
+		// dxt5
+		bytesPerBlock = 16;
+		compressedSize = floral::max(pixelsCount, 16ull);
+	}
+	else
+	{
+		// dxt1 (only 1 bit for alpha)
+		bytesPerBlock = 8;
+		compressedSize = floral::max(pixelsCount / 2, 8ull);
+	}
+
+	p8 output = (p8)i_allocator->allocate(compressedSize);
+	p8 targetBlock = output;
+
+	for (s32 y = 0; y < i_height; y += 4)
+	{
+		for (s32 x = 0; x < i_width; x += 4)
+		{
+			u8 rawRGBA[4 * 4 * 4];
+			memset(rawRGBA, 0, sizeof(rawRGBA));
+			p8 targetPixel = rawRGBA;
+			for (s32 py = 0; py < 4; py++)
+			{
+				for (s32 px = 0; px < 4; px++)
+				{
+					size ix = x + px;
+					size iy = y + py;
+
+					if (ix < i_width && iy < i_height)
+					{
+						p8 sourcePixel = &i_input[(iy * i_width + ix) * i_numChannels];
+						// initialize the alpha channel for this pixel
+						targetPixel[3] = 255;
+						for (s32 i = 0; i < i_numChannels; i++)
+						{
+							targetPixel[i] = sourcePixel[i];
+						}
+						targetPixel += 4;
+					}
+					else
+					{
+						targetPixel += 4;
+					}
+				}
+			}
+
+			if (i_numChannels == 4)
+			{
+				stb_compress_dxt_block(targetBlock, rawRGBA, 1, STB_DXT_HIGHQUAL);
+			}
+			else
+			{
+				stb_compress_dxt_block(targetBlock, rawRGBA, 0, STB_DXT_HIGHQUAL);
+			}
+
+			targetBlock += bytesPerBlock;
+		}
+	}
+
+	*(o_compressedSize) = compressedSize;
+	return output;
 }
 
 //--------------------------------------------------------------------
@@ -320,9 +453,11 @@ void SHCalculator::_OnInitialize()
 	}
 
 	{
-		m_SHInputTexData = (f32*)g_PersistanceResourceAllocator.allocate(SIZE_MB(6));
-		m_SHRadTexData = (f32*)g_PersistanceResourceAllocator.allocate(SIZE_KB(200));
-		m_SHIrrTexData = (f32*)g_PersistanceResourceAllocator.allocate(SIZE_KB(200));
+		m_SHInputTexData = (f32*)g_SceneResourceAllocator.allocate(k_faceSize * k_faceSize * 24 * sizeof(f32));
+		m_SHRadTexData = (f32*)g_SceneResourceAllocator.allocate(SIZE_KB(200));
+		memset(m_SHRadTexData, 0, SIZE_KB(200));
+		m_SHIrrTexData = (f32*)g_SceneResourceAllocator.allocate(SIZE_KB(200));
+		memset(m_SHIrrTexData, 0, SIZE_KB(200));
 
 		insigne::texture_desc_t desc;
 		desc.width = k_previewFaceSize;
@@ -331,6 +466,9 @@ void SHCalculator::_OnInitialize()
 		desc.min_filter = insigne::filtering_e::linear;
 		desc.mag_filter = insigne::filtering_e::linear;
 		desc.dimension = insigne::texture_dimension_e::tex_2d;
+		desc.wrap_s = insigne::wrap_e::clamp_to_edge;
+		desc.wrap_t = insigne::wrap_e::clamp_to_edge;
+		desc.wrap_r = insigne::wrap_e::clamp_to_edge;
 		desc.compression = insigne::texture_compression_e::no_compression;
 		desc.has_mipmap = false;
 		desc.data = nullptr;
@@ -500,13 +638,16 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 			insigne::texture_desc_t texDesc;
 			texDesc.width = k_faceSize;
 			texDesc.height = k_faceSize;
-			texDesc.format = insigne::texture_format_e::hdr_rgb;
+			texDesc.format = insigne::texture_format_e::hdr_rgb_high;
 			texDesc.dimension = insigne::texture_dimension_e::tex_cube;
+			texDesc.wrap_s = insigne::wrap_e::clamp_to_edge;
+			texDesc.wrap_t = insigne::wrap_e::clamp_to_edge;
+			texDesc.wrap_r = insigne::wrap_e::clamp_to_edge;
 			texDesc.compression = insigne::texture_compression_e::no_compression;
 			texDesc.has_mipmap = true;
 			const size dataSize = insigne::calculate_texture_memsize(texDesc);
 
-			m_PMREMImageData = m_TemporalArena->allocate_array<f32>(dataSize);
+			m_PMREMImageData = (f32*)m_TemporalArena->allocate(dataSize);
 			m_PMREMPromisedFrame = insigne::schedule_framebuffer_capture(m_SpecularFB, m_PMREMImageData);
 			m_IsCapturingPMREMData = true;
 		}
@@ -519,29 +660,48 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 
 	if (m_IsCapturingPMREMData && insigne::get_current_frame_idx() >= m_PMREMPromisedFrame)
 	{
-		f32* pData = m_PMREMImageData;
-		floral::file_info oFile = floral::open_output_file("out.prb");
-		floral::output_file_stream oStream;
-		floral::map_output_file(oFile, oStream);
-
+		floral::file_info oSHFile = floral::open_output_file("out.cbsh");
+		floral::output_file_stream oSHStream;
+		floral::map_output_file(oSHFile, oSHStream);
 		for (s32 i = 0; i < 9; i++)
 		{
 			const floral::vec3f& coeff = m_SHComputeTaskData.OutputCoeffs[i];
-			oStream.write(coeff);
+			oSHStream.write(coeff);
 		}
+		floral::close_file(oSHFile);
 
-		s32 faceSize = k_faceSize;
-		oStream.write(faceSize);
+		f32* pData = m_PMREMImageData;
+		floral::file_info oFile = floral::open_output_file("out.cbtex");
+		floral::output_file_stream oStream;
+		floral::map_output_file(oFile, oStream);
 
-		insigne::texture_desc_t texDesc;
-		texDesc.width = k_faceSize;
-		texDesc.height = k_faceSize;
-		texDesc.format = insigne::texture_format_e::hdr_rgb;
-		texDesc.dimension = insigne::texture_dimension_e::tex_cube;
-		texDesc.compression = insigne::texture_compression_e::no_compression;
-		texDesc.has_mipmap = true;
-		const size dataSize = insigne::calculate_texture_memsize(texDesc);
-		oStream.write_bytes(pData, dataSize);
+		tex_loader::TextureHeader header;
+		header.textureType = tex_loader::Type::PMREM;
+		header.colorRange = tex_loader::ColorRange::HDR;
+		header.colorSpace = tex_loader::ColorSpace::Linear;
+		header.colorChannel = tex_loader::ColorChannel::RGB;
+		header.encodedGamma = 0.5f;
+		header.mipsCount = (s32)log2(k_faceSize) + 1;
+		header.resolution = k_faceSize;
+		header.compression = tex_loader::Compression::DXT;
+
+		oStream.write(header);
+		for (s32 i = 0; i < 6; i++)
+		{
+			for (s32 j = 0; j < header.mipsCount; j++)
+			{
+				s32 mipSize = k_faceSize >> j;
+				p8 rgbaData = m_TemporalArena->allocate_array<u8>(mipSize * mipSize * 4);
+				convert_to_rgbm(pData, rgbaData, mipSize, mipSize, 0.5f);
+				size compressedSize = 0;
+				p8 compressedData = compress_dxt(rgbaData, mipSize, mipSize, 4, &compressedSize, m_TemporalArena);
+				oStream.write_bytes(compressedData, compressedSize);
+				m_TemporalArena->free(compressedData);
+				m_TemporalArena->free(rgbaData);
+
+				pData += (mipSize * mipSize * 3);
+			}
+		}
 		floral::close_file(oFile);
 
 		m_TemporalArena->free(m_PMREMImageData);
@@ -621,6 +781,8 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 			desc.min_filter = insigne::filtering_e::linear;
 			desc.mag_filter = insigne::filtering_e::linear;
 			desc.dimension = insigne::texture_dimension_e::tex_2d;
+			desc.wrap_s = insigne::wrap_e::clamp_to_edge;
+			desc.wrap_t = insigne::wrap_e::clamp_to_edge;
 			desc.compression = insigne::texture_compression_e::no_compression;
 			desc.has_mipmap = false;
 
@@ -708,6 +870,8 @@ void SHCalculator::_OnCleanUp()
 	g_StreammingAllocator.free(m_MaterialDataArena);
 	g_StreammingAllocator.free(m_TemporalArena);
 	m_TemporalArena = nullptr;
+
+	g_SceneResourceAllocator.free_all();
 
 	insigne::unregister_surface_type<geo2d::SurfacePT>();
 	insigne::unregister_surface_type<geo3d::SurfaceP>();
@@ -838,6 +1002,8 @@ void SHCalculator::_LoadHDRImage(const_cstr i_fileName)
 				desc.min_filter = insigne::filtering_e::linear;
 				desc.mag_filter = insigne::filtering_e::linear;
 				desc.dimension = insigne::texture_dimension_e::tex_2d;
+				desc.wrap_s = insigne::wrap_e::clamp_to_edge;
+				desc.wrap_t = insigne::wrap_e::clamp_to_edge;
 				desc.compression = insigne::texture_compression_e::no_compression;
 				desc.has_mipmap = false;
 				desc.width = k_faceSize * 3;
@@ -862,6 +1028,9 @@ void SHCalculator::_LoadHDRImage(const_cstr i_fileName)
 				desc.min_filter = insigne::filtering_e::linear_mipmap_linear;
 				desc.mag_filter = insigne::filtering_e::linear;
 				desc.dimension = insigne::texture_dimension_e::tex_cube;
+				desc.wrap_s = insigne::wrap_e::clamp_to_edge;
+				desc.wrap_t = insigne::wrap_e::clamp_to_edge;
+				desc.wrap_r = insigne::wrap_e::clamp_to_edge;
 				desc.compression = insigne::texture_compression_e::no_compression;
 				desc.has_mipmap = true;
 

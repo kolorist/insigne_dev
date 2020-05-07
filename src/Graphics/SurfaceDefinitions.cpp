@@ -16,6 +16,7 @@ namespace geo3d
 {
 // ------------------------------------------------------------------
 
+ssize SurfacePNTT::index						= -1;
 ssize SurfacePNT::index							= -1;
 ssize SurfaceP::index							= -1;
 

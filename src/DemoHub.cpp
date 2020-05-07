@@ -26,8 +26,8 @@
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
 #include "Graphics/RenderTech/PBR.h"
+#include "Graphics/RenderTech/PBRHelmet.h"
 #include "Graphics/RenderTech/PBRWithIBL.h"
-#include "Graphics/RenderTech/SHCalculator.h"
 #include "Graphics/RenderTech/FragmentPartition.h"
 #include "Graphics/RenderTech/LightProbeGI.h"
 
@@ -35,6 +35,7 @@
 #include "Graphics/Tools/SingleAccurateFormFactor.h"
 #include "Graphics/Tools/SurfelsGenerator.h"
 #include "Graphics/Tools/Samplers.h"
+#include "Graphics/Tools/SHCalculator.h"
 
 // misc demo
 #include "Graphics/Misc/CameraWork.h"
@@ -45,6 +46,7 @@
 
 namespace stone
 {
+//--------------------------------------------------------------------
 
 DemoHub::DemoHub()
 	: m_NextSuiteId(0)
@@ -61,6 +63,7 @@ void DemoHub::Initialize()
 {
 	m_PlaygroundSuite.reserve(4, &g_PersistanceAllocator);
 	m_PerformanceSuite.reserve(16, &g_PersistanceAllocator);
+	m_RenderTechSuite.reserve(16, &g_PersistanceAllocator);
 	m_ToolSuite.reserve(16, &g_PersistanceAllocator);
 	m_MiscSuite.reserve(16, &g_PersistanceAllocator);
 	m_ImGuiSuite.reserve(8, &g_PersistanceAllocator);
@@ -69,20 +72,22 @@ void DemoHub::Initialize()
 	debugdraw::Initialize();
 
 	_EmplacePlaygroundSuite<perf::Vault>();
-	_EmplacePlaygroundSuite<misc::GLTFLoader>();
-	_EmplacePlaygroundSuite<perf::PostFX>();
+	//_EmplacePlaygroundSuite<misc::GLTFLoader>();
+	//_EmplacePlaygroundSuite<perf::PostFX>();
 
 	_EmplacePerformanceSuite<perf::Empty>();
-	_EmplacePerformanceSuite<perf::Triangle>();
+	//_EmplacePerformanceSuite<perf::Triangle>();
 	_EmplacePerformanceSuite<perf::SceneLoader>();
-	_EmplacePerformanceSuite<perf::GammaCorrection>();
-	_EmplacePerformanceSuite<perf::Blending>();
+	//_EmplacePerformanceSuite<perf::GammaCorrection>();
+	//_EmplacePerformanceSuite<perf::Blending>();
 	_EmplacePerformanceSuite<perf::Textures>();
 	_EmplacePerformanceSuite<perf::CubeMapTextures>();
 
-	_EmplaceToolSuite<tech::SHCalculator>();
+	_EmplaceRenderTechSuite<tech::PBRHelmet>();
 
-	_EmplaceMiscSuite<misc::CameraWork>();
+	_EmplaceToolSuite<tools::SHCalculator>();
+
+	//_EmplaceMiscSuite<misc::CameraWork>();
 
 	_EmplaceImGuiSuite<gui::ImGuiDemoWindow>();
 	_EmplaceImGuiSuite<gui::ValuePlotter>();
@@ -162,75 +167,102 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 	{
 		if (ImGui::BeginMenu("TestSuite"))
 		{
-			if (ImGui::BeginMenu("Playground"))
+			if (m_PlaygroundSuite.get_size() > 0)
 			{
-				for (ssize i = 0; i < m_PlaygroundSuite.get_size(); i++)
+				if (ImGui::BeginMenu("Playground"))
 				{
-					SuiteRegistry& suiteRegistry = m_PlaygroundSuite[i];
-					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+					for (ssize i = 0; i < m_PlaygroundSuite.get_size(); i++)
 					{
-						_SwitchTestSuite(suiteRegistry);
+						SuiteRegistry& suiteRegistry = m_PlaygroundSuite[i];
+						if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+						{
+							_SwitchTestSuite(suiteRegistry);
+						}
 					}
+					ImGui::EndMenu();
 				}
-				ImGui::EndMenu();
 			}
 
-			if (ImGui::BeginMenu("Performance"))
+			if (m_PerformanceSuite.get_size() > 0)
 			{
-				for (ssize i = 0; i < m_PerformanceSuite.get_size(); i++)
+				if (ImGui::BeginMenu("Performance"))
 				{
-					SuiteRegistry& suiteRegistry = m_PerformanceSuite[i];
-					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+					for (ssize i = 0; i < m_PerformanceSuite.get_size(); i++)
 					{
-						_SwitchTestSuite(suiteRegistry);
+						SuiteRegistry& suiteRegistry = m_PerformanceSuite[i];
+						if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+						{
+							_SwitchTestSuite(suiteRegistry);
+						}
 					}
+					ImGui::EndMenu();
 				}
-				ImGui::EndMenu();
 			}
 
-			if (ImGui::BeginMenu("Render tech"))
+			if (m_RenderTechSuite.get_size() > 0)
 			{
-				ImGui::EndMenu();
+				if (ImGui::BeginMenu("Render Tech"))
+				{
+					for (ssize i = 0; i < m_RenderTechSuite.get_size(); i++)
+					{
+						SuiteRegistry& suiteRegistry = m_RenderTechSuite[i];
+						if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+						{
+							_SwitchTestSuite(suiteRegistry);
+						}
+					}
+					ImGui::EndMenu();
+				}
 			}
 
-			if (ImGui::BeginMenu("Tools"))
+			if (m_ToolSuite.get_size() > 0)
 			{
-				for (ssize i = 0; i < m_ToolSuite.get_size(); i++)
+				if (ImGui::BeginMenu("Tools"))
 				{
-					SuiteRegistry& suiteRegistry = m_ToolSuite[i];
-					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+					for (ssize i = 0; i < m_ToolSuite.get_size(); i++)
 					{
-						_SwitchTestSuite(suiteRegistry);
+						SuiteRegistry& suiteRegistry = m_ToolSuite[i];
+						if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+						{
+							_SwitchTestSuite(suiteRegistry);
+						}
 					}
+					ImGui::EndMenu();
 				}
-				ImGui::EndMenu();
 			}
 
-			if (ImGui::BeginMenu("Misc"))
+			if (m_MiscSuite.get_size() > 0)
 			{
-				for (ssize i = 0; i < m_MiscSuite.get_size(); i++)
+				if (ImGui::BeginMenu("Misc"))
 				{
-					SuiteRegistry& suiteRegistry = m_MiscSuite[i];
-					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+					for (ssize i = 0; i < m_MiscSuite.get_size(); i++)
 					{
-						_SwitchTestSuite(suiteRegistry);
+						SuiteRegistry& suiteRegistry = m_MiscSuite[i];
+						if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+						{
+							_SwitchTestSuite(suiteRegistry);
+						}
 					}
+					ImGui::EndMenu();
 				}
-				ImGui::EndMenu();
 			}
 
-			if (ImGui::BeginMenu("ImGui"))
+			if (m_ImGuiSuite.get_size() > 0)
 			{
-				for (ssize i = 0; i < m_ImGuiSuite.get_size(); i++)
+				if (ImGui::BeginMenu("ImGui"))
 				{
-					SuiteRegistry& suiteRegistry = m_ImGuiSuite[i];
-					if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+					for (ssize i = 0; i < m_ImGuiSuite.get_size(); i++)
 					{
-						_SwitchTestSuite(suiteRegistry);
+						SuiteRegistry& suiteRegistry = m_ImGuiSuite[i];
+						if (ImGui::MenuItem(suiteRegistry.name, nullptr))
+						{
+							_SwitchTestSuite(suiteRegistry);
+						}
 					}
+					ImGui::EndMenu();
 				}
-				ImGui::EndMenu();
 			}
+
 			if (ImGui::MenuItem("Clear all suites"))
 			{
 				_ClearAllSuite();
@@ -272,7 +304,7 @@ void DemoHub::RenderFrame(const f32 i_deltaMs)
 	}
 }
 
-//----------------------------------------------
+//--------------------------------------------------------------------
 
 void DemoHub::_SwitchTestSuite(SuiteRegistry& i_to)
 {
@@ -302,4 +334,5 @@ void DemoHub::_ClearAllSuite()
 	}
 }
 
+//--------------------------------------------------------------------
 }

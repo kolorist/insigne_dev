@@ -224,6 +224,25 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::SetValueVec3(const_cstr 
 // -------------------------------------------------------------------
 
 template <class TLinearAllocator, class TFreelistAllocator>
+void PostFXChain<TLinearAllocator, TFreelistAllocator>::SetValueVec2(const_cstr i_key, const floral::vec2f& i_value)
+{
+	floral::crc_string key(i_key);
+	for (size i = 0; i < m_ValueMap.get_size(); i++)
+	{
+		if (m_ValueMap[i].name == key)
+		{
+			const ValueProxy& valueProxy = m_ValueMap[i];
+			FLORAL_ASSERT(valueProxy.valueType == ValueType::Vec2);
+			voidptr pData = voidptr((aptr)m_UBData + valueProxy.offset);
+			memcpy(pData, (voidptr)&i_value, sizeof(floral::vec3f));
+			m_UBDataDirty = true;
+		}
+	}
+}
+
+// -------------------------------------------------------------------
+
+template <class TLinearAllocator, class TFreelistAllocator>
 void PostFXChain<TLinearAllocator, TFreelistAllocator>::BeginMainOutput()
 {
 	insigne::begin_render_pass(m_MainBuffer.fbHandle);

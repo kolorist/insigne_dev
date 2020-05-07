@@ -70,6 +70,7 @@ public:
 	void										Initialize(const pfx_parser::PostEffectsDescription& i_pfxDesc, const floral::vec2f& i_baseRes, TLinearAllocator* i_memoryArena);
 	void										CleanUp();
 	void										SetValueVec3(const_cstr i_key, const floral::vec3f& i_value);
+	void										SetValueVec2(const_cstr i_key, const floral::vec2f& i_value);
 
 	void										BeginMainOutput();
 	void										EndMainOutput();

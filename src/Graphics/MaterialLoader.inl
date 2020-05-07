@@ -9,6 +9,23 @@ namespace mat_loader
 {
 // ----------------------------------------------------------------------------
 
+inline insigne::wrap_e ToInsigneWrap(const mat_parser::TextureWrap i_value)
+{
+	switch (i_value)
+	{
+	case mat_parser::TextureWrap::ClampToEdge:
+		return insigne::wrap_e::clamp_to_edge;
+	case mat_parser::TextureWrap::MirroredRepeat:
+		return insigne::wrap_e::mirrored_repeat;
+	case mat_parser::TextureWrap::Repeat:
+		return insigne::wrap_e::repeat;
+	default:
+		FLORAL_ASSERT(false);
+		break;
+	}
+	return insigne::wrap_e::clamp_to_edge;
+}
+
 template <class TIOAllocator, class TMemoryAllocator>
 const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, TIOAllocator* i_ioAllocator, TMemoryAllocator* i_dataAllocator)
 {
@@ -178,16 +195,25 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 			switch (desc.dimension)
 			{
 			case mat_parser::TextureDimension::TextureCube:
+			{
+				texDesc.wrap_s = ToInsigneWrap(desc.wrapS);
+				texDesc.wrap_t = ToInsigneWrap(desc.wrapT);
+				texDesc.wrap_r = ToInsigneWrap(desc.wrapR);
+				break;
+			}
 			case mat_parser::TextureDimension::Texture2D:
 			{
-				insigne::texture_handle_t tex = tex_loader::LoadCBTexture(floral::path(desc.texturePath), texDesc, i_ioAllocator, true);
-				insigne::dispatch_render_pass(); // to prevent overflow texture data allocator
-				insigne::helpers::assign_texture(o_mat->material, desc.identifier, tex);
+				texDesc.wrap_s = ToInsigneWrap(desc.wrapS);
+				texDesc.wrap_t = ToInsigneWrap(desc.wrapT);
 				break;
 			}
 			default:
 				break;
 			}
+
+			insigne::texture_handle_t tex = tex_loader::LoadCBTexture(floral::path(desc.texturePath), texDesc, i_ioAllocator, true);
+			insigne::dispatch_render_pass();
+			insigne::helpers::assign_texture(o_mat->material, desc.identifier, tex);
 		}
 	}
 

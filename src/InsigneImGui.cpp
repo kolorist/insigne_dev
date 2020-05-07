@@ -124,6 +124,8 @@ void InitializeImGui()
 	uiTexDesc.min_filter = insigne::filtering_e::nearest;
 	uiTexDesc.mag_filter = insigne::filtering_e::nearest;
 	uiTexDesc.dimension = insigne::texture_dimension_e::tex_2d;
+	uiTexDesc.wrap_s = insigne::wrap_e::clamp_to_edge;
+	uiTexDesc.wrap_t = insigne::wrap_e::clamp_to_edge;
 	uiTexDesc.compression = insigne::texture_compression_e::no_compression;
 	uiTexDesc.has_mipmap = false;
 

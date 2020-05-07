@@ -16,7 +16,7 @@
 
 namespace stone
 {
-namespace tech
+namespace tools
 {
 // -------------------------------------------------------------------
 
