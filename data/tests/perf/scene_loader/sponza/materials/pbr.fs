@@ -4,6 +4,7 @@ layout (location = 0) out mediump vec4 o_Color;
 layout(std140) uniform ub_Scene
 {
 	highp mat4 iu_viewProjectionMatrix;
+	highp mat4 iu_shadowViewProjectionMatrix;
 	mediump vec3 iu_cameraPos;
 	mediump vec3 iu_sh[9];
 };
@@ -19,10 +20,12 @@ uniform mediump sampler2D u_NormalTex;
 uniform mediump sampler2D u_AttribTex;
 uniform mediump samplerCube u_PMREMTex;
 uniform mediump sampler2D u_SplitSumTex;
+uniform mediump sampler2D u_ShadowMap;
 
 in mediump mat3 v_TBN;
 in mediump vec2 v_TexCoord;
 in mediump vec3 v_ViewDir_W;
+in highp vec4 v_PosLS;
 
 mediump vec3 eval_sh_irradiance(in mediump vec3 i_normal)
 {
@@ -86,6 +89,23 @@ void main()
 	mediump vec2 metalRoughness = texture(u_AttribTex, v_TexCoord).bg;
 	mediump float roughness = clamp(metalRoughness.y, 0.0f, 1.0f);
 	mediump float metallic = clamp(metalRoughness.x, 0.0f, 1.0f);
+	
+	// shadow map
+	highp vec3 shadowProjCoords = v_PosLS.xyz / v_PosLS.w;
+	shadowProjCoords = shadowProjCoords * 0.5f + 0.5f;
+	mediump float shadowCurrDepth = shadowProjCoords.z;
+
+	mediump float shadowMask = 0.0f;
+	mediump vec2 texelSize = vec2(1.0f / 2048.0f);
+	for(int x = -1; x <= 1; ++x)
+	{
+		for(int y = -1; y <= 1; ++y)
+		{
+		    mediump float pcfDepth = texture(u_ShadowMap, shadowProjCoords.xy + vec2(x, y) * texelSize).r; 
+			shadowMask += shadowCurrDepth - 0.005f < pcfDepth ? 1.0f : 0.1f;
+		}
+	}
+	shadowMask /= 9.0f;
 
 	// The following implementation is according to https://github.com/KhronosGroup/glTF/blob/master/specification/2.0/README.md#appendix-b-brdf-implementation
 	const mediump vec3 dielectricSpecular = vec3(0.04f);
@@ -159,6 +179,7 @@ void main()
 	// -end- direct lighting
 
 	mediump vec3 radiance = iblContrib + directContrib;
+	radiance *= shadowMask;
 
 	o_Color = vec4(radiance, baseColor.a);
 }

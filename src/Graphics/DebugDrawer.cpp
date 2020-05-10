@@ -482,6 +482,11 @@ void DrawQuad3D(const floral::vec3f& i_p0, const floral::vec3f& i_p1, const flor
 	s_DebugDrawer->DrawQuad3D(i_p0, i_p1, i_p2, i_p3, i_color);
 }
 
+void DrawAABB3D(const floral::aabb3f& i_aabb, const floral::vec4f& i_color)
+{
+	s_DebugDrawer->DrawAABB3D(i_aabb, i_color);
+}
+
 void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral::vec4f& i_color)
 {
 	s_DebugDrawer->DrawPoint3D(i_position, i_size, i_color);

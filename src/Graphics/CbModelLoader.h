@@ -1,5 +1,6 @@
 #pragma once
 
+#include <floral/gpds/rect.h>
 #include <floral/cmds/path.h>
 
 namespace cbmodel
@@ -30,6 +31,8 @@ struct Model
 	s32*										indicesData;
 	TVertex*									verticesData;
 	const_cstr									materialName;
+
+	floral::aabb3f								aabb;
 };
 
 enum class VertexAttribute : u32

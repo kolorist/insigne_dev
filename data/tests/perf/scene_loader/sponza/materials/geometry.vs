@@ -7,6 +7,7 @@ layout (location = 3) in mediump vec2 l_TexCoord;
 layout(std140) uniform ub_Scene
 {
 	highp mat4 iu_viewProjectionMatrix;
+	highp mat4 iu_shadowViewProjectionMatrix;
 	mediump vec3 iu_cameraPos;
 	mediump vec3 iu_sh[9];
 };
@@ -14,6 +15,7 @@ layout(std140) uniform ub_Scene
 out mediump mat3 v_TBN;
 out mediump vec2 v_TexCoord;
 out mediump vec3 v_ViewDir_W;
+out highp vec4 v_PosLS;
 
 void main()
 {
@@ -24,5 +26,6 @@ void main()
 	v_TBN = mat3(tangentW, bitangentW, normalW);
 	vec3 posW = l_Position_L;
 	v_ViewDir_W = normalize(iu_cameraPos - posW);
+	v_PosLS = iu_shadowViewProjectionMatrix * vec4(posW, 1.0f);
 	gl_Position = iu_viewProjectionMatrix * vec4(posW, 1.0f);
 }

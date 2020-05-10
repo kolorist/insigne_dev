@@ -52,4 +52,5 @@ _params
 	_end_p_tex
 	
 	_p_tex_holder tex2d u_SplitSumTex
+	_p_tex_holder tex2d u_ShadowMap
 _end_params

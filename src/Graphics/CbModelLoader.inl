@@ -59,6 +59,8 @@ const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttri
 	inpStream.read_bytes(indicesData, header.indicesCount * sizeof(s32));
 
 	// vertex
+	floral::vec3f minCorner(9999.0f, 9999.0f, 9999.0f);
+	floral::vec3f maxCorner(-9999.0f, -9999.0f, -9999.0f);
 	aptr startOffset = 0;
 	if (floral::test_bit_mask(i_vtxAttrib, VertexAttribute::Position))
 	{
@@ -66,11 +68,21 @@ const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttri
 		inpStream.seek_begin(header.positionOffset);
 		for (s32 i = 0; i < header.verticesCount; i++)
 		{
-			inpStream.read_bytes(voidptr((aptr)verticesData + offset), sizeof(floral::vec3f));
+			voidptr dest = voidptr((aptr)verticesData + offset);
+			inpStream.read_bytes(dest, sizeof(floral::vec3f));
+			floral::vec3f* v = (floral::vec3f*)(dest);
+			if (v->x > maxCorner.x) maxCorner.x = v->x;
+			if (v->x < minCorner.x) minCorner.x = v->x;
+			if (v->y > maxCorner.y) maxCorner.y = v->y;
+			if (v->y < minCorner.y) minCorner.y = v->y;
+			if (v->z > maxCorner.z) maxCorner.z = v->z;
+			if (v->z < minCorner.z) minCorner.z = v->z;
 			offset += vtxStride;
 		}
 		startOffset += sizeof(floral::vec3f);
 	}
+	modelData.aabb.max_corner = maxCorner;
+	modelData.aabb.min_corner = minCorner;
 
 	if (floral::test_bit_mask(i_vtxAttrib, VertexAttribute::Normal))
 	{

@@ -58,8 +58,14 @@ private:
 	struct SceneData
 	{
 		floral::mat4x4f							viewProjectionMatrix;
+		floral::mat4x4f							shadowViewProjectionMatrix;
 		floral::vec4f							cameraPosition;
 		floral::vec4f							sh[9];
+	};
+
+	struct ShadowSceneData
+	{
+		floral::mat4x4f							viewProjectionMatrix;
 	};
 
 	struct LightingData
@@ -73,12 +79,20 @@ private:
 	using MaterialArray = floral::fast_fixed_array<MaterialKeyPair, LinearArena>;
 	ModelDataArray								m_ModelDataArray;
 	MaterialArray								m_MaterialArray;
+	floral::aabb3f								m_SceneAABB;
 
 	SceneData									m_SceneData;
 	LightingData								m_LightingData;
 	insigne::ub_handle_t						m_SceneUB;
 	insigne::ub_handle_t						m_LightingUB;
 	insigne::texture_handle_t					m_SplitSumTexture;
+
+	floral::vec3f								m_ShadowSceneAABB[8];
+	floral::vec3f								m_ShadowCameraPosition;
+	ShadowSceneData								m_ShadowSceneData;
+	insigne::ub_handle_t						m_ShadowSceneUB;
+	mat_loader::MaterialShaderPair				m_ShadowMapMaterial;
+	insigne::framebuffer_handle_t				m_ShadowMapFb;
 
 	pfx_chain::PostFXChain<LinearArena, FreelistArena>	m_PostFXChain;
 
