@@ -11,6 +11,7 @@
 *.cbskb
 *.cbmodel
 *.cbscene
+*.cbsh
 *.tga
 *.gltf
 *.bin

@@ -67,7 +67,15 @@ elseif (${TARGET_PLATFORM} STREQUAL "x64")
 endif ()
 include_directories("${PROJECT_SOURCE_DIR}/src")
 
-# 7. subdirectories
+# 7. C and CXX global compile options
+if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
+
+else ()
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -fno-rtti -fno-exceptions -fcolor-diagnostics -fansi-escape-codes")
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall -fcolor-diagnostics -fansi-escape-codes")
+endif ()
+
+# 8. subdirectories
 add_subdirectory (externals/floral)
 add_subdirectory (externals/helich)
 add_subdirectory (externals/clover)
@@ -77,7 +85,7 @@ add_subdirectory (externals/insigne)
 add_subdirectory (externals/imgui)
 add_subdirectory (externals/lotus)
 
-# 8. platform specific linking
+# 9. platform specific linking
 if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
 	add_library(${PROJECT_NAME} SHARED ${file_list})
 	target_link_libraries(${PROJECT_NAME}
@@ -109,19 +117,19 @@ else ()
 	set_target_properties (${PROJECT_NAME} PROPERTIES OUTPUT_NAME ${EXECUTABLE_FILE_NAME})
 endif ()
 
-# 9. C and CXX compile options
+# 10. C and CXX compile options
 if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
-	target_compile_options(${PROJECT_NAME}
-		PUBLIC	$<$<COMPILE_LANGUAGE:CXX>:-std=c++11 -Wall -fno-rtti -fno-exceptions>
-		PUBLIC	$<$<COMPILE_LANGUAGE:C>:-std=c11 -Wall>)
+	# target_compile_options(${PROJECT_NAME}
+		# PUBLIC	$<$<COMPILE_LANGUAGE:CXX>:-std=c++11 -Wall -fno-rtti -fno-exceptions>
+		# PUBLIC	$<$<COMPILE_LANGUAGE:C>:-std=c11 -Wall>)
 else ()
 	# we will c++14 on Windows build as c++11 yields compile errors
-	target_compile_options(${PROJECT_NAME}
-		PUBLIC	$<$<COMPILE_LANGUAGE:CXX>:-std=c++14 -Wall -fno-rtti -fno-exceptions>
-		PUBLIC	$<$<COMPILE_LANGUAGE:C>:-std=c11 -Wall>)
+	# target_compile_options(${PROJECT_NAME}
+		# PUBLIC	$<$<COMPILE_LANGUAGE:CXX>:-std=c++14 -Wall -fno-rtti -fno-exceptions>
+		# PUBLIC	$<$<COMPILE_LANGUAGE:C>:-std=c11 -Wall -fcolor-diagnostics -fansi-escape-codes>)
 endif ()
 
-# 10. misc
+# 11. misc
 if (${USE_MSVC_PROJECT})
 	# organize filters
 	foreach(_source IN ITEMS ${file_list})
