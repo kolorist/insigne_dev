@@ -99,7 +99,7 @@ void InitializeImGui()
 	ImGui::StyleColorsClassic();
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui::SetAllocatorFunctions(&ImGuiCustomAlloc, &ImGuiCustomFree, nullptr);
-
+	io.IniFilename = nullptr;
 	// key mapping
 	io.KeyMap[ImGuiKey_Backspace] = CLX_BACK;
 	io.KeyMap[ImGuiKey_Enter] = CLX_RETURN;
@@ -111,6 +111,11 @@ void InitializeImGui()
 			(f32)commonCtx->window_width,
 			(f32)commonCtx->window_height);
 	io.DisplayFramebufferScale = ImVec2(1.0f, 1.0f);
+#if defined(FLORAL_PLATFORM_WINDOWS)
+	io.FontGlobalScale = 1.0f;
+#else
+	io.FontGlobalScale = 3.0f;
+#endif
 
 	// fonts
 	u8* pixels;
@@ -235,10 +240,10 @@ void RenderImGui()
 	FLORAL_ASSERT(drawData != nullptr);
 
 	ImGuiIO& io = ImGui::GetIO();
-	s32 fbWidth = (s32)(io.DisplaySize.x * 1.0f); //io.DisplayFramebufferScale.x);
-	s32 fbHeight = (s32)(io.DisplaySize.y * 1.0f); //io.DisplayFramebufferScale.y);
+	s32 fbWidth = (s32)(io.DisplaySize.x * io.DisplayFramebufferScale.x);
+	s32 fbHeight = (s32)(io.DisplaySize.y * io.DisplayFramebufferScale.y);
 
-	drawData->ScaleClipRects(ImVec2(1.0f, 1.0f));
+	drawData->ScaleClipRects(io.DisplayFramebufferScale);
 
 	//m_UsedVertexMemory = 0;
 	//m_UsedIndexMemory = 0;

@@ -69,7 +69,8 @@ include_directories("${PROJECT_SOURCE_DIR}/src")
 
 # 7. C and CXX global compile options
 if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
-
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -fno-rtti -fno-exceptions -fcolor-diagnostics -fansi-escape-codes")
+	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall -fcolor-diagnostics -fansi-escape-codes")
 else ()
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -fno-rtti -fno-exceptions -fcolor-diagnostics -fansi-escape-codes")
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall -fcolor-diagnostics -fansi-escape-codes")
@@ -84,6 +85,14 @@ add_subdirectory (externals/calyx)
 add_subdirectory (externals/insigne)
 add_subdirectory (externals/imgui)
 add_subdirectory (externals/lotus)
+
+if (${TARGET_PLATFORM} STREQUAL "arm64-v8a"
+	OR ${TARGET_PLATFORM} STREQUAL "arm-v7a"
+	OR ${TARGET_PLATFORM} STREQUAL "x86"
+	OR ${TARGET_PLATFORM} STREQUAL "x64")
+	# add_subdirectory (externals/android/app)
+	list (APPEND file_list "externals/android/app/src/main/cpp/jnibridge.cpp")
+endif ()
 
 # 9. platform specific linking
 if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")

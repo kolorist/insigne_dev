@@ -1,7 +1,7 @@
 #include <calyx/life_cycle.h>
 #include <calyx/context.h>
 #include <calyx/events.h>
-#include <calyx/platform/windows/event_defs.h>
+#include <calyx/event_defs.h>
 
 #include <floral.h>
 #include <clover.h>
@@ -146,6 +146,7 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 				{
 					case calyx::interact_event_e::key_input:
 					{
+#if defined(FLORAL_PLATFORM_WINDOWS)
 						if (TEST_BIT(eve.interact_event_data.payload, CLX_KEY))
 						{
 							u32 keyCode = eve.interact_event_data.payload >> 4;
@@ -162,6 +163,11 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 								s_Controller->IOEvents.KeyInput(keyCode, 2);
 							}
 						}
+#else
+						u32 keyCode = eve.interact_event_data.payload;
+						s_Controller->IOEvents.KeyInput(keyCode, 0);
+						break;
+#endif
 						break;
 					}
 
@@ -175,16 +181,30 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 
 					case calyx::interact_event_e::cursor_interact:
 					{
-						if (TEST_BIT(eve.interact_event_data.payload, CLX_MOUSE_LEFT_BUTTON)) {
+#if defined(FLORAL_PLATFORM_WINDOWS)
+						if (TEST_BIT(eve.interact_event_data.payload, CLX_MOUSE_LEFT_BUTTON))
+						{
 							s_Controller->IOEvents.CursorInteract(
 									TEST_BIT_BOOL(eve.interact_event_data.payload, CLX_MOUSE_BUTTON_PRESSED),
 									1);
 						}
-						if (TEST_BIT(eve.interact_event_data.payload, CLX_MOUSE_RIGHT_BUTTON)) {
+						if (TEST_BIT(eve.interact_event_data.payload, CLX_MOUSE_RIGHT_BUTTON))
+						{
 							s_Controller->IOEvents.CursorInteract(
 									TEST_BIT_BOOL(eve.interact_event_data.payload, CLX_MOUSE_BUTTON_PRESSED),
 									2);
 						}
+#else
+						u32 cId = eve.interact_event_data.lowpayload;
+						if (eve.interact_event_data.payload == CLX_TOUCH_DOWN)
+						{
+							s_Controller->IOEvents.CursorInteract(true, (s32)cId);
+						}
+						else if (eve.interact_event_data.payload == CLX_TOUCH_UP)
+						{
+							s_Controller->IOEvents.CursorInteract(false, (s32)cId);
+						}
+#endif
 						break;
 					}
 

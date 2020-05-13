@@ -38,6 +38,7 @@ void Vault::_OnInitialize()
 
 	m_FSMemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(1));
 
+#if 0
 	floral::absolute_path workingDir = floral::get_application_directory();
 	floral::relative_path dataPath = floral::build_relative_path("../data/tests/perf/vault");
 	floral::concat_path(&workingDir, dataPath);
@@ -45,6 +46,7 @@ void Vault::_OnInitialize()
 
 	floral::relative_path filePath = floral::build_relative_path("out.cbsh");
 	floral::file_info tmpFile = floral::open_file_read(fs, filePath);
+#endif
 }
 
 void Vault::_OnUpdate(const f32 i_deltaMs)

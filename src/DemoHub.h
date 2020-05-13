@@ -125,6 +125,8 @@ private:
 	s32											m_CurrentTestSuiteId;
 	ITestSuite*									m_Suite;
 
+	floral::vec2i								m_CursorPosition;
+
 private:
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_PlaygroundSuite;
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_PerformanceSuite;

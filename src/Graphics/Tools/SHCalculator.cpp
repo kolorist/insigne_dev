@@ -662,7 +662,7 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 	{
 		floral::file_info oSHFile = floral::open_output_file("out.cbsh");
 		floral::output_file_stream oSHStream;
-		floral::map_output_file(oSHFile, oSHStream);
+		floral::map_output_file(oSHFile, &oSHStream);
 		for (s32 i = 0; i < 9; i++)
 		{
 			const floral::vec3f& coeff = m_SHComputeTaskData.OutputCoeffs[i];
@@ -673,7 +673,7 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 		f32* pData = m_PMREMImageData;
 		floral::file_info oFile = floral::open_output_file("out.cbtex");
 		floral::output_file_stream oStream;
-		floral::map_output_file(oFile, oStream);
+		floral::map_output_file(oFile, &oStream);
 
 		tex_loader::TextureHeader header;
 		header.textureType = tex_loader::Type::PMREM;

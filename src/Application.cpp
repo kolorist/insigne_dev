@@ -176,7 +176,20 @@ void Application::OnKeyInput(u32 i_keyCode, u32 i_keyStatus)
 
 void Application::OnCursorMove(u32 i_x, u32 i_y)
 {
-	m_DemoHub->OnCursorMove(i_x, i_y);
+	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
+	floral::vec2f nPos(f32(i_x) / commonCtx->window_width, -f32(i_y) / commonCtx->window_height);
+	nPos = nPos * 2.0f + floral::vec2f(-1.0f, 1.0f);
+
+	if (commonCtx->window_scale > 0.0f)
+	{
+		u32 x = u32((f32)i_x * commonCtx->window_scale);
+		u32 y = u32((f32)i_y * commonCtx->window_scale);
+		m_DemoHub->OnCursorMove(x, y);
+	}
+	else
+	{
+		m_DemoHub->OnCursorMove(i_x, i_y);
+	}
 }
 
 void Application::OnCursorInteract(bool i_pressed, u32 i_buttonId)
