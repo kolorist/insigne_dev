@@ -8,6 +8,7 @@
 #include <lotus/profiler.h>
 
 #include <insigne/system.h>
+#include <insigne/driver.h>
 
 #include <atomic>
 
@@ -248,6 +249,10 @@ void UpdateLogic(event_buffer_t* i_evtBuffer)
 							s_Controller->IOEvents.OnInitializeRenderer();
 							s_rendererInited = true;
 						}
+						else
+						{
+							insigne::request_refresh_context();
+						}
 						UpdateLogicThreadFlags();
 						break;
 					}
@@ -296,6 +301,7 @@ void setup_surface(context_attribs* io_commonCtx)
 	// no need to protect these as they are assigned from the very beginning,
 	// before the universe is created
 	io_commonCtx->window_title = "demo";
+	io_commonCtx->window_scale = 1.0f;
 	io_commonCtx->window_width = 1280;
 	io_commonCtx->window_height = 720;
 	io_commonCtx->window_offset_left = 50;

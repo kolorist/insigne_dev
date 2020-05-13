@@ -30,6 +30,10 @@ private:
 	void										_OnCleanUp() override;
 
 private:
+	cstr										m_WorkingDirCstr;
+
+private:
+	FreelistArena*								m_MemoryArena;
 	FreelistArena*								m_FSMemoryArena;
 };
 

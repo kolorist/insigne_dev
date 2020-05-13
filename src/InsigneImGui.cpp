@@ -97,9 +97,13 @@ void InitializeImGui()
 	ImGuiContext* ctx = ImGui::CreateContext();
 	ImGui::SetCurrentContext(ctx);
 	ImGui::StyleColorsClassic();
+	
+	ImGuiStyle& style = ImGui::GetStyle();
+	
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui::SetAllocatorFunctions(&ImGuiCustomAlloc, &ImGuiCustomFree, nullptr);
 	io.IniFilename = nullptr;
+
 	// key mapping
 	io.KeyMap[ImGuiKey_Backspace] = CLX_BACK;
 	io.KeyMap[ImGuiKey_Enter] = CLX_RETURN;

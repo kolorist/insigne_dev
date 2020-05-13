@@ -145,8 +145,8 @@ void ValuePlotter::_OnUpdate(const f32 i_deltaMs)
 	ImGui::Begin("Controller");
 	ImGui::Text("Header text");
 
-	PlotValuesWrap("delta ms", deltaMs, 0.0f, 33.0f, IM_ARRAYSIZE(deltaMs), 50, plotIdx, IM_COL32(0, 255, 0, 255), IM_COL32(0, 255, 0, 255));
-	PlotValuesWrap("delta ms 2", deltaMs, 0.0f, 33.0f, IM_ARRAYSIZE(deltaMs), 50, plotIdx, IM_COL32(255, 0, 0, 255), IM_COL32(255, 0, 0, 255));
+	PlotValuesWrap("delta ms", deltaMs, 0.0f, 33.0f, IM_ARRAYSIZE(deltaMs), 150, plotIdx, IM_COL32(0, 255, 0, 255), IM_COL32(0, 255, 0, 255));
+	PlotValuesWrap("delta ms 2", deltaMs, 0.0f, 33.0f, IM_ARRAYSIZE(deltaMs), 150, plotIdx, IM_COL32(255, 0, 0, 255), IM_COL32(255, 0, 0, 255));
 
 	ImGui::Text("Footer text");
 	ImGui::End();

@@ -87,9 +87,7 @@ add_subdirectory (externals/imgui)
 add_subdirectory (externals/lotus)
 
 if (${TARGET_PLATFORM} STREQUAL "arm64-v8a"
-	OR ${TARGET_PLATFORM} STREQUAL "arm-v7a"
-	OR ${TARGET_PLATFORM} STREQUAL "x86"
-	OR ${TARGET_PLATFORM} STREQUAL "x64")
+	OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
 	# add_subdirectory (externals/android/app)
 	list (APPEND file_list "externals/android/app/src/main/cpp/jnibridge.cpp")
 endif ()

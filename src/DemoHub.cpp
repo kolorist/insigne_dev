@@ -132,7 +132,6 @@ void DemoHub::OnCharacterInput(const c8 i_charCode)
 
 void DemoHub::OnCursorMove(const u32 i_x, const u32 i_y)
 {
-	m_CursorPosition = floral::vec2i(i_x, i_y);
 	const bool consumed = ImGuiCursorMove(i_x, i_y);
 	if (!consumed)
 	{
@@ -277,9 +276,6 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 		{
 			ImGui::MenuItem(m_Suite->GetName(), nullptr, nullptr, false);
 		}
-		c8 str[64];
-		sprintf(str, "%d - %d", m_CursorPosition.x, m_CursorPosition.y);
-		ImGui::MenuItem(str, nullptr, nullptr, false);
 		ImGui::EndMainMenuBar();
 	}
 

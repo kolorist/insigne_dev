@@ -61,7 +61,7 @@ void init_memory_system()
 			memory_region<refrain2::FreelistAllocator>	{ "refrain2/task",				SIZE_MB(4),		&refrain2::g_TaskAllocator },
 			memory_region<refrain2::FreelistAllocator>	{ "refrain2/taskdata",			SIZE_MB(16),	&refrain2::g_TaskDataAllocator },
 
-			memory_region<insigne::linear_allocator_t>	{ "insigne/persist",			SIZE_MB(512),	&insigne::g_persistance_allocator },
+			memory_region<insigne::linear_allocator_t>	{ "insigne/persist",			SIZE_MB(256),	&insigne::g_persistance_allocator },
 			memory_region<insigne::arena_allocator_t>	{ "insigne/arena",				SIZE_MB(64),	&insigne::g_arena_allocator },
 			memory_region<insigne::freelist_allocator_t>{ "insigne/stream",				SIZE_MB(64),	&insigne::g_stream_allocator },
 
@@ -70,40 +70,43 @@ void init_memory_system()
 			memory_region<stone::LinearAllocator>		{ "stone/system",				SIZE_MB(1),		&stone::g_SystemAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(32),	&stone::g_PersistanceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(64),	&stone::g_PersistanceResourceAllocator },
-			memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(128),	&stone::g_SceneResourceAllocator },
-			memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(128),	&stone::g_StreammingAllocator },
-			memory_region<stone::LinearArena>			{ "stone/temporal_lin",			SIZE_MB(4),		&stone::g_TemporalLinearArena },
-			memory_region<stone::FreelistArena>			{ "stone/temporal_free",		SIZE_MB(4),		&stone::g_TemporalFreeArena },
-			memory_region<stone::FreelistArena>			{ "stone/stb_arena",			SIZE_MB(128),	&stone::g_STBArena },
+			memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(64),	&stone::g_SceneResourceAllocator },
+			memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(64),	&stone::g_StreammingAllocator },
+			memory_region<stone::FreelistArena>			{ "stone/stb_arena",			SIZE_MB(32),	&stone::g_STBArena },
 			memory_region<stone::FreelistArena>			{ "stone/string_arena",			SIZE_MB(4),		&stone::g_StringArena }
 			);
 }
 
 }
 
-namespace stone {
-
-void SnapshotAllocatorInfos() {
+namespace stone
+{
+void SnapshotAllocatorInfos()
+{
 	u32 allocatorsCount = g_MemoryManager.p_mem_regions_count;
-	CLOVER_VERBOSE("==============Memory Dump==============");
+	CLOVER_VERBOSE("==============Memory Info==============");
 	CLOVER_VERBOSE("Number of Allocators: %d", allocatorsCount);
 	size totalAppMemoryBytes = 0;
-	for (u32 i = 0; i < allocatorsCount; i++) {
+	size totalUsedAppMemoryBytes = 0;
+	for (u32 i = 0; i < allocatorsCount; i++)
+	{
 		helich::memory_region_info& inf = g_MemoryManager.p_mem_regions[i];
-		CLOVER_VERBOSE("  %-25s [0x%x] [%d bytes]", inf.name, inf.base_address, inf.size_in_bytes);
+		CLOVER_VERBOSE(">>  %-25s [0x%x] [%d bytes]", inf.name, inf.base_address, inf.size_in_bytes);
 		totalAppMemoryBytes += inf.size_in_bytes;
-		helich::debug_memory_block memBlocks[128];
+		helich::debug_memory_block memBlocks[512];
 		u32 numAllocs = 0;
-		inf.dbg_info_extractor(inf.allocator_ptr, memBlocks, 128, numAllocs);
+		inf.dbg_info_extractor(inf.allocator_ptr, memBlocks, 512, numAllocs);
 		size totalUsedBytes = 0;
-		for (u32 j = 0; j < numAllocs; j++) {
-			CLOVER_VERBOSE("    #%4d: [0x%x] [%d bytes]", j, memBlocks[j].frame_address, memBlocks[j].frame_size);
+		for (u32 j = 0; j < numAllocs; j++)
+		{
+			CLOVER_VERBOSE("    #%4d: [0x%x] [%10d bytes] [%s]", j, memBlocks[j].frame_address, memBlocks[j].frame_size, memBlocks[j].description);
 			totalUsedBytes += memBlocks[j].frame_size;
 		}
+		totalUsedAppMemoryBytes += totalUsedBytes;
 		CLOVER_VERBOSE("    Usage: (%lld of %lld bytes) %4.2f %%", totalUsedBytes, inf.size_in_bytes,
 				(f32)totalUsedBytes * 100.0f / (f32)inf.size_in_bytes);
 	}
-	CLOVER_VERBOSE("Total: %lld MB", TO_MB(totalAppMemoryBytes));
+	CLOVER_VERBOSE("Total: %lld MB of %lld MB", TO_MB(totalUsedAppMemoryBytes), TO_MB(totalAppMemoryBytes));
 }
 
 }
