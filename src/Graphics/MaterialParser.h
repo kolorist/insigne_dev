@@ -5,6 +5,7 @@
 #include <floral/gpds/mat.h>
 #include <floral/containers/fast_array.h>
 #include <floral/cmds/path.h>
+#include <floral/io/filesystem.h>
 
 namespace mat_parser
 {
@@ -180,6 +181,9 @@ struct MaterialDescription
 
 template <class TMemoryArena>
 const MaterialDescription						ParseMaterial(const floral::path i_path, TMemoryArena* i_memoryArena);
+
+template <class TFileSystem, class TMemoryArena>
+const MaterialDescription						ParseMaterial(TFileSystem* i_fs, const floral::relative_path& i_path, TMemoryArena* i_memoryArena);
 
 template <class TMemoryArena>
 const MaterialDescription						ParseMaterial(const_cstr i_descBuffer, TMemoryArena* i_memoryArena);

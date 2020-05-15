@@ -19,6 +19,21 @@ const MaterialDescription ParseMaterial(const floral::path i_path, TMemoryArena*
 
 // ----------------------------------------------------------------------------
 
+template <class TFileSystem, class TMemoryArena>
+const MaterialDescription ParseMaterial(TFileSystem* i_fs, const floral::relative_path& i_path, TMemoryArena* i_memoryArena)
+{
+	floral::file_info inp = floral::open_file_read(i_fs, i_path);
+	floral::file_stream inpStream;
+	inpStream.buffer = (p8)i_memoryArena->allocate(inp.file_size + 1);
+	floral::read_all_file(inp, inpStream);
+	floral::close_file(inp);
+
+	inpStream.buffer[inp.file_size] = 0;
+	return ParseMaterial((const_cstr)inpStream.buffer, i_memoryArena);
+}
+
+// ----------------------------------------------------------------------------
+
 template <class TMemoryArena>
 const MaterialDescription ParseMaterial(const_cstr i_descBuffer, TMemoryArena* i_memoryArena)
 {

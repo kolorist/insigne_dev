@@ -5,6 +5,8 @@
 #include <insigne/commons.h>
 
 #include "Graphics/TestSuite.h"
+#include "Graphics/MaterialLoader.h"
+
 #include "Memory/MemorySystem.h"
 
 namespace stone
@@ -35,8 +37,12 @@ private:
 	insigne::vb_handle_t						m_VB;
 	insigne::ib_handle_t						m_IB;
 
-	insigne::shader_handle_t					m_Shader;
-	insigne::material_desc_t					m_Material;
+	mat_loader::MaterialShaderPair				m_MSPair;
+
+private:
+	FreelistArena*								m_MemoryArena;
+	LinearArena*								m_MaterialDataArena;
+	FreelistArena*								m_FSMemoryArena;
 };
 
 // ------------------------------------------------------------------

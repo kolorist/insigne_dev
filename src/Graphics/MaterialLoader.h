@@ -20,6 +20,8 @@ template <class TIOAllocator, class TMemoryAllocator>
 const bool										CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, TMemoryAllocator* i_ioAllocator, TMemoryAllocator* i_dataAllocator);
 template <class TMemoryAllocator>
 const bool										CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, nullptr_t i_ioAllocator, TMemoryAllocator* i_dataAllocator);
+template <class TFileSystem, class TIOAllocator, class TMemoryAllocator>
+const bool										CreateMaterial(MaterialShaderPair* o_mat, TFileSystem* i_fs, const mat_parser::MaterialDescription& i_matDesc, TIOAllocator* i_ioAllocator, TMemoryAllocator* i_dataAllocator);
 
 namespace internal
 {

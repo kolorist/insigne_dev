@@ -51,6 +51,9 @@ public:
 	void										RenderFrame(const f32 i_deltaMs);
 
 private:
+	void										_ShowGPUCounters();
+
+private:
 	void										_SwitchTestSuite(SuiteRegistry& i_to);
 	void										_ClearAllSuite();
 

@@ -1,6 +1,7 @@
 #include "DemoHub.h"
 
 #include <insigne/ut_render.h>
+#include <insigne/counters.h>
 
 #include <clover/Logger.h>
 
@@ -76,7 +77,7 @@ void DemoHub::Initialize()
 	//_EmplacePlaygroundSuite<perf::PostFX>();
 
 	_EmplacePerformanceSuite<perf::Empty>();
-	//_EmplacePerformanceSuite<perf::Triangle>();
+	_EmplacePerformanceSuite<perf::Triangle>();
 	_EmplacePerformanceSuite<perf::SceneLoader>();
 	//_EmplacePerformanceSuite<perf::GammaCorrection>();
 	//_EmplacePerformanceSuite<perf::Blending>();
@@ -272,11 +273,23 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 			ImGui::EndMenu();
 		}
 
+		static bool s_showGPUCounters = false;
+		if (ImGui::BeginMenu("Profiler"))
+		{
+			ImGui::MenuItem("GPU Counters", nullptr, &s_showGPUCounters);
+			ImGui::EndMenu();
+		}
+
 		if (m_Suite)
 		{
 			ImGui::MenuItem(m_Suite->GetName(), nullptr, nullptr, false);
 		}
 		ImGui::EndMainMenuBar();
+
+		if (s_showGPUCounters)
+		{
+			_ShowGPUCounters();
+		}
 	}
 
 	debugdraw::BeginFrame();
@@ -304,6 +317,31 @@ void DemoHub::RenderFrame(const f32 i_deltaMs)
 		insigne::mark_present_render();
 		insigne::dispatch_render_pass();
 	}
+}
+
+//--------------------------------------------------------------------
+
+void DemoHub::_ShowGPUCounters()
+{
+	// sample counters
+	static f32 s_gpuCycles[64];
+	static s32 currIdx = 0;
+	static f32 maxValue = 0.0f;
+	static f32 minValue = 0.0f;
+
+	const u64 validIdx = insigne::get_valid_debug_info_range_end();
+	f32 val = insigne::g_hardware_counters->gpu_cycles[validIdx];
+	s_gpuCycles[currIdx] = val;
+	size plotIdx = currIdx;
+	currIdx--;
+	if (currIdx < 0) currIdx = 63;
+	if (val > maxValue) maxValue = val;
+	if (val < minValue) minValue = val;
+	
+	ImGui::Begin("GPU Counters");
+	PlotValuesWrap("gpu cycles", s_gpuCycles, minValue, maxValue, IM_ARRAYSIZE(s_gpuCycles), 150,
+			plotIdx, IM_COL32(0, 255, 0, 255), IM_COL32(0, 255, 0, 255));
+	ImGui::End();
 }
 
 //--------------------------------------------------------------------

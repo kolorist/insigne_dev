@@ -1,6 +1,7 @@
 #include "Triangle.h"
 
 #include <floral/containers/array.h>
+#include <floral/io/filesystem.h>
 
 #include <clover/Logger.h>
 
@@ -12,37 +13,12 @@
 
 #include "InsigneImGui.h"
 #include "Graphics/SurfaceDefinitions.h"
+#include "Graphics/MaterialParser.h"
 
 namespace stone
 {
 namespace perf
 {
-//-------------------------------------------------------------------
-
-static const_cstr s_VertexShaderCode = R"(#version 300 es
-layout (location = 0) in highp vec2 l_Position_L;
-layout (location = 1) in mediump vec4 l_VertColor;
-
-out vec4 o_VertColor;
-
-void main() {
-	o_VertColor = l_VertColor;
-	gl_Position = vec4(l_Position_L, 0.0f, 1.0f);
-}
-)";
-
-static const_cstr s_FragmentShaderCode = R"(#version 300 es
-layout (location = 0) out mediump vec4 o_Color;
-
-in mediump vec4 o_VertColor;
-
-void main()
-{
-	o_Color = o_VertColor;
-}
-)";
-
-
 //-------------------------------------------------------------------
 
 Triangle::Triangle()
@@ -74,6 +50,11 @@ const_cstr Triangle::GetName() const
 void Triangle::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
+
+	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(2));
+	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
+	m_FSMemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(1));
+
 	// register surfaces
 	insigne::register_surface_type<geo2d::SurfacePC>();
 
@@ -110,24 +91,18 @@ void Triangle::_OnInitialize()
 		insigne::copy_update_ib(m_IB, &indices[0], indices.get_size(), 0);
 	}
 
-	{
-		insigne::shader_desc_t desc = insigne::create_shader_desc();
+	floral::absolute_path workingDir = floral::get_application_directory();
+	floral::relative_path dataPath = floral::build_relative_path("tests/perf/triangle");
+	floral::concat_path(&workingDir, dataPath);
 
-		strcpy(desc.vs, s_VertexShaderCode);
-		strcpy(desc.fs, s_FragmentShaderCode);
-		desc.vs_path = floral::path("/demo/simple_vs");
-		desc.fs_path = floral::path("/demo/simple_fs");
+	floral::filesystem<FreelistArena>* fs = floral::create_filesystem(workingDir, m_FSMemoryArena);
+	floral::relative_path matPath = floral::build_relative_path("triangle.mat");
+	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(fs, matPath, m_MemoryArena);
 
-		m_Shader = insigne::create_shader(desc);
-		insigne::infuse_material(m_Shader, m_Material);
-		m_Material.render_state.depth_write = true;
-		m_Material.render_state.depth_test = true;
-		m_Material.render_state.depth_func = insigne::compare_func_e::func_less_or_equal;
-		m_Material.render_state.blending = false;
-		m_Material.render_state.cull_face = true;
-		m_Material.render_state.face_side = insigne::face_side_e::back_side;
-		m_Material.render_state.front_face = insigne::front_face_e::face_ccw;
-	}
+	bool matLoadResult = mat_loader::CreateMaterial(&m_MSPair, fs, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(matLoadResult);
+
+	floral::destroy_filesystem(&fs);
 }
 
 //-------------------------------------------------------------------
@@ -142,7 +117,7 @@ void Triangle::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
-	insigne::draw_surface<geo2d::SurfacePC>(m_VB, m_IB, m_Material);
+	insigne::draw_surface<geo2d::SurfacePC>(m_VB, m_IB, m_MSPair.material);
 
 	RenderImGui();
 
@@ -157,6 +132,10 @@ void Triangle::_OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
 	insigne::unregister_surface_type<geo2d::SurfacePC>();
+
+	g_StreammingAllocator.free(m_FSMemoryArena);
+	g_StreammingAllocator.free(m_MaterialDataArena);
+	g_StreammingAllocator.free(m_MemoryArena);
 }
 
 //-------------------------------------------------------------------

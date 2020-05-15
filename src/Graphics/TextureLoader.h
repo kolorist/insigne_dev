@@ -2,6 +2,7 @@
 
 #include <floral/stdaliases.h>
 #include <floral/gpds/vec.h>
+#include <floral/io/filesystem.h>
 
 #include <insigne/commons.h>
 
@@ -67,6 +68,9 @@ struct TextureHeader
 
 template <class TIOAllocator>
 const insigne::texture_handle_t					LoadCBTexture(const floral::path& i_path, insigne::texture_desc_t& io_desc, TIOAllocator* i_ioAllocator, const bool i_loadMipmaps = false);
+
+template <class TFileSystem, class TIOAllocator>
+const insigne::texture_handle_t					LoadCBTexture(TFileSystem* i_fs, const floral::relative_path& i_path, insigne::texture_desc_t& io_desc, TIOAllocator* i_ioAllocator, const bool i_loadMipmaps = false);
 
 // LDR TGA texture only, use stb_image and stb_image_resize, slow
 const insigne::texture_handle_t					LoadLDRTexture2D(const floral::path& i_path, insigne::texture_desc_t& io_desc, const bool i_createMipmaps = false);

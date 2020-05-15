@@ -25,6 +25,8 @@ bool											DebugMat3fColumnOrder(const char* i_label, floral::mat3x3f* i_mat
 bool											DebugMat4fColumnOrder(const char* i_label, floral::mat4x4f* i_mat);
 bool											DebugMat3fRowOrder(const char* i_label, floral::mat3x3f* i_mat);
 bool											DebugMat4fRowOrder(const char* i_label, floral::mat4x4f* i_mat);
+void											PlotValuesWrap(const_cstr i_title, f32* i_values, const f32 i_minValue, const f32 i_maxValue, const size i_arraySize, const s32 i_height,
+													const s32 i_startIdx = 0, const ImU32 i_labelColor = 0xFFFFFFFF, const ImU32 i_lineColor = 0xFFFFFFFF);
 
 const bool										DidImGuiConsumeMouse();
 
