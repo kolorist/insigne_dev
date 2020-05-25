@@ -41,7 +41,7 @@ const_cstr SurfelsGenerator::GetName() const
 	return k_SuiteName;
 }
 
-void SurfelsGenerator::OnInitialize()
+void SurfelsGenerator::OnInitialize(floral::filesystem<FreelistArena>* i_fs)
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// snapshot begin state

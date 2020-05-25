@@ -44,7 +44,7 @@ const_cstr FragmentPartition::GetName() const
 	return k_SuiteName;
 }
 
-void FragmentPartition::OnInitialize()
+void FragmentPartition::OnInitialize(floral::filesystem<FreelistArena>* i_fs)
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// snapshot begin state

@@ -46,7 +46,7 @@ const insigne::texture_handle_t LoadLDRTexture2D(const floral::path& i_path, ins
 	}
 	io_desc.dimension = insigne::texture_dimension_e::tex_2d;
 	io_desc.has_mipmap = i_createMipmaps;
-	const size dataSize = insigne::prepare_texture_desc(io_desc);
+	insigne::prepare_texture_desc(io_desc);
 	aptr readSize = 0;
 
 	// copy mip 0

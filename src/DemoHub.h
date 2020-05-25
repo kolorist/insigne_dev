@@ -5,6 +5,7 @@
 #include <floral/containers/array.h>
 #include <floral/containers/fast_array.h>
 #include <floral/function/simple_callback.h>
+#include <floral/io/filesystem.h>
 
 #include "Memory/MemorySystem.h"
 
@@ -36,7 +37,7 @@ private:
 	};
 
 public:
-	DemoHub();
+	DemoHub(floral::filesystem<FreelistArena>* i_fs);
 	~DemoHub();
 
 	void										Initialize();
@@ -124,6 +125,7 @@ private:
 	}
 
 private:
+	floral::filesystem<FreelistArena>*			m_FileSystem;
 	s32											m_NextSuiteId;
 	s32											m_CurrentTestSuiteId;
 	ITestSuite*									m_Suite;

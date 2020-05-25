@@ -506,7 +506,7 @@ void SHCalculator::_OnInitialize()
 	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(
 			floral::path("tests/tech/sh_calculator/hdr_pfx.pfx"),
 			m_TemporalArena);
-	m_PostFXChain.Initialize(pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
+	m_PostFXChain.Initialize(m_FileSystem, pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 
 	_LoadMaterial(&m_SHPreviewMSPair, floral::path("tests/tech/sh_calculator/probe_preview_sh.mat"));
 	_LoadMaterial(&m_SHSkyPreviewMSPair, floral::path("tests/tech/sh_calculator/sky_preview_sh.mat"));

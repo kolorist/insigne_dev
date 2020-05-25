@@ -58,7 +58,7 @@ const_cstr LightProbeGI::GetName() const
 	return k_SuiteName;
 }
 
-void LightProbeGI::OnInitialize()
+void LightProbeGI::OnInitialize(floral::filesystem<FreelistArena>* i_fs)
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// snapshot begin state

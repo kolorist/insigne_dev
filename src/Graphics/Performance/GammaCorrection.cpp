@@ -76,7 +76,7 @@ void GammaCorrection::_OnInitialize()
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
 			floral::path("tests/perf/gamma_correction/gamma.mat"), m_MemoryArena);
 
-	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, nullptr, m_MaterialDataArena);
+	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
 	FLORAL_ASSERT(pbrMaterialResult == true);
 }
 

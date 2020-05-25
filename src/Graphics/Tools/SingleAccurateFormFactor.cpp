@@ -38,7 +38,7 @@ const_cstr SingleAccurateFormFactor::GetName() const
 	return k_SuiteName;
 }
 
-void SingleAccurateFormFactor::OnInitialize()
+void SingleAccurateFormFactor::OnInitialize(floral::filesystem<FreelistArena>* i_fs)
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// snapshot begin state

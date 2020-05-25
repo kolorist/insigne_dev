@@ -3,6 +3,7 @@
 #include <floral/stdaliases.h>
 #include <floral/cmds/path.h>
 #include <floral/containers/fast_array.h>
+#include <floral/io/filesystem.h>
 
 namespace pfx_parser
 {
@@ -76,6 +77,8 @@ struct PresetDescription
 
 struct PostEffectsDescription
 {
+	ColorFormat									mainFbFormat;
+
 	s32											fbsCount;
 	FBDescription*								fbList;
 
@@ -86,7 +89,10 @@ struct PostEffectsDescription
 // -------------------------------------------------------------------
 
 template <class TMemoryArena>
-const PostEffectsDescription					ParsePostFX(const floral::path i_path, TMemoryArena* i_memoryArena);
+const PostEffectsDescription					ParsePostFX(const floral::path& i_path, TMemoryArena* i_memoryArena);
+
+template <class TFileSystem, class TMemoryArena>
+const PostEffectsDescription					ParsePostFX(TFileSystem* i_fs, const floral::relative_path& i_path, TMemoryArena* i_memoryArena);
 
 template <class TMemoryArena>
 const PostEffectsDescription					ParsePostFX(const_cstr i_descBuffer, TMemoryArena* i_memoryArena);
@@ -102,6 +108,8 @@ enum class TokenType
 	ValueInt,
 	ValueFloat,
 	ValueStringLiteral,
+
+	MainFBFormat,
 
 	FBDeclare, EndFBDeclare,
 	FSize, ISize, Depth, Color,

@@ -223,7 +223,7 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 }
 
 template <class TMemoryAllocator>
-const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, nullptr_t i_ioAllocator, TMemoryAllocator* i_dataAllocator)
+const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, TMemoryAllocator* i_dataAllocator)
 {
 	return CreateMaterial(o_mat, i_matDesc, (TMemoryAllocator*)nullptr, i_dataAllocator);
 }
@@ -423,6 +423,12 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, TFileSystem* i_fs, const ma
 	}
 
 	return true;
+}
+
+template <class TFileSystem, class TMemoryAllocator>
+const bool CreateMaterial(MaterialShaderPair* o_mat, TFileSystem* i_fs, const mat_parser::MaterialDescription& i_matDesc, TMemoryAllocator* i_dataAllocator)
+{
+	return CreateMaterial(o_mat, i_fs, i_matDesc, (TMemoryAllocator*)nullptr, i_dataAllocator);
 }
 
 namespace internal

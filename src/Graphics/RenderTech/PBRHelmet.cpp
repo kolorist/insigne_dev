@@ -158,7 +158,7 @@ void PBRHelmet::_OnInitialize()
 			floral::path("tests/tech/pbr/hdr_pfx.pfx"),
 			m_MemoryArena);
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
-	m_PostFXChain.Initialize(pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
+	m_PostFXChain.Initialize(m_FileSystem, pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 
 	floral::vec2f fxaaTexelSize(1.0f / commonCtx->window_width, 1.0f / commonCtx->window_height);
 	m_PostFXChain.SetValueVec2("ub_FXAAConfigs.iu_TexelSize", fxaaTexelSize);

@@ -3,7 +3,6 @@
 #include <floral/stdaliases.h>
 
 #include "Graphics/TestSuite.h"
-
 #include "Graphics/InsigneHelpers.h"
 #include "Graphics/PostFXChain.h"
 #include "Graphics/MaterialLoader.h"

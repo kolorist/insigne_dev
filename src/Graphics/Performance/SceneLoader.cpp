@@ -88,7 +88,7 @@ void SceneLoader::_OnInitialize()
 		m_MemoryArena->free_all();
 		mat_loader::MaterialShaderPair splitSumMSPair;
 		mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(floral::path("tests/tech/pbr/pbr_splitsum.mat"), m_MemoryArena);
-		const bool ssMaterialResult = mat_loader::CreateMaterial(&splitSumMSPair, matDesc, nullptr, m_MaterialDataArena);
+		const bool ssMaterialResult = mat_loader::CreateMaterial(&splitSumMSPair, matDesc, m_MaterialDataArena);
 		FLORAL_ASSERT(ssMaterialResult);
 
 		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
@@ -293,7 +293,7 @@ void SceneLoader::_OnInitialize()
 	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(
 			floral::path("tests/perf/scene_loader/hdr_pfx.pfx"),
 			m_MemoryArena);
-	m_PostFXChain.Initialize(pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
+	m_PostFXChain.Initialize(m_FileSystem, pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 
 	floral::vec2f fxaaTexelSize(1.0f / commonCtx->window_width, 1.0f / commonCtx->window_height);
 	m_PostFXChain.SetValueVec2("ub_FXAAConfigs.iu_TexelSize", fxaaTexelSize);

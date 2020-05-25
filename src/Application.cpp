@@ -117,6 +117,11 @@ void Application::OnInitializePlatform()
 	insigne::g_scene_settings.max_fbos = 32;
 
 	insigne::organize_memory();
+
+	CLOVER_VERBOSE("Initialize filesystem");
+	m_FSMemoryArena = g_PersistanceAllocator.allocate_arena<FreelistArena>(SIZE_MB(1));
+	floral::absolute_path workingDir = floral::get_application_directory();
+	m_FileSystem = floral::create_filesystem(workingDir, m_FSMemoryArena);
 }
 
 void Application::OnInitializeRenderer()
@@ -141,7 +146,7 @@ void Application::OnInitializeGame()
 {
 	LOG_TOPIC("app");
 	CLOVER_VERBOSE("Initialize game settings");
-	m_DemoHub = g_PersistanceAllocator.allocate<DemoHub>();
+	m_DemoHub = g_PersistanceAllocator.allocate<DemoHub>(m_FileSystem);
 	m_DemoHub->Initialize();
 	m_Initialized = true;
 }
@@ -161,6 +166,8 @@ void Application::OnCleanUp()
 {
 	m_DemoHub->CleanUp();
 	insigne::clean_up_and_stop_render_thread();
+
+	floral::destroy_filesystem(&m_FileSystem);
 }
 
 // -----------------------------------------

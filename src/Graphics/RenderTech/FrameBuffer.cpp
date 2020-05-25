@@ -91,7 +91,7 @@ const_cstr FrameBuffer::GetName() const
 	return k_SuiteName;
 }
 
-void FrameBuffer::OnInitialize()
+void FrameBuffer::OnInitialize(floral::filesystem<FreelistArena>* i_fs)
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// snapshot begin state

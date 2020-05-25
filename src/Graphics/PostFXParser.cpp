@@ -11,6 +11,8 @@ namespace pfx_parser
 static const_cstr k_KeywordFBDeclare			= "_fb";
 static const_cstr k_KeywordEndFBDeclare			= "_end_fb";
 
+static const_cstr k_KeywordMainFBFormat			= "_main_fb";
+
 static const_cstr k_KeywordFSize				= "fsize";
 static const_cstr k_KeywordISize				= "isize";
 static const_cstr k_KeywordDepth				= "depth";
@@ -64,6 +66,11 @@ Token Tokenizer::GetNextToken()
 	else if (strncmp(tokenStr, k_KeywordEndFBDeclare, tokenStrLen) == 0)
 	{
 		newToken.type = TokenType::EndFBDeclare;
+	}
+
+	else if (strncmp(tokenStr, k_KeywordMainFBFormat, tokenStrLen) == 0 && strlen(k_KeywordMainFBFormat) == tokenStrLen)
+	{
+		newToken.type = TokenType::MainFBFormat;
 	}
 
 	else if (strncmp(tokenStr, k_KeywordFSize, tokenStrLen) == 0)

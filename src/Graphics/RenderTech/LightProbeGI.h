@@ -23,7 +23,7 @@ public:
 
 	const_cstr									GetName() const override;
 
-	void										OnInitialize() override;
+	void										OnInitialize(floral::filesystem<FreelistArena>* i_fs) override;
 	void										OnUpdate(const f32 i_deltaMs) override;
 	void										OnRender(const f32 i_deltaMs) override;
 	void										OnCleanUp() override;

@@ -42,7 +42,6 @@ private:
 private:
 	FreelistArena*								m_MemoryArena;
 	LinearArena*								m_MaterialDataArena;
-	FreelistArena*								m_FSMemoryArena;
 };
 
 // ------------------------------------------------------------------

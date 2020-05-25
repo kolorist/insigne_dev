@@ -7,6 +7,7 @@
 #include "Graphics/TestSuite.h"
 #include "Graphics/InsigneHelpers.h"
 #include "Graphics/MaterialLoader.h"
+#include "Graphics/PostFXChain.h"
 
 #include "Memory/MemorySystem.h"
 
@@ -22,7 +23,7 @@ public:
 	static constexpr const_cstr k_name			= "blending";
 
 public:
-	Blending();
+	Blending(const_cstr i_pfxConfig);
 	~Blending();
 
 	ICameraMotion*								GetCameraMotion() override;
@@ -34,15 +35,56 @@ private:
 	void										_OnRender(const f32 i_deltaMs) override;
 	void										_OnCleanUp() override;
 
+protected:
+	const_cstr									m_PostFXConfig;
+
 private:
 	helpers::SurfaceGPU							m_Quad0;
 	helpers::SurfaceGPU							m_TQuad0;
-	mat_loader::MaterialShaderPair				m_MSPair0;
-	mat_loader::MaterialShaderPair				m_TMSPair0;
+	helpers::SurfaceGPU							m_TQuad00;
+	mat_loader::MaterialShaderPair				m_MSPairSolid;
+	mat_loader::MaterialShaderPair				m_MSPairTransparent;
+
+	pfx_chain::PostFXChain<LinearArena, FreelistArena>	m_PostFXChain;
 
 private:
 	FreelistArena*								m_MemoryArena;
 	LinearArena*								m_MaterialDataArena;
+	LinearArena*								m_PostFXArena;
+};
+
+// ------------------------------------------------------------------
+
+class LDRBlending : public Blending
+{
+public:
+	static constexpr const_cstr k_name			= "ldr blending";
+
+public:
+	LDRBlending()
+		: Blending("ldr_postfx.pfx")
+	{
+	}
+
+	~LDRBlending()
+	{
+	}
+};
+
+class HDRBlending : public Blending
+{
+public:
+	static constexpr const_cstr k_name			= "hdr blending";
+
+public:
+	HDRBlending()
+		: Blending("hdr_postfx.pfx")
+	{
+	}
+
+	~HDRBlending()
+	{
+	}
 };
 
 // ------------------------------------------------------------------

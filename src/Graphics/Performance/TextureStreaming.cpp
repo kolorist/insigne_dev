@@ -34,7 +34,7 @@ const_cstr TextureStreaming::GetName() const
 	return k_SuiteName;
 }
 
-void TextureStreaming::OnInitialize()
+void TextureStreaming::OnInitialize(floral::filesystem<FreelistArena>* i_fs)
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_SuiteName);
 	// snapshot begin state
@@ -115,7 +115,7 @@ void TextureStreaming::OnInitialize()
 
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
 			floral::path("gfx/mat/texture_streaming.mat"), m_MemoryArena);
-	const bool result = mat_loader::CreateMaterial(&m_MSPair, matDesc, nullptr, m_MaterialDataArena);
+	const bool result = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
 
 	insigne::helpers::assign_texture(m_MSPair.material, "u_Tex", m_Texture);
 

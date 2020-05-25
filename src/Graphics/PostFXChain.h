@@ -67,7 +67,8 @@ public:
 	PostFXChain();
 	~PostFXChain();
 
-	void										Initialize(const pfx_parser::PostEffectsDescription& i_pfxDesc, const floral::vec2f& i_baseRes, TLinearAllocator* i_memoryArena);
+	template <class TFileSystem>
+	void										Initialize(TFileSystem* i_fs, const pfx_parser::PostEffectsDescription& i_pfxDesc, const floral::vec2f& i_baseRes, TLinearAllocator* i_memoryArena);
 	void										CleanUp();
 	void										SetValueVec3(const_cstr i_key, const floral::vec3f& i_value);
 	void										SetValueVec2(const_cstr i_key, const floral::vec2f& i_value);
@@ -82,7 +83,9 @@ public:
 private:
 	void										_SetValue(const floral::crc_string& i_key, voidptr i_data, const size i_size);
 	Framebuffer*								_FindFramebuffer(const_cstr i_name);
-	mat_loader::MaterialShaderPair				_LoadAndCreateMaterial(const_cstr i_fileName, aptr& io_offset, voidptr i_data, const insigne::ub_handle_t i_ub);
+
+	template <class TFileSystem>
+	mat_loader::MaterialShaderPair				_LoadAndCreateMaterial(TFileSystem* i_fs, const_cstr i_fileName, aptr& io_offset, voidptr i_data, const insigne::ub_handle_t i_ub);
 
 private:
 	helpers::SurfaceGPU							m_SSQuad;

@@ -27,7 +27,8 @@ PostFXChain<TLinearAllocator, TFreelistAllocator>::~PostFXChain()
 // -------------------------------------------------------------------
 
 template <class TLinearAllocator, class TFreelistAllocator>
-void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(const pfx_parser::PostEffectsDescription& i_pfxDesc, const floral::vec2f& i_baseRes, TLinearAllocator* i_memoryArena)
+template <class TFileSystem>
+void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* i_fs, const pfx_parser::PostEffectsDescription& i_pfxDesc, const floral::vec2f& i_baseRes, TLinearAllocator* i_memoryArena)
 {
 	m_MemoryArena = i_memoryArena;
 	m_MemoryArena->free_all();
@@ -84,7 +85,18 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(const pfx_par
 	mainDesc.width = (s32)i_baseRes.x;
 	mainDesc.height = (s32)i_baseRes.y;
 	mainDesc.has_depth = true;
-	mainDesc.color_attachments->push_back(insigne::color_attachment_t("color0", insigne::texture_format_e::hdr_rgb_half));
+	if (i_pfxDesc.mainFbFormat == pfx_parser::ColorFormat::LDR)
+	{
+		mainDesc.color_attachments->push_back(insigne::color_attachment_t("color0", insigne::texture_format_e::rgba));
+	}
+	else if (i_pfxDesc.mainFbFormat == pfx_parser::ColorFormat::HDRHigh)
+	{
+		mainDesc.color_attachments->push_back(insigne::color_attachment_t("color0", insigne::texture_format_e::hdr_rgba));
+	}
+	else
+	{
+		mainDesc.color_attachments->push_back(insigne::color_attachment_t("color0", insigne::texture_format_e::hdr_rgb_half));
+	}
 	m_MainBuffer.fbHandle = insigne::create_framebuffer(mainDesc);
 	m_MainBuffer.dim = i_baseRes;
 
@@ -164,7 +176,7 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(const pfx_par
 			const pfx_parser::PassDescription& passDesc = presetDesc.passList[j];
 			RenderPass newRenderPass;
 			newRenderPass.targetFb = _FindFramebuffer(passDesc.targetFBName);
-			newRenderPass.msPair = _LoadAndCreateMaterial(passDesc.materialFileName, dataOffset, m_UBData, m_UB);
+			newRenderPass.msPair = _LoadAndCreateMaterial(i_fs, passDesc.materialFileName, dataOffset, m_UBData, m_UB);
 			// binding
 			for (s32 k = 0; k < passDesc.bindingsCount; k++)
 			{
@@ -328,14 +340,16 @@ Framebuffer* PostFXChain<TLinearAllocator, TFreelistAllocator>::_FindFramebuffer
 // -------------------------------------------------------------------
 
 template <class TLinearAllocator, class TFreelistAllocator>
-mat_loader::MaterialShaderPair PostFXChain<TLinearAllocator, TFreelistAllocator>::_LoadAndCreateMaterial(const_cstr i_fileName, aptr& io_offset, voidptr i_data, const insigne::ub_handle_t i_ub)
+template <class TFileSystem>
+mat_loader::MaterialShaderPair PostFXChain<TLinearAllocator, TFreelistAllocator>::_LoadAndCreateMaterial(TFileSystem* i_fs, const_cstr i_fileName, aptr& io_offset, voidptr i_data, const insigne::ub_handle_t i_ub)
 {
 	mat_loader::MaterialShaderPair retPair;
 	m_TemporalArena->free_all();
-	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(floral::path(i_fileName), m_TemporalArena);
+	floral::relative_path matPath = floral::build_relative_path(i_fileName);
+	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(i_fs, matPath, m_TemporalArena);
 
 	// we will create the uniform buffer ourself
-	const bool pbrMaterialResult = mat_loader::CreateMaterial<TLinearAllocator>(&retPair, matDesc, nullptr, nullptr);
+	const bool pbrMaterialResult = mat_loader::CreateMaterial<TFileSystem, TLinearAllocator, TFreelistAllocator>(&retPair, i_fs, matDesc, nullptr, nullptr);
 	FLORAL_ASSERT(pbrMaterialResult == true);
 
 	FLORAL_ASSERT(matDesc.buffersCount <= 1);

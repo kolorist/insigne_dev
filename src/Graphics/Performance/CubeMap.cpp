@@ -125,7 +125,7 @@ void CubeMapTextures::_OnInitialize()
 	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(
 			floral::path("tests/perf/textures/hdr_pfx.pfx"),
 			m_MemoryArena);
-	m_PostFXChain.Initialize(pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
+	m_PostFXChain.Initialize(m_FileSystem, pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 }
 
 //-------------------------------------------------------------------

@@ -49,8 +49,9 @@ namespace stone
 {
 //--------------------------------------------------------------------
 
-DemoHub::DemoHub()
-	: m_NextSuiteId(0)
+DemoHub::DemoHub(floral::filesystem<FreelistArena>* i_fs)
+	: m_FileSystem(i_fs)
+	, m_NextSuiteId(0)
 	, m_CurrentTestSuiteId(-1)
 	, m_Suite(nullptr)
 {
@@ -73,14 +74,14 @@ void DemoHub::Initialize()
 	debugdraw::Initialize();
 
 	_EmplacePlaygroundSuite<perf::Vault>();
-	//_EmplacePlaygroundSuite<misc::GLTFLoader>();
 	//_EmplacePlaygroundSuite<perf::PostFX>();
 
 	_EmplacePerformanceSuite<perf::Empty>();
 	_EmplacePerformanceSuite<perf::Triangle>();
 	_EmplacePerformanceSuite<perf::SceneLoader>();
 	//_EmplacePerformanceSuite<perf::GammaCorrection>();
-	//_EmplacePerformanceSuite<perf::Blending>();
+	_EmplacePerformanceSuite<perf::LDRBlending>();
+	_EmplacePerformanceSuite<perf::HDRBlending>();
 	_EmplacePerformanceSuite<perf::Textures>();
 	_EmplacePerformanceSuite<perf::CubeMapTextures>();
 
@@ -326,8 +327,6 @@ void DemoHub::_ShowGPUCounters()
 	// sample counters
 	static f32 s_gpuCycles[64];
 	static s32 currIdx = 0;
-	static f32 maxValue = 0.0f;
-	static f32 minValue = 0.0f;
 
 	const u64 validIdx = insigne::get_valid_debug_info_range_end();
 	f32 val = insigne::g_hardware_counters->gpu_cycles[validIdx];
@@ -335,11 +334,22 @@ void DemoHub::_ShowGPUCounters()
 	size plotIdx = currIdx;
 	currIdx--;
 	if (currIdx < 0) currIdx = 63;
-	if (val > maxValue) maxValue = val;
-	if (val < minValue) minValue = val;
+
+	f32 maxValue = 0.0f;
+	f32 minValue = 0.0f;
+	f32 avgValue = 0.0f;
+	for (s32 i = 0; i < 64; i++)
+	{
+		f32 v = s_gpuCycles[i];
+		if (v > maxValue) maxValue = v;
+		if (v < minValue) minValue = v;
+		avgValue += v;
+	}
+	avgValue /= 64.0f;
 	
 	ImGui::Begin("GPU Counters");
-	PlotValuesWrap("gpu cycles", s_gpuCycles, minValue, maxValue, IM_ARRAYSIZE(s_gpuCycles), 150,
+	ImGui::SameLine(); ImGui::Text("Avg: %4.2f", avgValue);
+	PlotValuesWrap("gpu cycles", s_gpuCycles, minValue, maxValue, IM_ARRAYSIZE(s_gpuCycles), 80,
 			plotIdx, IM_COL32(0, 255, 0, 255), IM_COL32(0, 255, 0, 255));
 	ImGui::End();
 }
@@ -359,7 +369,7 @@ void DemoHub::_SwitchTestSuite(SuiteRegistry& i_to)
 
 		m_CurrentTestSuiteId = i_to.id;
 		m_Suite = i_to.createFunction();
-		m_Suite->OnInitialize();
+		m_Suite->OnInitialize(m_FileSystem);
 	}
 }
 

@@ -5,9 +5,22 @@ namespace pfx_parser
 // -------------------------------------------------------------------
 
 template <class TMemoryArena>
-const PostEffectsDescription ParsePostFX(const floral::path i_path, TMemoryArena* i_memoryArena)
+const PostEffectsDescription ParsePostFX(const floral::path& i_path, TMemoryArena* i_memoryArena)
 {
 	floral::file_info inp = floral::open_file(i_path);
+	floral::file_stream inpStream;
+	inpStream.buffer = (p8)i_memoryArena->allocate(inp.file_size + 1);
+	floral::read_all_file(inp, inpStream);
+	floral::close_file(inp);
+
+	inpStream.buffer[inp.file_size] = 0;
+	return ParsePostFX((const_cstr)inpStream.buffer, i_memoryArena);
+}
+
+template <class TFileSystem, class TMemoryArena>
+const PostEffectsDescription ParsePostFX(TFileSystem* i_fs, const floral::relative_path& i_path, TMemoryArena* i_memoryArena)
+{
+	floral::file_info inp = floral::open_file_read(i_fs, i_path);
 	floral::file_stream inpStream;
 	inpStream.buffer = (p8)i_memoryArena->allocate(inp.file_size + 1);
 	floral::read_all_file(inp, inpStream);
@@ -80,6 +93,9 @@ const_cstr PostFXParser(const TokenArray<TMemoryArena>& i_tokenArray, PostEffect
 
 	size tokenIdx = 0;
 	bool finished = false;
+
+	o_pfxDesc->mainFbFormat = ColorFormat::HDRMedium;
+
 	do
 	{
 		const Token& token = i_tokenArray[tokenIdx];
@@ -99,6 +115,31 @@ const_cstr PostFXParser(const TokenArray<TMemoryArena>& i_tokenArray, PostEffect
 				return parseResult;
 			}
 			fbDescArray.push_back(newFBDesc);
+			break;
+		}
+
+		case TokenType::MainFBFormat:
+		{
+			tokenIdx++;
+			const Token& expectFormat = i_tokenArray[tokenIdx];
+			FLORAL_ASSERT(expectFormat.type == TokenType::ValueStringLiteral);
+			if (strcmp(expectFormat.strValue, "ldr") == 0)
+			{
+				o_pfxDesc->mainFbFormat = ColorFormat::LDR;
+			}
+			else if (strcmp(expectFormat.strValue, "hdr_medium") == 0)
+			{
+				o_pfxDesc->mainFbFormat = ColorFormat::HDRMedium;
+			}
+			else if (strcmp(expectFormat.strValue, "hdr_high") == 0)
+			{
+				o_pfxDesc->mainFbFormat = ColorFormat::HDRHigh;
+			}
+			else
+			{
+				FLORAL_ASSERT(false);
+			}
+			tokenIdx++;
 			break;
 		}
 

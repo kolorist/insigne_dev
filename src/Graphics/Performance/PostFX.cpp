@@ -68,7 +68,7 @@ void PostFX::_OnInitialize()
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
 			floral::path("tests/perf/post_effects/sample.mat"), m_MemoryArena);
 
-	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, nullptr, m_MaterialDataArena);
+	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MaterialDataArena);
 	FLORAL_ASSERT(pbrMaterialResult == true);
 
 	m_MemoryArena->free_all();
@@ -76,7 +76,7 @@ void PostFX::_OnInitialize()
 			floral::path("tests/perf/post_effects/posteffects.pfx"),
 			m_MemoryArena);
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
-	m_PostFXChain.Initialize(pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
+	m_PostFXChain.Initialize(m_FileSystem, pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 
 	m_MemoryArena->free_all();
 }

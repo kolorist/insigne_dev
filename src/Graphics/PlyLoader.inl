@@ -20,7 +20,7 @@ PlyData<TAllocator> LoadFromPly(const floral::path& i_path, TAllocator* i_alloca
 	c8 buffer[1024];
 	u32 vertexCount = 0;
 	u32 faceCount = 0;
-	bool hasNormal = false;
+	//bool hasNormal = false;
 
 	dataStream.read_line_to_buffer(buffer);	// ply
 	dataStream.read_line_to_buffer(buffer);	// format ascii 1.0
@@ -118,7 +118,7 @@ PlyData<TAllocator> LoadFFPatchesFromPly(const floral::path& i_path, TAllocator*
 	c8 buffer[1024];
 	u32 vertexCount = 0;
 	u32 faceCount = 0;
-	bool hasNormal = false;
+	//bool hasNormal = false;
 
 	dataStream.read_line_to_buffer(buffer);	// ply
 	dataStream.read_line_to_buffer(buffer);	// format ascii 1.0

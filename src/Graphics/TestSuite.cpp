@@ -10,8 +10,10 @@ namespace stone
 {
 // ------------------------------------------------------------------
 
-void TestSuite::OnInitialize()
+void TestSuite::OnInitialize(floral::filesystem<FreelistArena>* i_fs)
 {
+	m_FileSystem = i_fs;
+
 	m_BuffersBeginStateId = insigne::get_buffers_resource_state();
 	m_ShadingBeginStateId = insigne::get_shading_resource_state();
 	m_TextureBeginStateId = insigne::get_textures_resource_state();
@@ -38,6 +40,8 @@ void TestSuite::OnCleanUp()
 	insigne::cleanup_textures_resource(m_TextureBeginStateId);
 	insigne::cleanup_shading_resource(m_ShadingBeginStateId);
 	insigne::cleanup_buffers_resource(m_BuffersBeginStateId);
+
+	m_FileSystem = nullptr;
 
 	insigne::dispatch_render_pass();
 	insigne::wait_finish_dispatching();

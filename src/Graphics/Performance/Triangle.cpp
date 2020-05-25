@@ -50,10 +50,11 @@ const_cstr Triangle::GetName() const
 void Triangle::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
+	floral::relative_path wdir = floral::build_relative_path("tests/perf/triangle");
+	floral::push_directory(m_FileSystem, wdir);
 
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(2));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
-	m_FSMemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(1));
 
 	// register surfaces
 	insigne::register_surface_type<geo2d::SurfacePC>();
@@ -91,18 +92,10 @@ void Triangle::_OnInitialize()
 		insigne::copy_update_ib(m_IB, &indices[0], indices.get_size(), 0);
 	}
 
-	floral::absolute_path workingDir = floral::get_application_directory();
-	floral::relative_path dataPath = floral::build_relative_path("tests/perf/triangle");
-	floral::concat_path(&workingDir, dataPath);
-
-	floral::filesystem<FreelistArena>* fs = floral::create_filesystem(workingDir, m_FSMemoryArena);
 	floral::relative_path matPath = floral::build_relative_path("triangle.mat");
-	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(fs, matPath, m_MemoryArena);
-
-	bool matLoadResult = mat_loader::CreateMaterial(&m_MSPair, fs, matDesc, m_MemoryArena, m_MaterialDataArena);
+	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	bool matLoadResult = mat_loader::CreateMaterial(&m_MSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(matLoadResult);
-
-	floral::destroy_filesystem(&fs);
 }
 
 //-------------------------------------------------------------------
@@ -133,9 +126,10 @@ void Triangle::_OnCleanUp()
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
 	insigne::unregister_surface_type<geo2d::SurfacePC>();
 
-	g_StreammingAllocator.free(m_FSMemoryArena);
 	g_StreammingAllocator.free(m_MaterialDataArena);
 	g_StreammingAllocator.free(m_MemoryArena);
+
+	floral::pop_directory(m_FileSystem);
 }
 
 //-------------------------------------------------------------------
