@@ -33,7 +33,7 @@ public:
 	const_cstr									GetName() const override;
 
 private:
-	mat_loader::MaterialShaderPair				_LoadMaterial(const floral::path& i_path);
+	mat_loader::MaterialShaderPair				_LoadMaterial(const_cstr i_path);
 
 private:
 	void										_OnInitialize() override;

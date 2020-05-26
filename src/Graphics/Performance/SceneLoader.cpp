@@ -55,6 +55,9 @@ const_cstr SceneLoader::GetName() const
 void SceneLoader::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
+	floral::relative_path wdir = floral::build_relative_path("tests/perf/scene_loader");
+	floral::push_directory(m_FileSystem, wdir);
+
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
 	m_SceneDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(16));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
@@ -87,8 +90,9 @@ void SceneLoader::_OnInitialize()
 
 		m_MemoryArena->free_all();
 		mat_loader::MaterialShaderPair splitSumMSPair;
-		mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(floral::path("tests/tech/pbr/pbr_splitsum.mat"), m_MemoryArena);
-		const bool ssMaterialResult = mat_loader::CreateMaterial(&splitSumMSPair, matDesc, m_MaterialDataArena);
+		floral::relative_path matPath = floral::build_relative_path("pbr_splitsum.mat");
+		mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+		const bool ssMaterialResult = mat_loader::CreateMaterial(&splitSumMSPair, m_FileSystem, matDesc, m_MaterialDataArena);
 		FLORAL_ASSERT(ssMaterialResult);
 
 		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
@@ -177,13 +181,16 @@ void SceneLoader::_OnInitialize()
 	const cbscene::Scene scene = cbscene::LoadSceneData(floral::path("tests/perf/scene_loader/sponza/sponza.gltf.cbscene"),
 			m_MemoryArena, m_SceneDataArena);
 
+	floral::relative_path sceneDir = floral::build_relative_path("sponza");
+	floral::push_directory(m_FileSystem, sceneDir);
 	m_MaterialArray.reserve(scene.nodesCount, m_SceneDataArena);
 	m_ModelDataArray.reserve(scene.nodesCount, m_SceneDataArena);
 	floral::vec3f minCorner(9999.0f, 9999.0f, 9999.0f);
 	floral::vec3f maxCorner(-9999.0f, -9999.0f, -9999.0f);
 	for (size i = 0; i < scene.nodesCount; i++)
 	{
-		c8 modelFile[512];
+		// TODO: adapt model loading to floral::filesystem
+		c8 modelFile[128];
 		sprintf(modelFile, "tests/perf/scene_loader/sponza/%s", scene.nodeFileNames[i]);
 		m_MemoryArena->free_all();
 		cbmodel::Model<geo3d::VertexPNTT> model = cbmodel::LoadModelData<geo3d::VertexPNTT>(
@@ -197,15 +204,16 @@ void SceneLoader::_OnInitialize()
 		if (model.aabb.max_corner.x > maxCorner.x) maxCorner.x = model.aabb.max_corner.x;
 		if (model.aabb.max_corner.y > maxCorner.y) maxCorner.y = model.aabb.max_corner.y;
 		if (model.aabb.max_corner.z > maxCorner.z) maxCorner.z = model.aabb.max_corner.z;
-		c8 materialPath[512];
-		sprintf(materialPath, "tests/perf/scene_loader/sponza/materials/%s.mat", model.materialName);
-		mat_loader::MaterialShaderPair msPair = _LoadMaterial(floral::path(materialPath));
+		c8 materialPath[128];
+		sprintf(materialPath, "materials/%s.mat", model.materialName);
+		mat_loader::MaterialShaderPair msPair = _LoadMaterial(materialPath);
 		helpers::SurfaceGPU modelGPU = helpers::CreateSurfaceGPU(model.verticesData, model.verticesCount, sizeof(geo3d::VertexPNTT),
 				model.indicesData, model.indicesCount, insigne::buffer_usage_e::static_draw, false);
 		m_ModelDataArray.push_back(ModelRegistry{ model, msPair, modelGPU });
 	}
 	m_SceneAABB.min_corner = minCorner;
 	m_SceneAABB.max_corner = maxCorner;
+	floral::pop_directory(m_FileSystem);
 
 	// compute shadow bounding box
 	floral::mat4x4f shadowProjectionMatrix(1.0f);
@@ -282,6 +290,7 @@ void SceneLoader::_OnInitialize()
 
 	// shadow material and framebuffer
 	{
+
 		mat_parser::MaterialDescription matDesc =
 			mat_parser::ParseMaterial(floral::path("tests/perf/scene_loader/shadowmap.mat"), m_MemoryArena);
 		bool matLoadResult = mat_loader::CreateMaterial(&m_ShadowMapMaterial, matDesc, m_MemoryArena, m_MaterialDataArena);
@@ -290,8 +299,10 @@ void SceneLoader::_OnInitialize()
 	}
 
 	m_MemoryArena->free_all();
+	floral::relative_path pfxPath = floral::build_relative_path("hdr_pfx.pfx");
 	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(
-			floral::path("tests/perf/scene_loader/hdr_pfx.pfx"),
+			m_FileSystem,
+			pfxPath,
 			m_MemoryArena);
 	m_PostFXChain.Initialize(m_FileSystem, pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 
@@ -376,13 +387,15 @@ void SceneLoader::_OnCleanUp()
 	g_StreammingAllocator.free(m_MaterialDataArena);
 	g_StreammingAllocator.free(m_SceneDataArena);
 	g_StreammingAllocator.free(m_MemoryArena);
+
+	floral::pop_directory(m_FileSystem);
 }
 
 //-------------------------------------------------------------------
 
-mat_loader::MaterialShaderPair SceneLoader::_LoadMaterial(const floral::path& i_path)
+mat_loader::MaterialShaderPair SceneLoader::_LoadMaterial(const_cstr i_path)
 {
-	floral::crc_string key(i_path.pm_PathStr);
+	floral::crc_string key(i_path);
 	for (size i = 0; i < m_MaterialArray.get_size(); i++)
 	{
 		if (m_MaterialArray[i].key == key)
@@ -395,8 +408,9 @@ mat_loader::MaterialShaderPair SceneLoader::_LoadMaterial(const floral::path& i_
 
 	MaterialKeyPair materialKeyPair;
 	materialKeyPair.key = key;
-	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(i_path, m_MemoryArena);
-	bool matLoadResult = mat_loader::CreateMaterial(&materialKeyPair.msPair, matDesc, m_MemoryArena, m_MaterialDataArena);
+	floral::relative_path matPath = floral::build_relative_path(i_path);
+	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	bool matLoadResult = mat_loader::CreateMaterial(&materialKeyPair.msPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(matLoadResult == true);
 	insigne::helpers::assign_uniform_block(materialKeyPair.msPair.material, "ub_Scene", 0, 0, m_SceneUB);
 	insigne::helpers::assign_uniform_block(materialKeyPair.msPair.material, "ub_Lighting", 0, 0, m_LightingUB);

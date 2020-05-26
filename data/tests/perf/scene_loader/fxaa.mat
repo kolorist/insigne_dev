@@ -1,6 +1,6 @@
 _shader
-	vs	tests/perf/scene_loader/fxaa.vs
-	fs	tests/perf/scene_loader/fxaa.fs
+	vs	fxaa.vs
+	fs	fxaa.fs
 _end_shader
 
 _state
