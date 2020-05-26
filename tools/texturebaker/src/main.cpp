@@ -20,6 +20,8 @@
 #include "stb_image_resize.h"
 #include "stb_dxt.h"
 
+#include "etc2comp/Etc/Etc.h"
+
 namespace texbaker
 {
 // -------------------------------------------------------------------
@@ -39,6 +41,53 @@ void ConvertToLinear(p8 i_data, p8 o_data, const s32 i_width, const s32 i_height
 			}
 		}
 	}
+}
+
+p8 CompressETC2(p8 i_input, const s32 i_width, const s32 i_height, const s32 i_numChannels, size* o_compressedSize)
+{
+	Etc::Image::Format dstFormat;
+	u32 expectedSize = 0;
+	if (i_numChannels == 3)
+	{
+		expectedSize = ceil((f32)i_width / 4.0f) * ceil((f32)i_height / 4.0f) * 8;
+		dstFormat = Etc::Image::Format::RGB8;
+	}
+	else if (i_numChannels == 4)
+	{
+		expectedSize = ceil((f32)i_width / 4.0f) * ceil((f32)i_height / 4.0f) * 16;
+		dstFormat = Etc::Image::Format::RGBA8;
+	}
+	else
+	{
+		FLORAL_ASSERT(false);
+	}
+
+	f32 effort = 90.0f;
+	Etc::ErrorMetric errorMetric = Etc::ErrorMetric::RGBX;
+
+	size pixelsCount = i_width * i_height;
+	// etc2comp always expect alpha channel
+	f32* floatImgData = (f32*)g_PersistanceAllocator.allocate(pixelsCount * 4 * sizeof(f32));
+	for (size p = 0; p < pixelsCount; p++)
+	{
+		floatImgData[p * 4 + 3] = 1.0f; // fill default alpha = 1.0f
+		for (s32 comp = 0; comp < i_numChannels; comp++)
+		{
+			floatImgData[p * 4 + comp] = (f32)i_input[p * i_numChannels + comp] / 255.0f;
+		}
+	}
+
+	p8 dstImage = nullptr;
+	u32 encodedBitBytes = 0;
+	u32 extendedWidth = 0;
+	u32 extendedHeight = 0;
+	s32 encodingTime = 0;
+	Etc::Encode(floatImgData, i_width, i_height, dstFormat, errorMetric, effort, 4, 4, &dstImage,
+			&encodedBitBytes, &extendedWidth, &extendedHeight, &encodingTime, true);
+	FLORAL_ASSERT(encodedBitBytes == expectedSize);
+	*o_compressedSize = encodedBitBytes;
+	g_PersistanceAllocator.free(floatImgData);
+	return dstImage;
 }
 
 p8 CompressDXT(p8 i_input, const s32 i_width, const s32 i_height, const s32 i_numChannels, size* o_compressedSize)
@@ -181,8 +230,9 @@ void ConvertTexture2DLDR(floral::filesystem<FreelistArena>* i_fs, const_cstr i_i
 	}
 
 	case cbtex::Compression::DXT:
+	case cbtex::Compression::ETC:
 	{
-		// when in DXT, we will only use Linear color space, R, RG texture is treated as RGB texture
+		// when in DXT and ETC, we will only use Linear color space, R, RG texture is treated as RGB texture
 		// shader must be reponsible to sample the texture correctly
 		header.colorSpace = cbtex::ColorSpace::Linear;
 		header.encodedGamma = 1.0f;
@@ -216,26 +266,35 @@ void ConvertTexture2DLDR(floral::filesystem<FreelistArena>* i_fs, const_cstr i_i
 		CLOVER_DEBUG("Creating mip #%d at size %dx%d...", i, nx, ny);
 		if (i == 1)
 		{
+			p8 inpData = data;
+			if (i_inputGamma < 1.0f)
+			{
+				inpData = (p8)g_PersistanceAllocator.allocate(nx * ny * n);
+				ConvertToLinear(data, inpData, nx, ny, n, i_inputGamma);
+			}
+
 			if (i_compressionMethod == cbtex::Compression::DXT)
 			{
-				p8 inpData = data;
-				if (i_inputGamma < 1.0f)
-				{
-					inpData = (p8)g_PersistanceAllocator.allocate(nx * ny * n);
-					ConvertToLinear(data, inpData, nx, ny, n, i_inputGamma);
-				}
 				size compressedSize = 0;
 				p8 compressedData = CompressDXT(inpData, nx, ny, n, &compressedSize);
 				outputStream.write_bytes(compressedData, compressedSize);
 				g_PersistanceAllocator.free(compressedData);
-				if (i_inputGamma < 1.0f)
-				{
-					g_PersistanceAllocator.free(inpData);
-				}
+			}
+			else if (i_compressionMethod == cbtex::Compression::ETC)
+			{
+				size compressedSize = 0;
+				p8 compressedData = CompressETC2(inpData, nx, ny, n, &compressedSize);
+				outputStream.write_bytes(compressedData, compressedSize);
+				delete[] compressedData;
 			}
 			else
 			{
 				outputStream.write_bytes(data, nx * ny * n);
+			}
+
+			if (i_inputGamma < 1.0f)
+			{
+				g_PersistanceAllocator.free(inpData);
 			}
 		}
 		else
@@ -269,6 +328,23 @@ void ConvertTexture2DLDR(floral::filesystem<FreelistArena>* i_fs, const_cstr i_i
 				p8 compressedData = CompressDXT(inpData, nx, ny, n, &compressedSize);
 				outputStream.write_bytes(compressedData, compressedSize);
 				g_PersistanceAllocator.free(compressedData);
+				if (i_inputGamma < 1.0f)
+				{
+					g_PersistanceAllocator.free(inpData);
+				}
+			}
+			else if (i_compressionMethod == cbtex::Compression::ETC)
+			{
+				p8 inpData = rzdata;
+				if (i_inputGamma < 1.0f)
+				{
+					inpData = (p8)g_PersistanceAllocator.allocate(nx * ny * n);
+					ConvertToLinear(rzdata, inpData, nx, ny, n, i_inputGamma);
+				}
+				size compressedSize = 0;
+				p8 compressedData = CompressETC2(inpData, nx, ny, n, &compressedSize);
+				outputStream.write_bytes(compressedData, compressedSize);
+				delete[] compressedData;
 				if (i_inputGamma < 1.0f)
 				{
 					g_PersistanceAllocator.free(inpData);
@@ -762,6 +838,10 @@ int main(int argc, char** argv)
 			{
 				compression = cbtex::Compression::DXT;
 			}
+			else if (strcmp(argv[i], "etc") == 0)
+			{
+				compression = cbtex::Compression::ETC;
+			}
 			else if (strcmp(argv[i], "no-compress") == 0)
 			{
 				compression = cbtex::Compression::NoCompress;
@@ -789,27 +869,6 @@ int main(int argc, char** argv)
 	{
 		texbaker::ConvertTextureCubeMapHDR(fileSystem, inputFilePath, outputFilePath, generateMipmaps, compression, inputGamma);
 	}
-
-#if 0
-	f32 encodedGamma = 0.454545f;
-	bool generateMipmaps = true;
-	cbtex::Compression compression = cbtex::Compression::DXT;
-	texbaker::ConvertTexture2DLDR(argv[1], argv[2], encodedGamma, generateMipmaps, compression);
-#endif
-#if 0
-	f32 encodedGamma = 0.5f;
-	bool generateMipmaps = true;
-	cbtex::Compression compression = cbtex::Compression::DXT;
-	//cbtex::Compression compression = cbtex::Compression::NoCompress;
-	texbaker::ConvertTexture2DHDR(argv[1], argv[2], generateMipmaps, compression, encodedGamma);
-#endif
-#if 0
-	f32 encodedGamma = 0.5f;
-	bool generateMipmaps = true;
-	cbtex::Compression compression = cbtex::Compression::DXT;
-	//cbtex::Compression compression = cbtex::Compression::NoCompress;
-	texbaker::ConvertTextureCubeMapHDR(argv[1], argv[2], generateMipmaps, compression, encodedGamma);
-#endif
 
 	floral::destroy_filesystem(&fileSystem);
 	return 0;

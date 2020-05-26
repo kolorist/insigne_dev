@@ -40,7 +40,8 @@ enum class Type
 enum class Compression
 {
 	NoCompress = 0,
-	DXT											// auto choose dxt1 for rgb / dxt5 for rgba
+	DXT,										// auto choose dxt1 for rgb / dxt5 for rgba
+	ETC
 };
 
 // -------------------------------------------------------------------

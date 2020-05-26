@@ -57,13 +57,17 @@ elseif (${TARGET_PLATFORM} STREQUAL "x86")
 elseif (${TARGET_PLATFORM} STREQUAL "x64")
 	add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif ()
+
 include_directories("${PROJECT_SOURCE_DIR}/src")
+include_directories("${PROJECT_SOURCE_DIR}/src/etc2comp/Etc")
+include_directories("${PROJECT_SOURCE_DIR}/src/etc2comp/EtcCodec")
 
 # 7. C and CXX global compile options
 if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-v7a")
 
 else ()
-	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -fno-rtti -fno-exceptions -fcolor-diagnostics -fansi-escape-codes")
+	# we cannot use -fno-rtti because etc2comp need rtti for future.h. WTF?
+	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -fno-exceptions -fcolor-diagnostics -fansi-escape-codes")
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall -fcolor-diagnostics -fansi-escape-codes")
 endif ()
 
