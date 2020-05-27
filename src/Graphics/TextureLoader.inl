@@ -203,6 +203,24 @@ const insigne::texture_handle_t LoadCBTexture(TFileSystem* i_fs, const floral::r
 			break;
 		}
 
+		case Compression::ETC:
+		{
+			io_desc.compression = insigne::texture_compression_e::etc;
+			switch (header.colorChannel)
+			{
+				case ColorChannel::RGB:
+					io_desc.format = insigne::texture_format_e::rgb;
+					break;
+				case ColorChannel::RGBA:
+					io_desc.format = insigne::texture_format_e::rgba;
+					break;
+				default:
+					FLORAL_ASSERT(false);
+					break;
+			}
+			break;
+		}
+
 		case Compression::NoCompress:
 		{
 			io_desc.compression = insigne::texture_compression_e::no_compression;
@@ -265,6 +283,24 @@ const insigne::texture_handle_t LoadCBTexture(TFileSystem* i_fs, const floral::r
 		{
 			io_desc.compression = insigne::texture_compression_e::dxt;
 			io_desc.format = insigne::texture_format_e::rgba;
+			break;
+		}
+
+		case Compression::ETC:
+		{
+			io_desc.compression = insigne::texture_compression_e::etc;
+			switch (header.colorChannel)
+			{
+				case ColorChannel::RGB:
+					io_desc.format = insigne::texture_format_e::rgb;
+					break;
+				case ColorChannel::RGBA:
+					io_desc.format = insigne::texture_format_e::rgba;
+					break;
+				default:
+					FLORAL_ASSERT(false);
+					break;
+			}
 			break;
 		}
 

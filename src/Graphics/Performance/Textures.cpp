@@ -51,6 +51,9 @@ const_cstr Textures::GetName() const
 void Textures::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
+	floral::relative_path wdir = floral::build_relative_path("tests/perf/textures");
+	floral::push_directory(m_FileSystem, wdir);
+
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_KB(256));
 
@@ -79,11 +82,10 @@ void Textures::_OnInitialize()
 			&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
 
 	m_MemoryArena->free_all();
-	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
-			floral::path("tests/perf/textures/quad.mat"), m_MemoryArena);
-
-	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MemoryArena, m_MaterialDataArena);
-	FLORAL_ASSERT(pbrMaterialResult == true);
+	floral::relative_path matPath = floral::build_relative_path("quad.mat");
+	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	const bool createResult = mat_loader::CreateMaterial(&m_MSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
 }
 
 //-------------------------------------------------------------------
@@ -116,6 +118,8 @@ void Textures::_OnCleanUp()
 
 	g_StreammingAllocator.free(m_MaterialDataArena);
 	g_StreammingAllocator.free(m_MemoryArena);
+
+	floral::pop_directory(m_FileSystem);
 }
 
 //-------------------------------------------------------------------

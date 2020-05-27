@@ -18,8 +18,8 @@ mediump vec3 DecodeRGBM(in mediump vec4 i_rgbmColor)
 
 void main()
 {
-	mediump vec3 mainColor = DecodeRGBM(texture(u_MainTex, v_TexCoord).rgba);
-	//mediump vec3 mainColor = texture(u_MainTex, v_TexCoord).rgb;
+	//mediump vec3 mainColor = DecodeRGBM(texture(u_MainTex, v_TexCoord).rgba);
+	mediump vec3 mainColor = texture(u_MainTex, v_TexCoord).rgb;
 	mainColor = pow(mainColor, vec3(0.454545f));
 	o_Color = vec4(mainColor, 1.0f);
 }

@@ -347,9 +347,10 @@ void DemoHub::_ShowGPUCounters()
 	}
 	avgValue /= 64.0f;
 	
+	ImGuiIO& io = ImGui::GetIO();
 	ImGui::Begin("GPU Counters");
 	ImGui::SameLine(); ImGui::Text("Avg: %4.2f", avgValue);
-	PlotValuesWrap("gpu cycles", s_gpuCycles, minValue, maxValue, IM_ARRAYSIZE(s_gpuCycles), 80,
+	PlotValuesWrap("gpu cycles", s_gpuCycles, minValue, maxValue, IM_ARRAYSIZE(s_gpuCycles), 80 * io.FontGlobalScale,
 			plotIdx, IM_COL32(0, 255, 0, 255), IM_COL32(0, 255, 0, 255));
 	ImGui::End();
 }

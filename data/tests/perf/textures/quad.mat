@@ -1,6 +1,6 @@
 _shader
-	vs	tests/perf/textures/quad.vs
-	fs	tests/perf/textures/quad.fs
+	vs	quad.vs
+	fs	quad.fs
 _end_shader
 
 _state
@@ -21,6 +21,6 @@ _params
 		mag_filter		linear
 		wrap_s			clamp_to_edge
 		wrap_t			clamp_to_edge
-		path			tests/perf/textures/hdrtex2d_dxt_rgbm.cbtex
+		path			ldrtex2d_albedo.etc.cbtex
 	_end_p_tex
 _end_params
