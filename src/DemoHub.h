@@ -26,6 +26,27 @@ struct SuiteCreator
 
 // ------------------------------------------------------------------
 
+class HWCounter
+{
+public:
+	HWCounter(const s32 i_numSamples, const_cstr i_label);
+	~HWCounter();
+
+	void PushValue(const f32 i_value);
+
+	void Draw();
+
+private:
+	const_cstr									m_Label;
+	f32*										m_Values;
+	s32											m_CurrentIdx;
+	s32											m_PlotIdx;
+	s32											m_NumSamples;
+	f32											m_MaxValue, m_AvgValue;
+};
+
+// ------------------------------------------------------------------
+
 class DemoHub : public IDemoHub
 {
 private:
@@ -129,6 +150,13 @@ private:
 	s32											m_NextSuiteId;
 	s32											m_CurrentTestSuiteId;
 	ITestSuite*									m_Suite;
+
+private:
+	HWCounter									m_GPUCycles;
+	HWCounter									m_FragmentCycles;
+	HWCounter									m_TilerCycles;
+	HWCounter									m_ExtReadBytes;
+	HWCounter									m_ExtWriteBytes;
 
 private:
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_PlaygroundSuite;

@@ -49,11 +49,64 @@ namespace stone
 {
 //--------------------------------------------------------------------
 
+HWCounter::HWCounter(const s32 i_numSamples, const_cstr i_label)
+	: m_Label(i_label)
+	, m_CurrentIdx(0)
+	, m_PlotIdx(0)
+	, m_NumSamples(i_numSamples)
+	, m_MaxValue(0.0f)
+	, m_AvgValue(0.0f)
+{
+	m_Values = g_PersistanceAllocator.allocate_array<f32>(i_numSamples);
+	memset(m_Values, 0, i_numSamples * sizeof(f32));
+}
+
+HWCounter::~HWCounter()
+{
+	// no need to free, it will be freed after termination either way
+	//g_PersistanceAllocator.free(m_Values);
+}
+
+void HWCounter::PushValue(const f32 i_value)
+{
+	m_Values[m_CurrentIdx] = i_value;
+	m_PlotIdx = m_CurrentIdx;
+	m_CurrentIdx--;
+	if (m_CurrentIdx < 0) m_CurrentIdx = m_NumSamples - 1;
+
+	f32 avg = 0.0f;
+	m_MaxValue = 0.0f;
+	for (s32 i = 0; i < m_NumSamples; i++)
+	{
+		const f32 v = m_Values[i];
+		avg += v;
+		if (v > m_MaxValue) m_MaxValue = v;
+	}
+	avg /= (f32)m_NumSamples;
+	m_AvgValue = avg;
+}
+
+void HWCounter::Draw()
+{
+	ImGuiIO& io = ImGui::GetIO();
+	ImGui::PushID(m_Label); ImGui::Text("Avg: %4.2f", m_AvgValue); ImGui::PopID();
+	PlotValuesWrap(m_Label, m_Values, 0.0f, m_MaxValue, m_NumSamples, 50 * io.FontGlobalScale,
+			m_PlotIdx, IM_COL32(0, 255, 0, 255), IM_COL32(0, 255, 0, 255));
+}
+
+//--------------------------------------------------------------------
+
 DemoHub::DemoHub(floral::filesystem<FreelistArena>* i_fs)
 	: m_FileSystem(i_fs)
 	, m_NextSuiteId(0)
 	, m_CurrentTestSuiteId(-1)
 	, m_Suite(nullptr)
+
+	, m_GPUCycles(64, "GPU Cycles")
+	, m_FragmentCycles(64, "Fragment Cycles")
+	, m_TilerCycles(64, "Tiler Cycles")
+	, m_ExtReadBytes(64, "Ext Read Bytes")
+	, m_ExtWriteBytes(64, "Ext Write Bytes")
 {
 }
 
@@ -324,34 +377,25 @@ void DemoHub::RenderFrame(const f32 i_deltaMs)
 
 void DemoHub::_ShowGPUCounters()
 {
-	// sample counters
-	static f32 s_gpuCycles[64];
-	static s32 currIdx = 0;
-
 	const u64 validIdx = insigne::get_valid_debug_info_range_end();
-	f32 val = insigne::g_hardware_counters->gpu_cycles[validIdx];
-	s_gpuCycles[currIdx] = val;
-	size plotIdx = currIdx;
-	currIdx--;
-	if (currIdx < 0) currIdx = 63;
+	f32 gpuCycles = insigne::g_hardware_counters->gpu_cycles[validIdx];
+	f32 fragmentCycles = insigne::g_hardware_counters->fragment_cycles[validIdx];
+	f32 tilerCycles = insigne::g_hardware_counters->tiler_cycles[validIdx];
+	f32 extReadBytes = insigne::g_hardware_counters->external_memory_read_bytes[validIdx];
+	f32 extWriteBytes = insigne::g_hardware_counters->external_memory_write_bytes[validIdx];
 
-	f32 maxValue = 0.0f;
-	f32 minValue = 0.0f;
-	f32 avgValue = 0.0f;
-	for (s32 i = 0; i < 64; i++)
-	{
-		f32 v = s_gpuCycles[i];
-		if (v > maxValue) maxValue = v;
-		if (v < minValue) minValue = v;
-		avgValue += v;
-	}
-	avgValue /= 64.0f;
-	
-	ImGuiIO& io = ImGui::GetIO();
+	m_GPUCycles.PushValue(gpuCycles);
+	m_FragmentCycles.PushValue(fragmentCycles);
+	m_TilerCycles.PushValue(tilerCycles);
+	m_ExtReadBytes.PushValue(extReadBytes);
+	m_ExtWriteBytes.PushValue(extWriteBytes);
+
 	ImGui::Begin("GPU Counters");
-	ImGui::SameLine(); ImGui::Text("Avg: %4.2f", avgValue);
-	PlotValuesWrap("gpu cycles", s_gpuCycles, minValue, maxValue, IM_ARRAYSIZE(s_gpuCycles), 80 * io.FontGlobalScale,
-			plotIdx, IM_COL32(0, 255, 0, 255), IM_COL32(0, 255, 0, 255));
+	m_GPUCycles.Draw();
+	m_FragmentCycles.Draw();
+	m_TilerCycles.Draw();
+	m_ExtReadBytes.Draw();
+	m_ExtWriteBytes.Draw();
 	ImGui::End();
 }
 
