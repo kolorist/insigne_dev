@@ -155,6 +155,7 @@ private:
 	HWCounter									m_GPUCycles;
 	HWCounter									m_FragmentCycles;
 	HWCounter									m_TilerCycles;
+	HWCounter									m_ShaderTextureCycles;
 	HWCounter									m_ExtReadBytes;
 	HWCounter									m_ExtWriteBytes;
 

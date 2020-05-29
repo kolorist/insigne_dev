@@ -100,6 +100,11 @@ void InitializeImGui()
 	
 	ImGuiStyle& style = ImGui::GetStyle();
 	
+#if defined(FLORAL_PLATFORM_WINDOWS)
+#else
+	style.ScrollbarSize *= 3.0f;
+#endif	
+	
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui::SetAllocatorFunctions(&ImGuiCustomAlloc, &ImGuiCustomFree, nullptr);
 	io.IniFilename = nullptr;

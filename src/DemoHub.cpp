@@ -105,6 +105,7 @@ DemoHub::DemoHub(floral::filesystem<FreelistArena>* i_fs)
 	, m_GPUCycles(64, "GPU Cycles")
 	, m_FragmentCycles(64, "Fragment Cycles")
 	, m_TilerCycles(64, "Tiler Cycles")
+	, m_ShaderTextureCycles(64, "Shader Texture Cycles")
 	, m_ExtReadBytes(64, "Ext Read Bytes")
 	, m_ExtWriteBytes(64, "Ext Write Bytes")
 {
@@ -381,21 +382,35 @@ void DemoHub::_ShowGPUCounters()
 	f32 gpuCycles = insigne::g_hardware_counters->gpu_cycles[validIdx];
 	f32 fragmentCycles = insigne::g_hardware_counters->fragment_cycles[validIdx];
 	f32 tilerCycles = insigne::g_hardware_counters->tiler_cycles[validIdx];
+	f32 shaderTextureCycles = insigne::g_hardware_counters->shader_texture_cycles[validIdx];
 	f32 extReadBytes = insigne::g_hardware_counters->external_memory_read_bytes[validIdx];
 	f32 extWriteBytes = insigne::g_hardware_counters->external_memory_write_bytes[validIdx];
 
 	m_GPUCycles.PushValue(gpuCycles);
 	m_FragmentCycles.PushValue(fragmentCycles);
 	m_TilerCycles.PushValue(tilerCycles);
+	m_ShaderTextureCycles.PushValue(shaderTextureCycles);
 	m_ExtReadBytes.PushValue(extReadBytes);
 	m_ExtWriteBytes.PushValue(extWriteBytes);
 
 	ImGui::Begin("GPU Counters");
-	m_GPUCycles.Draw();
-	m_FragmentCycles.Draw();
-	m_TilerCycles.Draw();
-	m_ExtReadBytes.Draw();
-	m_ExtWriteBytes.Draw();
+	if (ImGui::CollapsingHeader("Generals"))
+	{
+		m_GPUCycles.Draw();
+		m_FragmentCycles.Draw();
+		m_TilerCycles.Draw();
+	}
+
+	if (ImGui::CollapsingHeader("Fragment"))
+	{
+		m_ShaderTextureCycles.Draw();
+	}
+
+	if (ImGui::CollapsingHeader("Bandwidth"))
+	{
+		m_ExtReadBytes.Draw();
+		m_ExtWriteBytes.Draw();
+	}
 	ImGui::End();
 }
 
