@@ -3,13 +3,16 @@
 #include <floral/stdaliases.h>
 #include <floral/gpds/vec.h>
 #include <floral/gpds/mat.h>
+#include <floral/io/filesystem.h>
 
 #include <imgui.h>
+
+#include "Memory/MemorySystem.h"
 
 namespace stone
 {
 
-void											InitializeImGui();
+void											InitializeImGui(floral::filesystem<FreelistArena>* i_fs);
 void											UpdateImGui();
 void											RenderImGui();
 

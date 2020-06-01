@@ -13,7 +13,6 @@
 #include <insigne/memory.h>
 #include <insigne/driver.h>
 
-#include "Memory/MemorySystem.h"
 #include "Graphics/SurfaceDefinitions.h"
 
 namespace stone
@@ -70,6 +69,9 @@ static floral::vec2f s_CursorPos;
 static bool s_CursorPressed;
 static bool s_CursorHeldThisFrame;
 
+static floral::file_info s_configFile;
+static floral::output_file_stream s_configFileOStream;
+
 static FreelistArena* s_MemoryArena = nullptr;
 
 //----------------------------------------------
@@ -89,13 +91,31 @@ static inline void ImGuiCustomFree(void* ptr, voidptr userData)
 	}
 }
 
-void InitializeImGui()
+void InitializeImGui(floral::filesystem<FreelistArena>* i_fs)
 {
 	FLORAL_ASSERT(s_MemoryArena == nullptr);
 	s_MemoryArena = g_PersistanceAllocator.allocate_arena<FreelistArena>(k_CPUMemoryBudget);
 
 	ImGuiContext* ctx = ImGui::CreateContext();
 	ImGui::SetCurrentContext(ctx);
+
+	// load cached configs
+	floral::relative_path configFilePath = floral::build_relative_path("imgui.ini");
+	floral::file_info readConfigFile = floral::open_file_read(i_fs, configFilePath);
+	if (readConfigFile.file_size > 0)
+	{
+		floral::file_stream readConfigStream;
+		readConfigStream.buffer = (p8)s_MemoryArena->allocate(readConfigFile.file_size);
+		floral::read_all_file(readConfigFile, readConfigStream);
+		ImGui::LoadIniSettingsFromMemory((const_cstr)readConfigStream.buffer, readConfigFile.file_size);
+		floral::close_file(readConfigFile);
+	}
+
+	s_MemoryArena->free_all();
+
+	s_configFile = floral::open_file_write(i_fs, configFilePath);
+	floral::map_output_file(s_configFile, &s_configFileOStream);
+
 	ImGui::StyleColorsClassic();
 	
 	ImGuiStyle& style = ImGui::GetStyle();
@@ -213,6 +233,15 @@ void UpdateImGui()
 	s_CursorHeldThisFrame = false;
 
 	io.DeltaTime = 16.6667f / 1000.0f;
+
+	if (io.WantSaveIniSettings)
+	{
+		CLOVER_DEBUG("Saving ImGui current settings...");
+		size_t settingsSize = 0;
+		const_cstr settingsData = ImGui::SaveIniSettingsToMemory(&settingsSize);
+		s_configFileOStream.write_bytes((voidptr)settingsData, settingsSize);
+		io.WantSaveIniSettings = false;
+	}
 }
 
 static const ssize AllocateNewBuffer()

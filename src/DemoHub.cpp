@@ -124,7 +124,7 @@ void DemoHub::Initialize()
 	m_MiscSuite.reserve(16, &g_PersistanceAllocator);
 	m_ImGuiSuite.reserve(8, &g_PersistanceAllocator);
 
-	InitializeImGui();
+	InitializeImGui(m_FileSystem);
 	debugdraw::Initialize();
 
 	_EmplacePlaygroundSuite<perf::Vault>();
