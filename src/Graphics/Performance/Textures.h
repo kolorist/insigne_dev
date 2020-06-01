@@ -36,7 +36,8 @@ private:
 
 private:
 	helpers::SurfaceGPU							m_Quad;
-	mat_loader::MaterialShaderPair				m_MSPair;
+	size										m_ShaderIdx;
+	mat_loader::MaterialShaderPair				m_MSPair[5];
 
 private:
 	FreelistArena*								m_MemoryArena;

@@ -23,6 +23,7 @@ namespace perf
 //-------------------------------------------------------------------
 
 Textures::Textures()
+	: m_ShaderIdx(0)
 {
 }
 
@@ -82,9 +83,29 @@ void Textures::_OnInitialize()
 			&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
 
 	m_MemoryArena->free_all();
-	floral::relative_path matPath = floral::build_relative_path("quad.mat");
+	floral::relative_path matPath = floral::build_relative_path("no_filtering.mat");
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
-	const bool createResult = mat_loader::CreateMaterial(&m_MSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	bool createResult = mat_loader::CreateMaterial(&m_MSPair[0], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+
+	matPath = floral::build_relative_path("linear_filtering.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_MSPair[1], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+
+	matPath = floral::build_relative_path("trilinear_filtering.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_MSPair[2], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+
+	matPath = floral::build_relative_path("trilinear_4_samples.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_MSPair[3], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+
+	matPath = floral::build_relative_path("trilinear_8_samples.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_MSPair[4], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(createResult == true);
 }
 
@@ -92,6 +113,29 @@ void Textures::_OnInitialize()
 
 void Textures::_OnUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("Controller##Textures");
+	ImGui::Text("Choose shaders:");
+	if (ImGui::RadioButton("no filtering", m_ShaderIdx == 0))
+	{
+		m_ShaderIdx = 0;
+	}
+	if (ImGui::RadioButton("linear filtering", m_ShaderIdx == 1))
+	{
+		m_ShaderIdx = 1;
+	}
+	if (ImGui::RadioButton("trilinear filtering", m_ShaderIdx == 2))
+	{
+		m_ShaderIdx = 2;
+	}
+	if (ImGui::RadioButton("4 texture samples", m_ShaderIdx == 3))
+	{
+		m_ShaderIdx = 3;
+	}
+	if (ImGui::RadioButton("8 texture samples", m_ShaderIdx == 4))
+	{
+		m_ShaderIdx = 4;
+	}
+	ImGui::End();
 }
 
 //-------------------------------------------------------------------
@@ -100,7 +144,7 @@ void Textures::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
-	insigne::draw_surface<geo2d::SurfacePT>(m_Quad.vb, m_Quad.ib, m_MSPair.material);
+	insigne::draw_surface<geo2d::SurfacePT>(m_Quad.vb, m_Quad.ib, m_MSPair[m_ShaderIdx].material);
 
 	RenderImGui();
 
