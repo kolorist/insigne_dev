@@ -1,6 +1,6 @@
 _shader
-	vs	tests/perf/scene_loader/sponza/materials/geometry.vs
-	fs	tests/perf/scene_loader/sponza/materials/albedo.fs
+	vs	shaders/geometry.vs
+	fs	shaders/albedo.fs
 _end_shader
 
 _state
@@ -19,6 +19,6 @@ _params
 		mag_filter		linear
 		wrap_s			clamp_to_edge
 		wrap_t			clamp_to_edge
-		path			tests/perf/scene_loader/sponza/materials/textures/white_png.cbtex
+		path			textures/white_png.cbtex
 	_end_p_tex
 _end_params

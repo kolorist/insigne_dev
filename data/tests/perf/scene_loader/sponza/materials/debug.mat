@@ -1,6 +1,6 @@
 _shader
-	vs	tests/perf/scene_loader/sponza/materials/debug.vs
-	fs	tests/perf/scene_loader/sponza/materials/debug.fs
+	vs	shaders/debug.vs
+	fs	shaders/debug.fs
 _end_shader
 
 _state

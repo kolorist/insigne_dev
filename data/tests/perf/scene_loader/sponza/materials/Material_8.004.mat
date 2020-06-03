@@ -1,6 +1,6 @@
 _shader
-	vs	tests/perf/scene_loader/sponza/materials/geometry.vs
-	fs	tests/perf/scene_loader/sponza/materials/pbr.fs
+	vs	shaders/geometry.vs
+	fs	shaders/pbr.fs
 _end_shader
 
 _state
@@ -20,7 +20,7 @@ _params
 		mag_filter		linear
 		wrap_s			clamp_to_edge
 		wrap_t			clamp_to_edge
-		path			tests/perf/scene_loader/sponza/materials/textures/6047387724914829168.cbtex
+		path			textures/6047387724914829168.cbtex
 	_end_p_tex
 
 	_p_tex u_NormalTex
@@ -29,7 +29,7 @@ _params
 		mag_filter		linear
 		wrap_s			clamp_to_edge
 		wrap_t			clamp_to_edge
-		path			tests/perf/scene_loader/sponza/materials/textures/15722799267630235092.cbtex
+		path			textures/15722799267630235092.cbtex
 	_end_p_tex
 
 	_p_tex u_AttribTex
@@ -38,7 +38,7 @@ _params
 		mag_filter		linear
 		wrap_s			clamp_to_edge
 		wrap_t			clamp_to_edge
-		path			tests/perf/scene_loader/sponza/materials/textures/8051790464816141987.cbtex
+		path			textures/8051790464816141987.cbtex
 	_end_p_tex
 	
 	_p_tex u_PMREMTex
@@ -48,7 +48,7 @@ _params
 		wrap_s			clamp_to_edge
 		wrap_t			clamp_to_edge
 		wrap_r			clamp_to_edge
-		path			tests/perf/scene_loader/sponza/materials/env/venice_sunset.cbtex
+		path			env/venice_sunset.cbtex
 	_end_p_tex
 	
 	_p_tex_holder tex2d u_SplitSumTex
