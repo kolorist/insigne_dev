@@ -41,6 +41,7 @@
 
 // misc demo
 #include "Graphics/Misc/CameraWork.h"
+#include "Graphics/Misc/GameOfLife.h"
 
 // imgui demo
 #include "Graphics/ImGui/ImGuiDemoWindow.h"
@@ -148,6 +149,7 @@ void DemoHub::Initialize()
 #endif
 
 	//_EmplaceMiscSuite<misc::CameraWork>();
+	_EmplaceMiscSuite<misc::GameOfLife>();
 
 	_EmplaceImGuiSuite<gui::ImGuiDemoWindow>();
 	_EmplaceImGuiSuite<gui::ValuePlotter>();
