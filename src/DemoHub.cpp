@@ -31,6 +31,7 @@
 #include "Graphics/RenderTech/PBRWithIBL.h"
 #include "Graphics/RenderTech/FragmentPartition.h"
 #include "Graphics/RenderTech/LightProbeGI.h"
+#include "Graphics/RenderTech/HDRBloom.h"
 
 // tools demo
 #include "Graphics/Tools/SingleAccurateFormFactor.h"
@@ -140,6 +141,7 @@ void DemoHub::Initialize()
 	_EmplacePerformanceSuite<perf::CubeMapTextures>();
 
 	_EmplaceRenderTechSuite<tech::PBRHelmet>();
+	_EmplaceRenderTechSuite<tech::HDRBloom>();
 
 #if defined(FLORAL_PLATFORM_WINDOWS)
 	_EmplaceToolSuite<tools::SHCalculator>();
