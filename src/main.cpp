@@ -327,6 +327,9 @@ void flush_mainthread()
 void initialize()
 {
 	using namespace stone;
+
+	floral::set_current_thread_name("main_thread");
+
 	lotus::init_capture_for_this_thread(0, "main_thread");
 
 	LOG_TOPIC("game");

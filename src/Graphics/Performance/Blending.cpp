@@ -67,10 +67,10 @@ void Blending::_OnInitialize()
 
 	{
 		floral::inplace_array<geo3d::VertexPC, 4> vertices;
-		vertices.push_back({ { -0.8f, 0.8f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
-		vertices.push_back({ { -0.8f, -0.8f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
-		vertices.push_back({ { 0.8f, -0.8f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
-		vertices.push_back({ { 0.8f, 0.8f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
+		vertices.push_back({ { -0.8f, 0.8f, 0.0f }, { 0.0f, 2.0f, 0.0f, 1.0f } });
+		vertices.push_back({ { -0.8f, -0.8f, 0.0f }, { 0.0f, 2.0f, 0.0f, 1.0f } });
+		vertices.push_back({ { 0.8f, -0.8f, 0.0f }, { 0.0f, 2.0f, 0.0f, 1.0f } });
+		vertices.push_back({ { 0.8f, 0.8f, 0.0f }, { 0.0f, 2.0f, 0.0f, 1.0f } });
 
 		floral::inplace_array<s32, 6> indices;
 		indices.push_back(0);

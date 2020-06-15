@@ -155,8 +155,9 @@ void Application::OnFrameStep(f32 i_deltaMs)
 {
 	if (m_Initialized)
 	{
-		insigne::begin_frame();
 		UpdateFrame(i_deltaMs);
+
+		insigne::begin_frame();
 		RenderFrame(i_deltaMs);
 		insigne::end_frame();
 	}
