@@ -253,7 +253,7 @@ void GameOfLife::_OnUpdate(const f32 i_deltaMs)
 			{
 				if (m_FrontLifeBuffer[y * 128 + x])
 				{
-					m_TexData[(127 - y) * 128 + x] = floral::vec3f(2.0f, 0.0, 0.0);
+					m_TexData[(127 - y) * 128 + x] = floral::vec3f(4.0f, 1.0f, 1.0f);
 				}
 				else
 				{

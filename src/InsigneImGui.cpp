@@ -69,8 +69,7 @@ static floral::vec2f s_CursorPos;
 static bool s_CursorPressed;
 static bool s_CursorHeldThisFrame;
 
-static floral::file_info s_configFile;
-static floral::output_file_stream s_configFileOStream;
+floral::filesystem<FreelistArena>* s_fileSystem = nullptr;
 
 static FreelistArena* s_MemoryArena = nullptr;
 
@@ -94,6 +93,7 @@ static inline void ImGuiCustomFree(void* ptr, voidptr userData)
 void InitializeImGui(floral::filesystem<FreelistArena>* i_fs)
 {
 	FLORAL_ASSERT(s_MemoryArena == nullptr);
+	s_fileSystem = i_fs;
 	s_MemoryArena = g_PersistanceAllocator.allocate_arena<FreelistArena>(k_CPUMemoryBudget);
 
 	ImGuiContext* ctx = ImGui::CreateContext();
@@ -113,11 +113,8 @@ void InitializeImGui(floral::filesystem<FreelistArena>* i_fs)
 
 	s_MemoryArena->free_all();
 
-	s_configFile = floral::open_file_write(i_fs, configFilePath);
-	floral::map_output_file(s_configFile, &s_configFileOStream);
-
 	ImGui::StyleColorsClassic();
-	
+
 	ImGuiStyle& style = ImGui::GetStyle();
 	
 #if defined(FLORAL_PLATFORM_WINDOWS)
@@ -237,9 +234,15 @@ void UpdateImGui()
 	if (io.WantSaveIniSettings)
 	{
 		CLOVER_DEBUG("Saving ImGui current settings...");
+		floral::relative_path configFilePath = floral::build_relative_path("imgui.ini");
+		floral::file_info configFile = floral::open_file_write(s_fileSystem, configFilePath);
+		floral::output_file_stream configFileOStream;
+		floral::map_output_file(configFile, &configFileOStream);
 		size_t settingsSize = 0;
 		const_cstr settingsData = ImGui::SaveIniSettingsToMemory(&settingsSize);
-		s_configFileOStream.write_bytes((voidptr)settingsData, settingsSize);
+		configFileOStream.write_bytes((voidptr)settingsData, settingsSize);
+		floral::close_file(configFile);
+
 		io.WantSaveIniSettings = false;
 	}
 }
