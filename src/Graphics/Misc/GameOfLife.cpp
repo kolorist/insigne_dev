@@ -19,7 +19,7 @@ namespace misc
 {
 //-------------------------------------------------------------------
 
-#if 0
+#if 1
 static floral::vec3f k_Colors[] = {
 	floral::vec3f(0.9411765f, 2.729412f, 2.556863f),
 	floral::vec3f(3.858824f, 3.341177f, 1.443137f),
@@ -28,8 +28,8 @@ static floral::vec3f k_Colors[] = {
 #else
 static floral::vec3f k_Colors[] = {
 	floral::vec3f(3.0f, 0.0f, 0.0f),
-	floral::vec3f(0.0f, 3.0f, 0.0f),
-	floral::vec3f(0.0f, 0.0f, 3.0f)
+	floral::vec3f(0.0f, 2.0f, 0.0f),
+	floral::vec3f(0.0f, 0.0f, 1.0f)
 };
 #endif
 
@@ -264,29 +264,40 @@ void GameOfLife::_OnInitialize()
 
 void GameOfLife::_OnUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("Controller##GameOfLife");
+	static bool showBoard[3] = { false, false, false };
+	static s32 speed = 5;
+	ImGui::Checkbox("Show Board 0", &showBoard[0]);
+	ImGui::Checkbox("Show Board 1", &showBoard[1]);
+	ImGui::Checkbox("Show Board 2", &showBoard[2]);
+	ImGui::SliderInt("Speed", &speed, 1, 30);
+	ImGui::End();
+
 	static size frameIdx = 0;
 	frameIdx++;
-	if (frameIdx % 5 == 0)
+	if (frameIdx % (31 - speed) == 0)
 	{
 		memset(m_TexData, 0, 128 * 128 * sizeof(floral::vec3f));
 		for (s32 i = 0; i < 3; i++)
 		{
-			UpdateGameOfLife(m_FrontLifeBuffer[i], m_BackLifeBuffer[i], 128);
-			bool* tmp = m_BackLifeBuffer[i];
-			m_BackLifeBuffer[i] = m_FrontLifeBuffer[i];
-			m_FrontLifeBuffer[i] = tmp;
-
-			for (s32 y = 0; y < 128; y++)
+			if (showBoard[i])
 			{
-				for (s32 x = 0; x < 128; x++)
+				UpdateGameOfLife(m_FrontLifeBuffer[i], m_BackLifeBuffer[i], 128);
+				bool* tmp = m_BackLifeBuffer[i];
+				m_BackLifeBuffer[i] = m_FrontLifeBuffer[i];
+				m_FrontLifeBuffer[i] = tmp;
+
+				for (s32 y = 0; y < 128; y++)
 				{
-					if (m_FrontLifeBuffer[i][y * 128 + x])
+					for (s32 x = 0; x < 128; x++)
 					{
-						m_TexData[(127 - y) * 128 + x] += k_Colors[i];
+						if (m_FrontLifeBuffer[i][y * 128 + x])
+						{
+							m_TexData[(127 - y) * 128 + x] += k_Colors[i];
+						}
 					}
 				}
 			}
-
 		}
 		insigne::copy_update_texture(m_Texture, m_TexData, 128 * 128 * sizeof(floral::vec3f));
 	}
