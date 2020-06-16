@@ -19,6 +19,22 @@ namespace misc
 {
 //-------------------------------------------------------------------
 
+#if 0
+static floral::vec3f k_Colors[] = {
+	floral::vec3f(0.9411765f, 2.729412f, 2.556863f),
+	floral::vec3f(3.858824f, 3.341177f, 1.443137f),
+	floral::vec3f(3.717647f, 1.333333f, 0.9254902f)
+};
+#else
+static floral::vec3f k_Colors[] = {
+	floral::vec3f(3.0f, 0.0f, 0.0f),
+	floral::vec3f(0.0f, 3.0f, 0.0f),
+	floral::vec3f(0.0f, 0.0f, 3.0f)
+};
+#endif
+
+//-------------------------------------------------------------------
+
 const bool ReadBoardMirroredRepeat(bool* i_board, s32 i_x, s32 i_y, const s32 i_size)
 {
 	FLORAL_ASSERT(i_x >= -1 && i_x <= i_size);
@@ -163,41 +179,54 @@ void GameOfLife::_OnInitialize()
 			&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
 
 	m_TexData = m_ResourceArena->allocate_array<floral::vec3f>(128 * 128);
-	m_FrontLifeBuffer = m_ResourceArena->allocate_array<bool>(128 * 128);
-	m_BackLifeBuffer = m_ResourceArena->allocate_array<bool>(128 * 128);
+	m_FrontLifeBuffer[0] = m_ResourceArena->allocate_array<bool>(128 * 128);
+	m_FrontLifeBuffer[1] = m_ResourceArena->allocate_array<bool>(128 * 128);
+	m_FrontLifeBuffer[2] = m_ResourceArena->allocate_array<bool>(128 * 128);
+	m_BackLifeBuffer[0] = m_ResourceArena->allocate_array<bool>(128 * 128);
+	m_BackLifeBuffer[1] = m_ResourceArena->allocate_array<bool>(128 * 128);
+	m_BackLifeBuffer[2] = m_ResourceArena->allocate_array<bool>(128 * 128);
 
-	memset(m_FrontLifeBuffer, 0, 128 * 128 * sizeof(bool));
-	memset(m_BackLifeBuffer, 0, 128 * 128 * sizeof(bool));
+	memset(m_FrontLifeBuffer[0], 0, 128 * 128 * sizeof(bool));
+	memset(m_FrontLifeBuffer[1], 0, 128 * 128 * sizeof(bool));
+	memset(m_FrontLifeBuffer[2], 0, 128 * 128 * sizeof(bool));
+	memset(m_BackLifeBuffer[0], 0, 128 * 128 * sizeof(bool));
+	memset(m_BackLifeBuffer[1], 0, 128 * 128 * sizeof(bool));
+	memset(m_BackLifeBuffer[2], 0, 128 * 128 * sizeof(bool));
 
 	// read from file
-	m_MemoryArena->free_all();
-	floral::relative_path inputPath = floral::build_relative_path("initial.board");
-	floral::file_info inp = floral::open_file_read(m_FileSystem, inputPath);
-	floral::file_stream inpStream;
-	inpStream.buffer = (p8)m_MemoryArena->allocate(inp.file_size);
-	floral::read_all_file(inp, inpStream);
-	floral::close_file(inp);
-	for (s32 y = 0; y < 128; y++)
+	for (s32 i = 0; i < 3; i++)
 	{
-		for (s32 x = 0; x < 128; x++)
+		m_MemoryArena->free_all();
+		c8 boardName[128];
+		sprintf(boardName, "initial_%d.board", i);
+		floral::relative_path inputPath = floral::build_relative_path(boardName);
+		floral::file_info inp = floral::open_file_read(m_FileSystem, inputPath);
+		floral::file_stream inpStream;
+		inpStream.buffer = (p8)m_MemoryArena->allocate(inp.file_size);
+		floral::read_all_file(inp, inpStream);
+		floral::close_file(inp);
+		for (s32 y = 0; y < 128; y++)
 		{
-			c8 cellStatus = 0;
-			do
+			for (s32 x = 0; x < 128; x++)
 			{
-				cellStatus = inpStream.read_char();
-			} while (cellStatus != '0' && cellStatus != '1');
+				c8 cellStatus = 0;
+				do
+				{
+					cellStatus = inpStream.read_char();
+				} while (cellStatus != '0' && cellStatus != '1');
 
-			if (cellStatus == '1')
-			{
-				m_BackLifeBuffer[y * 128 + x] = true;
-			}
-			else if (cellStatus == '0')
-			{
-				m_BackLifeBuffer[y * 128 + x] = false;
-			}
-			else
-			{
-				FLORAL_ASSERT(false);
+				if (cellStatus == '1')
+				{
+					m_BackLifeBuffer[i][y * 128 + x] = true;
+				}
+				else if (cellStatus == '0')
+				{
+					m_BackLifeBuffer[i][y * 128 + x] = false;
+				}
+				else
+				{
+					FLORAL_ASSERT(false);
+				}
 			}
 		}
 	}
@@ -219,9 +248,6 @@ void GameOfLife::_OnInitialize()
 
 	const size dataSize = insigne::prepare_texture_desc(texDesc);
 	insigne::copy_update_texture(m_Texture, m_TexData, dataSize);
-#if 0
-	insigne::copy_update_texture(m_Texture, m_TexData, 128 * 128 * sizeof(floral::vec3f));
-#endif
 
 	m_MemoryArena->free_all();
 	floral::relative_path matPath = floral::build_relative_path("main.mat");
@@ -242,24 +268,25 @@ void GameOfLife::_OnUpdate(const f32 i_deltaMs)
 	frameIdx++;
 	if (frameIdx % 5 == 0)
 	{
-		UpdateGameOfLife(m_FrontLifeBuffer, m_BackLifeBuffer, 128);
-		bool* tmp = m_BackLifeBuffer;
-		m_BackLifeBuffer = m_FrontLifeBuffer;
-		m_FrontLifeBuffer = tmp;
-
-		for (s32 y = 0; y < 128; y++)
+		memset(m_TexData, 0, 128 * 128 * sizeof(floral::vec3f));
+		for (s32 i = 0; i < 3; i++)
 		{
-			for (s32 x = 0; x < 128; x++)
+			UpdateGameOfLife(m_FrontLifeBuffer[i], m_BackLifeBuffer[i], 128);
+			bool* tmp = m_BackLifeBuffer[i];
+			m_BackLifeBuffer[i] = m_FrontLifeBuffer[i];
+			m_FrontLifeBuffer[i] = tmp;
+
+			for (s32 y = 0; y < 128; y++)
 			{
-				if (m_FrontLifeBuffer[y * 128 + x])
+				for (s32 x = 0; x < 128; x++)
 				{
-					m_TexData[(127 - y) * 128 + x] = floral::vec3f(4.0f, 1.0f, 1.0f);
-				}
-				else
-				{
-					m_TexData[(127 - y) * 128 + x] = floral::vec3f(0.0f, 0.0, 0.0);
+					if (m_FrontLifeBuffer[i][y * 128 + x])
+					{
+						m_TexData[(127 - y) * 128 + x] += k_Colors[i];
+					}
 				}
 			}
+
 		}
 		insigne::copy_update_texture(m_Texture, m_TexData, 128 * 128 * sizeof(floral::vec3f));
 	}

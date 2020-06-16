@@ -40,8 +40,8 @@ private:
 	mat_loader::MaterialShaderPair				m_MSPair;
 	insigne::texture_handle_t					m_Texture;
 
-	bool*										m_FrontLifeBuffer;
-	bool*										m_BackLifeBuffer;
+	bool*										m_FrontLifeBuffer[3];
+	bool*										m_BackLifeBuffer[3];
 	floral::vec3f*								m_TexData;
 
 	pfx_chain::PostFXChain<LinearArena, FreelistArena>	m_PostFXChain;
