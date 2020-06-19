@@ -31,6 +31,8 @@ struct Framebuffer
 
 struct RenderPass
 {
+	ssize										mainColorSlot;
+	ssize										prevColorSlot;
 	Framebuffer*								targetFb;
 	mat_loader::MaterialShaderPair				msPair;
 };
@@ -90,8 +92,10 @@ private:
 private:
 	helpers::SurfaceGPU							m_SSQuad;
 
-	Framebuffer									m_MainBuffer;
+	Framebuffer									m_MainBuffer[2];
 	Framebuffer									m_FinalBuffer;
+	s32											m_CurrentBuffer;
+
 	floral::fast_fixed_array<Framebuffer, TLinearAllocator>					m_FramebufferList;
 	floral::fast_fixed_array<Preset<TLinearAllocator>, TLinearAllocator>	m_Presets;
 

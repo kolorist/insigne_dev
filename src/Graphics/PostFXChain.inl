@@ -8,6 +8,8 @@
 #include "MaterialParser.h"
 #include "SurfaceDefinitions.h"
 
+//#define USE_FULLSCREEN_QUAD
+
 namespace pfx_chain
 {
 // -------------------------------------------------------------------
@@ -48,7 +50,7 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* 
 	m_UB = insigne::create_ub(ubDesc);
 	m_UBDataDirty = true;
 
-#if 0
+#ifdef USE_FULLSCREEN_QUAD
 	floral::inplace_array<geo2d::VertexPT, 4> vertices;
 	vertices.push_back({ { -1.0f, 1.0f }, { 0.0f, 1.0f } });
 	vertices.push_back({ { -1.0f, -1.0f }, { 0.0f, 0.0f } });
@@ -80,7 +82,8 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* 
 			&indices[0], 3, insigne::buffer_usage_e::static_draw, true);
 #endif
 
-	m_MainBuffer.name = floral::crc_string("_main");
+	m_MainBuffer[0].name = floral::crc_string("_main");
+	m_MainBuffer[1].name = floral::crc_string("_main");
 	insigne::framebuffer_desc_t mainDesc = insigne::create_framebuffer_desc();
 	mainDesc.width = (s32)i_baseRes.x;
 	mainDesc.height = (s32)i_baseRes.y;
@@ -97,8 +100,10 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* 
 	{
 		mainDesc.color_attachments->push_back(insigne::color_attachment_t("color0", insigne::texture_format_e::hdr_rgb_half));
 	}
-	m_MainBuffer.fbHandle = insigne::create_framebuffer(mainDesc);
-	m_MainBuffer.dim = i_baseRes;
+	m_MainBuffer[0].fbHandle = insigne::create_framebuffer(mainDesc);
+	m_MainBuffer[1].fbHandle = insigne::create_framebuffer(mainDesc);
+	m_MainBuffer[0].dim = i_baseRes;
+	m_MainBuffer[1].dim = i_baseRes;
 
 	m_FinalBuffer.name = floral::crc_string("_final");
 	m_FinalBuffer.fbHandle = DEFAULT_FRAMEBUFFER_HANDLE;
@@ -178,12 +183,23 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* 
 			newRenderPass.targetFb = _FindFramebuffer(passDesc.targetFBName);
 			newRenderPass.msPair = _LoadAndCreateMaterial(i_fs, passDesc.materialFileName, dataOffset, m_UBData, m_UB);
 			// binding
+			newRenderPass.mainColorSlot = -1;
+			newRenderPass.prevColorSlot = -1;
 			for (s32 k = 0; k < passDesc.bindingsCount; k++)
 			{
 				const pfx_parser::BindDescription& bindDesc = passDesc.bindingList[k];
 				if (bindDesc.attachment == pfx_parser::Attachment::Color)
 				{
 					Framebuffer* sourceFb = _FindFramebuffer(bindDesc.inputFBName);
+					// we only support first color attachment of the main color buffer
+					if (strcmp(bindDesc.inputFBName, "_main") == 0 && bindDesc.slot == 0)
+					{
+						newRenderPass.mainColorSlot = insigne::get_material_texture_slot(newRenderPass.msPair.material, bindDesc.samplerName);
+					}
+					else if (strcmp(bindDesc.inputFBName, "_prev") == 0 && bindDesc.slot == 0)
+					{
+						newRenderPass.prevColorSlot = insigne::get_material_texture_slot(newRenderPass.msPair.material, bindDesc.samplerName);
+					}
 					insigne::helpers::assign_texture(newRenderPass.msPair.material, bindDesc.samplerName,
 							insigne::extract_color_attachment(sourceFb->fbHandle, bindDesc.slot));
 				}
@@ -201,6 +217,8 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* 
 	}
 	m_PresentMaterial = nullptr;
 	m_UsedUBBytes = dataOffset;
+
+	m_CurrentBuffer = 0;
 }
 
 // -------------------------------------------------------------------
@@ -257,7 +275,8 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::SetValueVec2(const_cstr 
 template <class TLinearAllocator, class TFreelistAllocator>
 void PostFXChain<TLinearAllocator, TFreelistAllocator>::BeginMainOutput()
 {
-	insigne::begin_render_pass(m_MainBuffer.fbHandle);
+	m_CurrentBuffer = (m_CurrentBuffer + 1) % 2;
+	insigne::begin_render_pass(m_MainBuffer[m_CurrentBuffer].fbHandle);
 }
 
 // -------------------------------------------------------------------
@@ -265,7 +284,7 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::BeginMainOutput()
 template <class TLinearAllocator, class TFreelistAllocator>
 void PostFXChain<TLinearAllocator, TFreelistAllocator>::EndMainOutput()
 {
-	insigne::end_render_pass(m_MainBuffer.fbHandle);
+	insigne::end_render_pass(m_MainBuffer[m_CurrentBuffer].fbHandle);
 	insigne::dispatch_render_pass();
 }
 
@@ -285,7 +304,17 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Process()
 	{
 		const RenderPass& rp = m_Presets[0].renderPasses[i];
 		insigne::begin_render_pass(rp.targetFb->fbHandle);
-		const mat_loader::MaterialShaderPair& msPair = m_Presets[0].renderPasses[i].msPair;
+		mat_loader::MaterialShaderPair& msPair = m_Presets[0].renderPasses[i].msPair;
+		const Framebuffer& mainFb = m_MainBuffer[m_CurrentBuffer];
+		const Framebuffer& prevFb = m_MainBuffer[(m_CurrentBuffer + 1) % 2];
+		if (rp.mainColorSlot >= 0)
+		{
+			msPair.material.textures[rp.mainColorSlot].value = insigne::extract_color_attachment(mainFb.fbHandle, 0);
+		}
+		if (rp.prevColorSlot >= 0)
+		{
+			msPair.material.textures[rp.prevColorSlot].value = insigne::extract_color_attachment(prevFb.fbHandle, 0);
+		}
 		insigne::draw_surface<geo2d::SurfacePT>(m_SSQuad.vb, m_SSQuad.ib, msPair.material);
 		insigne::end_render_pass(rp.targetFb->fbHandle);
 		insigne::dispatch_render_pass();
@@ -317,7 +346,11 @@ Framebuffer* PostFXChain<TLinearAllocator, TFreelistAllocator>::_FindFramebuffer
 {
 	if (strcmp(i_name, "_main") == 0)
 	{
-		return &m_MainBuffer;
+		return &m_MainBuffer[m_CurrentBuffer];
+	}
+	else if (strcmp(i_name, "_prev") == 0)
+	{
+		return &m_MainBuffer[(m_CurrentBuffer + 1) % 2];
 	}
 	else if (strcmp(i_name, "_final") == 0)
 	{
