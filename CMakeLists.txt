@@ -74,6 +74,8 @@ if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-
 else ()
 	set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -fno-rtti -fno-exceptions -fcolor-diagnostics -fansi-escape-codes")
 	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -Wall -fcolor-diagnostics -fansi-escape-codes")
+	# set (CMAKE_CXX_CLANG_TIDY "clang-tidy;-header-filter=.;-checks=-*,portability-*,performance-*")
+	# set (CMAKE_C_CLANG_TIDY "clang-tidy;-header-filter=.;-checks=-*,portability-*,performance-*")
 endif ()
 
 # 8. subdirectories
