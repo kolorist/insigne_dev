@@ -46,6 +46,8 @@ private:
 	helpers::SurfaceGPU							m_SurfaceGPU;
 	mat_loader::MaterialShaderPair				m_MSPair;
 
+	size										m_frameIndex;
+	floral::mat4x4f								m_projection, m_view;
 	SceneData									m_SceneData;
 	insigne::ub_handle_t						m_SceneUB;
 	insigne::texture_handle_t					m_SplitSumTexture;

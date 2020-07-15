@@ -27,7 +27,34 @@ namespace tech
 {
 // -------------------------------------------------------------------
 
+// 8xTAA
+static const floral::vec2f s_sampleLocs[8] = {
+	floral::vec2f(-7.0f, 1.0f) / 8.0f,
+	floral::vec2f(-5.0f, -5.0f) / 8.0f,
+	floral::vec2f(-1.0f, -3.0f) / 8.0f,
+	floral::vec2f(3.0f, -7.0f) / 8.0f,
+	floral::vec2f(5.0f, -1.0f) / 8.0f,
+	floral::vec2f(7.0f, 7.0f) / 8.0f,
+	floral::vec2f(1.0f, 3.0f) / 8.0f,
+	floral::vec2f(-3.0f, 5.0f) / 8.0f
+};
+
+floral::mat4x4f get_jittered_matrix(const size i_frameIdx, const f32 i_width, const f32 i_height)
+{
+	const size idx = i_frameIdx % 8;
+
+	const floral::vec2f k_texelSize(1.0f / i_width, 1.0f / i_height);
+	const floral::vec2f k_subSampleSize = k_texelSize * 2.0f; // That is the size of the subsample in NDC
+
+	const floral::vec2f sloc = s_sampleLocs[idx];
+
+	floral::vec2f subSample = sloc * k_subSampleSize * 0.5f;
+
+	return floral::construct_translation3d(subSample.x, subSample.y, 0.0f);
+}
+
 PBRHelmet::PBRHelmet()
+	: m_frameIndex(0)
 {
 }
 
@@ -111,14 +138,14 @@ void PBRHelmet::_OnInitialize()
 			model.indicesData, model.indicesCount, insigne::buffer_usage_e::static_draw, false);
 
 	const floral::vec3f k_camPos = floral::vec3f(4.3f, 5.1f, 5.4f);
-	floral::mat4x4f view = floral::construct_lookat_point(
+	m_view = floral::construct_lookat_point(
 			floral::vec3f(0.0f, 1.0f, 0.0f),
 			k_camPos,
 			floral::vec3f(0.0f, 0.0f, 0.0f));
-	floral::mat4x4f projection = floral::construct_perspective(
+	m_projection = floral::construct_perspective(
 			0.01f, 100.0f, 16.3125f, 16.0f / 9.0f);
 	m_SceneData.cameraPos = floral::vec4f(k_camPos, 0.0f);
-	m_SceneData.viewProjectionMatrix = projection * view;
+	m_SceneData.viewProjectionMatrix = m_projection * m_view;
 	{
 		// loading SH
 		m_MemoryArena->free_all();
@@ -183,6 +210,12 @@ void PBRHelmet::_OnUpdate(const f32 i_deltaMs)
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(1.0f, 0.0f, 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 1.0f, 0.0f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 0.0f, 1.0f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+
+	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
+	floral::mat4x4f wvp = get_jittered_matrix(m_frameIndex, commonCtx->window_width, commonCtx->window_height) * m_projection * m_view;
+	m_SceneData.viewProjectionMatrix = wvp;
+	insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
+	m_frameIndex++;
 }
 
 void PBRHelmet::_OnRender(const f32 i_deltaMs)

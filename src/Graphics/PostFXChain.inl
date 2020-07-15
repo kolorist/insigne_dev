@@ -16,6 +16,8 @@ namespace pfx_chain
 
 template <class TLinearAllocator, class TFreelistAllocator>
 PostFXChain<TLinearAllocator, TFreelistAllocator>::PostFXChain()
+	: m_CurrentBuffer(0)
+	, m_TAAEnabled(false)
 {
 }
 
@@ -82,8 +84,9 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* 
 			&indices[0], 3, insigne::buffer_usage_e::static_draw, true);
 #endif
 
-	m_MainBuffer[0].name = floral::crc_string("_main");
-	m_MainBuffer[1].name = floral::crc_string("_main");
+	m_MainBuffer.name = floral::crc_string("_main");
+	m_TAABuffers[0].name = floral::crc_string("_taa0");
+	m_TAABuffers[1].name = floral::crc_string("_taa1");
 	insigne::framebuffer_desc_t mainDesc = insigne::create_framebuffer_desc();
 	mainDesc.width = (s32)i_baseRes.x;
 	mainDesc.height = (s32)i_baseRes.y;
@@ -100,10 +103,12 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* 
 	{
 		mainDesc.color_attachments->push_back(insigne::color_attachment_t("color0", insigne::texture_format_e::hdr_rgb_half));
 	}
-	m_MainBuffer[0].fbHandle = insigne::create_framebuffer(mainDesc);
-	m_MainBuffer[1].fbHandle = insigne::create_framebuffer(mainDesc);
-	m_MainBuffer[0].dim = i_baseRes;
-	m_MainBuffer[1].dim = i_baseRes;
+	m_MainBuffer.fbHandle = insigne::create_framebuffer(mainDesc);
+	m_TAABuffers[0].fbHandle = insigne::create_framebuffer(mainDesc);
+	m_TAABuffers[1].fbHandle = insigne::create_framebuffer(mainDesc);
+	m_MainBuffer.dim = i_baseRes;
+	m_TAABuffers[0].dim = i_baseRes;
+	m_TAABuffers[1].dim = i_baseRes;
 
 	m_FinalBuffer.name = floral::crc_string("_final");
 	m_FinalBuffer.fbHandle = DEFAULT_FRAMEBUFFER_HANDLE;
@@ -218,7 +223,16 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* 
 	m_PresentMaterial = nullptr;
 	m_UsedUBBytes = dataOffset;
 
-	m_CurrentBuffer = 0;
+	// for taa
+	m_TemporalArena->free_all();
+	floral::relative_path matPath = floral::build_relative_path("taa.mat");
+	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(i_fs, matPath, m_TemporalArena);
+	const bool matLoadResult = mat_loader::CreateMaterial(&m_TAAMSPair, i_fs, matDesc, m_MemoryArena, m_MaterialDataArena);
+	if (matLoadResult)
+	{
+		m_TAAEnabled = true;
+		insigne::helpers::assign_texture(m_TAAMSPair.material, "u_MainTex", insigne::extract_color_attachment(m_MainBuffer.fbHandle, 0));
+	}
 }
 
 // -------------------------------------------------------------------
@@ -230,6 +244,7 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::CleanUp()
 	m_MaterialDataArena = nullptr;
 	m_TemporalArena = nullptr;
 	m_MemoryArena = nullptr;
+	m_CurrentBuffer = 0;
 }
 
 // -------------------------------------------------------------------
@@ -270,13 +285,16 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::SetValueVec2(const_cstr 
 	}
 }
 
+// TODO: we are doing TAA wrong
+// - the _main should not be ping-ponged
+// - there should be a distinct TAA render pass, which render to a ping-pong framebuffers
+// - the ping-pong framebuffer will then be fed to the post-process pass as their normal _main buffer
 // -------------------------------------------------------------------
 
 template <class TLinearAllocator, class TFreelistAllocator>
 void PostFXChain<TLinearAllocator, TFreelistAllocator>::BeginMainOutput()
 {
-	m_CurrentBuffer = (m_CurrentBuffer + 1) % 2;
-	insigne::begin_render_pass(m_MainBuffer[m_CurrentBuffer].fbHandle);
+	insigne::begin_render_pass(m_MainBuffer.fbHandle);
 }
 
 // -------------------------------------------------------------------
@@ -284,7 +302,7 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::BeginMainOutput()
 template <class TLinearAllocator, class TFreelistAllocator>
 void PostFXChain<TLinearAllocator, TFreelistAllocator>::EndMainOutput()
 {
-	insigne::end_render_pass(m_MainBuffer[m_CurrentBuffer].fbHandle);
+	insigne::end_render_pass(m_MainBuffer.fbHandle);
 	insigne::dispatch_render_pass();
 }
 
@@ -299,28 +317,41 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Process()
 		m_UBDataDirty = false;
 	}
 
+	// taa
+	m_CurrentBuffer = (m_CurrentBuffer + 1) % 2;
+	Framebuffer& currFb = m_TAABuffers[m_CurrentBuffer];
+	Framebuffer& histFb = m_TAABuffers[(m_CurrentBuffer + 1) % 2];
+
+	if (m_TAAEnabled)
+	{
+		insigne::begin_render_pass(currFb.fbHandle);
+		insigne::helpers::assign_texture(m_TAAMSPair.material, "u_HistTex", insigne::extract_color_attachment(histFb.fbHandle, 0));
+		insigne::draw_surface<geo2d::SurfacePT>(m_SSQuad.vb, m_SSQuad.ib, m_TAAMSPair.material);
+		insigne::end_render_pass(currFb.fbHandle);
+		insigne::dispatch_render_pass();
+	}
+
 	const size numRenderPasses = m_Presets[0].renderPasses.get_size() - 1; // exclude final pass
-	for (size i = 0;  i < numRenderPasses; i++)
+	for (size i = 0; i < numRenderPasses; i++)
 	{
 		const RenderPass& rp = m_Presets[0].renderPasses[i];
 		insigne::begin_render_pass(rp.targetFb->fbHandle);
 		mat_loader::MaterialShaderPair& msPair = m_Presets[0].renderPasses[i].msPair;
-		const Framebuffer& mainFb = m_MainBuffer[m_CurrentBuffer];
-		const Framebuffer& prevFb = m_MainBuffer[(m_CurrentBuffer + 1) % 2];
-		if (rp.mainColorSlot >= 0)
+		if (m_TAAEnabled && rp.mainColorSlot >= 0)
 		{
-			msPair.material.textures[rp.mainColorSlot].value = insigne::extract_color_attachment(mainFb.fbHandle, 0);
-		}
-		if (rp.prevColorSlot >= 0)
-		{
-			msPair.material.textures[rp.prevColorSlot].value = insigne::extract_color_attachment(prevFb.fbHandle, 0);
+			msPair.material.textures[rp.mainColorSlot].value = insigne::extract_color_attachment(currFb.fbHandle, 0);
 		}
 		insigne::draw_surface<geo2d::SurfacePT>(m_SSQuad.vb, m_SSQuad.ib, msPair.material);
 		insigne::end_render_pass(rp.targetFb->fbHandle);
 		insigne::dispatch_render_pass();
 	}
 
+	const RenderPass& finalRp = m_Presets[0].renderPasses[numRenderPasses];
 	m_PresentMaterial = &(m_Presets[0].renderPasses[numRenderPasses].msPair);
+	if (m_TAAEnabled && finalRp.mainColorSlot >= 0)
+	{
+		m_PresentMaterial->material.textures[finalRp.mainColorSlot].value = insigne::extract_color_attachment(currFb.fbHandle, 0);
+	}
 }
 
 // -------------------------------------------------------------------
@@ -346,11 +377,7 @@ Framebuffer* PostFXChain<TLinearAllocator, TFreelistAllocator>::_FindFramebuffer
 {
 	if (strcmp(i_name, "_main") == 0)
 	{
-		return &m_MainBuffer[m_CurrentBuffer];
-	}
-	else if (strcmp(i_name, "_prev") == 0)
-	{
-		return &m_MainBuffer[(m_CurrentBuffer + 1) % 2];
+		return &m_MainBuffer;
 	}
 	else if (strcmp(i_name, "_final") == 0)
 	{

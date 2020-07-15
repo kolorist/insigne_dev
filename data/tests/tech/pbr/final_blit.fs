@@ -51,6 +51,7 @@ mediump vec3 Uncharted2Tonemap(in highp vec3 x)
 void main()
 {
 	mediump vec3 mainColor = texture(u_MainTex, v_TexCoord).rgb;
+
 #if 0
 	mediump vec3 color = ACESFitted(mainColor);
 #else

@@ -92,13 +92,15 @@ private:
 private:
 	helpers::SurfaceGPU							m_SSQuad;
 
-	Framebuffer									m_MainBuffer[2];
+	Framebuffer									m_MainBuffer;
+	Framebuffer									m_TAABuffers[2];
 	Framebuffer									m_FinalBuffer;
 	s32											m_CurrentBuffer;
 
 	floral::fast_fixed_array<Framebuffer, TLinearAllocator>					m_FramebufferList;
 	floral::fast_fixed_array<Preset<TLinearAllocator>, TLinearAllocator>	m_Presets;
 
+	mat_loader::MaterialShaderPair				m_TAAMSPair;
 	mat_loader::MaterialShaderPair*				m_PresentMaterial;
 
 	p8																		m_UBData;
@@ -106,6 +108,7 @@ private:
 	insigne::ub_handle_t													m_UB;
 	floral::fast_fixed_array<ValueProxy, TLinearAllocator>					m_ValueMap;
 	bool																	m_UBDataDirty;
+	bool										m_TAAEnabled;
 
 private:
 	TLinearAllocator*							m_MemoryArena;
