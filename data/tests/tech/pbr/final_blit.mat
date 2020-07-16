@@ -1,6 +1,6 @@
 _shader
-	vs	tests/tech/pbr/ssquad.vs
-	fs	tests/tech/pbr/final_blit.fs
+	vs	ssquad.vs
+	fs	final_blit.fs
 _end_shader
 
 _state

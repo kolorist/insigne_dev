@@ -1,6 +1,6 @@
 _shader
-	vs	pbr_splitsum.vs
-	fs	pbr_splitsum.fs
+	vs	taa.vs
+	fs	taa.fs
 _end_shader
 
 _state
@@ -11,4 +11,6 @@ _state
 _end_state
 
 _params
+	_p_tex_holder tex2d u_HistTex
+	_p_tex_holder tex2d u_MainTex
 _end_params

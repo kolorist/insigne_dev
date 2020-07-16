@@ -1,6 +1,6 @@
 _shader
-	vs	tests/tech/pbr/fxaa.vs
-	fs	tests/tech/pbr/fxaa.fs
+	vs	fxaa.vs
+	fs	fxaa.fs
 _end_shader
 
 _state

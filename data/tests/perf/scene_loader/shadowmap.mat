@@ -1,6 +1,6 @@
 _shader
-	vs	tests/perf/scene_loader/shadowmap.vs
-	fs	tests/perf/scene_loader/shadowmap.fs
+	vs	shadowmap.vs
+	fs	shadowmap.fs
 _end_shader
 
 _state

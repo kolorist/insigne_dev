@@ -35,15 +35,15 @@ mediump vec3 ACESFitted(in mediump vec3 color)
     return color;
 }
 
-const highp float A = 0.15f;
-const highp float B = 0.50f;
-const highp float C = 0.10f;
-const highp float D = 0.20f;
-const highp float E = 0.02f;
-const highp float F = 0.30f;
-const highp vec3 W = vec3(11.2f, 11.2f, 11.2f);
+const mediump float A = 0.15f;
+const mediump float B = 0.50f;
+const mediump float C = 0.10f;
+const mediump float D = 0.20f;
+const mediump float E = 0.02f;
+const mediump float F = 0.30f;
+const mediump vec3 W = vec3(11.2f, 11.2f, 11.2f);
 
-mediump vec3 Uncharted2Tonemap(in highp vec3 x)
+mediump vec3 Uncharted2Tonemap(in mediump vec3 x)
 {
    return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
 }

@@ -1,6 +1,6 @@
 _shader
-	vs	tests/tech/pbr/pbr.vs
-	fs	tests/tech/pbr/pbr.fs
+	vs	pbr.vs
+	fs	pbr.fs
 _end_shader
 
 _state
@@ -24,7 +24,7 @@ _params
 		mag_filter		linear
 		wrap_s			repeat
 		wrap_t			repeat
-		path			tests/tech/pbr/damaged_helmet_albedo.cbtex
+		path			damaged_helmet_albedo.cbtex
 	_end_p_tex
 
 	_p_tex u_MetalRoughnessTex
@@ -33,7 +33,7 @@ _params
 		mag_filter		linear
 		wrap_s			repeat
 		wrap_t			repeat
-		path			tests/tech/pbr/damaged_helmet_metalroughness.cbtex
+		path			damaged_helmet_metalroughness.cbtex
 	_end_p_tex
 
 	_p_tex u_NormalTex
@@ -42,7 +42,7 @@ _params
 		mag_filter		linear
 		wrap_s			repeat
 		wrap_t			repeat
-		path			tests/tech/pbr/damaged_helmet_normal.cbtex
+		path			damaged_helmet_normal.cbtex
 	_end_p_tex
 
 	_p_tex u_EmissionTex
@@ -51,7 +51,7 @@ _params
 		mag_filter		linear
 		wrap_s			repeat
 		wrap_t			repeat
-		path			tests/tech/pbr/damaged_helmet_emissive.cbtex
+		path			damaged_helmet_emissive.cbtex
 	_end_p_tex
 	
 	_p_tex u_PMREMTex

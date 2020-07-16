@@ -65,6 +65,11 @@ mediump vec3 srgb_to_linear(in mediump vec3 i_srgbColor)
 	return pow(i_srgbColor, vec3(2.2f));
 }
 
+mediump vec3 get_safe_hdr(in mediump vec3 i_hdrColor)
+{
+	return clamp(i_hdrColor, vec3(0.0f, 0.0f, 0.0f), vec3(36.0f, 36.0f, 36.0f));
+}
+
 void main()
 {
 	// base vectors
@@ -165,5 +170,5 @@ void main()
 	radiance += emissionColor;
 	radiance *= occlusion;
 
-	o_Color = vec4(radiance, 1.0f);
+	o_Color = vec4(get_safe_hdr(radiance), 1.0f);
 }
