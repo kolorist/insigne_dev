@@ -23,7 +23,7 @@
 #include "Graphics/stb_image_resize.h"
 #include "Graphics/stb_image_write.h"
 #include "Graphics/stb_dxt.h"
-//#include "Graphics/etc2comp/Etc/Etc.h"
+#include "Graphics/etc2comp/Etc/Etc.h"
 #include "Graphics/prt.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/DebugDrawer.h"
@@ -205,7 +205,6 @@ void convert_to_rgbm(f32* i_inpData, p8 o_rgbmData, const s32 i_width, const s32
 }
 
 //--------------------------------------------------------------------
-#if 0
 template <class TAllocator>
 p8 compress_etc2(p8 i_input, const s32 i_width, const s32 i_height, const s32 i_numChannels, size* o_compressedSize, TAllocator* i_allocator)
 {
@@ -253,7 +252,6 @@ p8 compress_etc2(p8 i_input, const s32 i_width, const s32 i_height, const s32 i_
 	i_allocator->free(floatImgData);
 	return dstImage;
 }
-#endif
 
 template <class TAllocator>
 p8 compress_dxt(p8 i_input, const s32 i_width, const s32 i_height, const s32 i_numChannels, size* o_compressedSize, TAllocator* i_allocator)
@@ -744,15 +742,20 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 				p8 rgbaData = m_TemporalArena->allocate_array<u8>(mipSize * mipSize * 4);
 				convert_to_rgbm(pData, rgbaData, mipSize, mipSize, 0.5f);
 				size compressedSize = 0;
+#if 0
 				p8 compressedData = compress_dxt(rgbaData, mipSize, mipSize, 4, &compressedSize, m_TemporalArena);
-				//p8 compressedData = compress_etc2(rgbaData, mipSize, mipSize, 4, &compressedSize, m_TemporalArena);
 				oStream.write_bytes(compressedData, compressedSize);
 				m_TemporalArena->free(compressedData);
-				//delete[] compressedData;
+#else
+				p8 compressedData = compress_etc2(rgbaData, mipSize, mipSize, 4, &compressedSize, m_TemporalArena);
+				oStream.write_bytes(compressedData, compressedSize);
+				delete[] compressedData;
+#endif
 				m_TemporalArena->free(rgbaData);
 
 				pData += (mipSize * mipSize * 3);
 			}
+			CLOVER_VERBOSE("Finished face #%d", i);
 		}
 		floral::close_file(oFile);
 

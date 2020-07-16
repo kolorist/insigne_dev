@@ -29,6 +29,7 @@ namespace tech
 
 PBRHelmet::PBRHelmet()
 	: m_frameIndex(0)
+	, m_elapsedTime(0.0f)
 {
 }
 
@@ -117,7 +118,7 @@ void PBRHelmet::_OnInitialize()
 	m_SurfaceGPU = helpers::CreateSurfaceGPU(model.verticesData, model.verticesCount, sizeof(geo3d::VertexPNTT),
 			model.indicesData, model.indicesCount, insigne::buffer_usage_e::static_draw, false);
 
-	const floral::vec3f k_camPos = floral::vec3f(4.3f, 5.1f, 5.4f);
+	const floral::vec3f k_camPos = floral::vec3f(0.0f, 5.1f, 7.0f);
 	m_view = floral::construct_lookat_point(
 			floral::vec3f(0.0f, 1.0f, 0.0f),
 			k_camPos,
@@ -173,6 +174,11 @@ void PBRHelmet::_OnInitialize()
 
 void PBRHelmet::_OnUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("Controller##PBRHelmet");
+	static bool autoRotate = false;
+	ImGui::Checkbox("Auto rotate", &autoRotate);
+	ImGui::End();
+
 	// coordinate
 	const s32 k_gridRange = 6;
 	const f32 k_gridSpacing = 0.25f;
@@ -194,7 +200,28 @@ void PBRHelmet::_OnUpdate(const f32 i_deltaMs)
 	if (m_PostFXChain.IsTAAEnabled())
 	{
 		calyx::context_attribs* commonCtx = calyx::get_context_attribs();
-		floral::mat4x4f wvp = pfx_chain::get_jittered_matrix(m_frameIndex, commonCtx->window_width, commonCtx->window_height) * m_projection * m_view;
+
+		if (autoRotate)
+		{
+			m_elapsedTime += i_deltaMs;
+			const f32 k_factor = floral::to_radians(m_elapsedTime / 40.0f);
+			const floral::vec3f k_camPos = floral::vec3f(7.0f * sinf(k_factor), 5.1f, 7.0f * cosf(k_factor));
+			m_view = floral::construct_lookat_point(
+					floral::vec3f(0.0f, 1.0f, 0.0f),
+					k_camPos,
+					floral::vec3f(0.0f, 0.0f, 0.0f));
+			m_SceneData.cameraPos = floral::vec4f(k_camPos, 0.0f);
+		}
+
+		floral::mat4x4f wvp;
+		if (!autoRotate)
+		{
+			wvp = pfx_chain::get_jittered_matrix(m_frameIndex, commonCtx->window_width, commonCtx->window_height) * m_projection * m_view;
+		}
+		else
+		{
+			wvp = m_projection * m_view;
+		}
 		m_SceneData.viewProjectionMatrix = wvp;
 		insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
 	}

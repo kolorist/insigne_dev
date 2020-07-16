@@ -47,6 +47,7 @@ private:
 	mat_loader::MaterialShaderPair				m_MSPair;
 
 	u64											m_frameIndex;
+	f32											m_elapsedTime;
 	floral::mat4x4f								m_projection, m_view;
 	SceneData									m_SceneData;
 	insigne::ub_handle_t						m_SceneUB;
