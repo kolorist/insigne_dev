@@ -117,16 +117,16 @@ void SceneLoader::_OnInitialize()
 
 	const floral::vec3f k_cameraPosition(-79.5f, 30.0f, -10.0f);
 	//const floral::vec3f k_cameraPosition = floral::vec3f(-79.5f, 50.0f, -10.0f) * 10.0f;
-	floral::mat4x4f viewMatrix = floral::construct_lookat_point(floral::vec3f(0.0f, 1.0f, 0.0f),
+	m_view = floral::construct_lookat_point(floral::vec3f(0.0f, 1.0f, 0.0f),
 			k_cameraPosition,
 			floral::vec3f(0.0f, 10.0f, 0.0f));
-	floral::mat4x4f projectionMatrix = floral::construct_perspective(1.0f, 200.0f, 45.0f, aspectRatio);
-	m_SceneData.viewProjectionMatrix = projectionMatrix * viewMatrix;
+	m_projection = floral::construct_perspective(1.0f, 200.0f, 45.0f, aspectRatio);
+	m_SceneData.viewProjectionMatrix = m_projection * m_view;
 	m_SceneData.cameraPosition = floral::vec4f(k_cameraPosition, 1.0f);
 	{
 		m_MemoryArena->free_all();
 		// loading SH
-		floral::file_info shFile = floral::open_file("tests/perf/scene_loader/sponza/materials/env/venice_sunset.cbsh");
+		floral::file_info shFile = floral::open_file_read(m_FileSystem, floral::build_relative_path("sponza/env/venice_sunset.cbsh"));
 		floral::file_stream shStream;
 		shStream.buffer = (p8)m_MemoryArena->allocate(shFile.file_size);
 		floral::read_all_file(shFile, shStream);
@@ -178,25 +178,22 @@ void SceneLoader::_OnInitialize()
 	}
 
 	m_MemoryArena->free_all();
-	const cbscene::Scene scene = cbscene::LoadSceneData(floral::path("tests/perf/scene_loader/sponza/sponza.gltf.cbscene"),
+	const cbscene::Scene scene = cbscene::LoadSceneData(m_FileSystem, floral::build_relative_path("sponza/sponza.gltf.cbscene"),
 			m_MemoryArena, m_SceneDataArena);
 
-	floral::relative_path sceneDir = floral::build_relative_path("sponza");
-	floral::push_directory(m_FileSystem, sceneDir);
+	floral::push_directory(m_FileSystem, floral::build_relative_path("sponza"));
 	m_MaterialArray.reserve(scene.nodesCount, m_SceneDataArena);
 	m_ModelDataArray.reserve(scene.nodesCount, m_SceneDataArena);
 	floral::vec3f minCorner(9999.0f, 9999.0f, 9999.0f);
 	floral::vec3f maxCorner(-9999.0f, -9999.0f, -9999.0f);
 	for (size i = 0; i < scene.nodesCount; i++)
 	{
-		// TODO: adapt model loading to floral::filesystem
-		c8 modelFile[128];
-		sprintf(modelFile, "tests/perf/scene_loader/sponza/%s", scene.nodeFileNames[i]);
 		m_MemoryArena->free_all();
-		cbmodel::Model<geo3d::VertexPNTT> model = cbmodel::LoadModelData<geo3d::VertexPNTT>(
-				floral::path(modelFile),
+		cbmodel::Model<geo3d::VertexPNTT> model = cbmodel::LoadModelData<geo3d::VertexPNTT>(m_FileSystem,
+				floral::build_relative_path(scene.nodeFileNames[i]),
 				cbmodel::VertexAttribute::Position | cbmodel::VertexAttribute::Normal | cbmodel::VertexAttribute::Tangent | cbmodel::VertexAttribute::TexCoord,
 				m_MemoryArena, m_SceneDataArena);
+
 		if (model.aabb.min_corner.x < minCorner.x) minCorner.x = model.aabb.min_corner.x;
 		if (model.aabb.min_corner.y < minCorner.y) minCorner.y = model.aabb.min_corner.y;
 		if (model.aabb.min_corner.z < minCorner.z) minCorner.z = model.aabb.min_corner.z;
@@ -204,6 +201,7 @@ void SceneLoader::_OnInitialize()
 		if (model.aabb.max_corner.x > maxCorner.x) maxCorner.x = model.aabb.max_corner.x;
 		if (model.aabb.max_corner.y > maxCorner.y) maxCorner.y = model.aabb.max_corner.y;
 		if (model.aabb.max_corner.z > maxCorner.z) maxCorner.z = model.aabb.max_corner.z;
+
 		c8 materialPath[128];
 		sprintf(materialPath, "materials/%s.mat", model.materialName);
 		mat_loader::MaterialShaderPair msPair = _LoadMaterial(materialPath);
@@ -292,18 +290,15 @@ void SceneLoader::_OnInitialize()
 	{
 
 		mat_parser::MaterialDescription matDesc =
-			mat_parser::ParseMaterial(floral::path("tests/perf/scene_loader/shadowmap.mat"), m_MemoryArena);
-		bool matLoadResult = mat_loader::CreateMaterial(&m_ShadowMapMaterial, matDesc, m_MemoryArena, m_MaterialDataArena);
-		FLORAL_ASSERT(matLoadResult == true);
+			mat_parser::ParseMaterial(m_FileSystem, floral::build_relative_path("shadowmap.mat"), m_MemoryArena);
+		bool matLoadResult = mat_loader::CreateMaterial(&m_ShadowMapMaterial, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+		FLORAL_ASSERT(matLoadResult);
 		insigne::helpers::assign_uniform_block(m_ShadowMapMaterial.material, "ub_Scene", 0, 0, m_ShadowSceneUB);
 	}
 
 	m_MemoryArena->free_all();
-	floral::relative_path pfxPath = floral::build_relative_path("hdr_pfx.pfx");
-	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(
-			m_FileSystem,
-			pfxPath,
-			m_MemoryArena);
+	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(m_FileSystem,
+			floral::build_relative_path("hdr_pfx.pfx"), m_MemoryArena);
 	m_PostFXChain.Initialize(m_FileSystem, pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 
 	floral::vec2f fxaaTexelSize(1.0f / commonCtx->window_width, 1.0f / commonCtx->window_height);
@@ -314,6 +309,14 @@ void SceneLoader::_OnInitialize()
 
 void SceneLoader::_OnUpdate(const f32 i_deltaMs)
 {
+	if (m_PostFXChain.IsTAAEnabled())
+	{
+		calyx::context_attribs* commonCtx = calyx::get_context_attribs();
+		floral::mat4x4f wvp = pfx_chain::get_jittered_matrix(m_frameIndex, commonCtx->window_width, commonCtx->window_height) * m_projection * m_view;
+		m_SceneData.viewProjectionMatrix = wvp;
+		insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
+	}
+
 	debugdraw::DrawAABB3D(m_SceneAABB, floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 
 	// bottom
@@ -338,6 +341,8 @@ void SceneLoader::_OnUpdate(const f32 i_deltaMs)
 	debugdraw::DrawLine3D(floral::vec3f(0.0f, 0.0f, 1.0f), floral::vec3f(4.0f, 0.0f, 1.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 0.5f));
 	debugdraw::DrawLine3D(floral::vec3f(0.0f, 0.0f, 1.0f), floral::vec3f(0.0f, 4.0f, 1.0f), floral::vec4f(0.0f, 1.0f, 0.0f, 0.5f));
 	debugdraw::DrawLine3D(floral::vec3f(0.0f, 0.0f, 1.0f), floral::vec3f(0.0f, 0.0f, 5.0f), floral::vec4f(0.0f, 0.0f, 1.0f, 0.5f));
+
+	m_frameIndex++;
 }
 
 //-------------------------------------------------------------------

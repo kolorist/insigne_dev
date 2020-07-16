@@ -27,32 +27,6 @@ namespace tech
 {
 // -------------------------------------------------------------------
 
-// 8xTAA
-static const floral::vec2f s_sampleLocs[8] = {
-	floral::vec2f(-7.0f, 1.0f) / 8.0f,
-	floral::vec2f(-5.0f, -5.0f) / 8.0f,
-	floral::vec2f(-1.0f, -3.0f) / 8.0f,
-	floral::vec2f(3.0f, -7.0f) / 8.0f,
-	floral::vec2f(5.0f, -1.0f) / 8.0f,
-	floral::vec2f(7.0f, 7.0f) / 8.0f,
-	floral::vec2f(1.0f, 3.0f) / 8.0f,
-	floral::vec2f(-3.0f, 5.0f) / 8.0f
-};
-
-floral::mat4x4f get_jittered_matrix(const size i_frameIdx, const f32 i_width, const f32 i_height)
-{
-	const size idx = i_frameIdx % 8;
-
-	const floral::vec2f k_texelSize(1.0f / i_width, 1.0f / i_height);
-	const floral::vec2f k_subSampleSize = k_texelSize * 2.0f; // That is the size of the subsample in NDC
-
-	const floral::vec2f sloc = s_sampleLocs[idx];
-
-	floral::vec2f subSample = sloc * k_subSampleSize * 0.5f;
-
-	return floral::construct_translation3d(subSample.x, subSample.y, 0.0f);
-}
-
 PBRHelmet::PBRHelmet()
 	: m_frameIndex(0)
 {
@@ -75,6 +49,10 @@ const_cstr PBRHelmet::GetName() const
 void PBRHelmet::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
+
+	floral::relative_path wdir = floral::build_relative_path("tests/tech/pbr");
+	floral::push_directory(m_FileSystem, wdir);
+
 	// register surfaces
 	insigne::register_surface_type<geo3d::SurfacePNTT>();
 	insigne::register_surface_type<geo2d::SurfacePT>();
@@ -105,8 +83,9 @@ void PBRHelmet::_OnInitialize()
 
 		m_MemoryArena->free_all();
 		mat_loader::MaterialShaderPair splitSumMSPair;
-		mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(floral::path("tests/tech/pbr/pbr_splitsum.mat"), m_MemoryArena);
-		const bool ssMaterialResult = mat_loader::CreateMaterial(&splitSumMSPair, matDesc, m_MemoryArena, m_MaterialDataArena);
+		floral::relative_path matPath = floral::build_relative_path("pbr_splitsum.mat");
+		mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+		const bool ssMaterialResult = mat_loader::CreateMaterial(&splitSumMSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 		FLORAL_ASSERT(ssMaterialResult);
 
 		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
@@ -130,7 +109,8 @@ void PBRHelmet::_OnInitialize()
 	}
 
 	m_MemoryArena->free_all();
-	cbmodel::Model<geo3d::VertexPNTT> model = cbmodel::LoadModelData<geo3d::VertexPNTT>(floral::path("tests/tech/pbr/DamagedHelmet.gltf_mesh_0.cbmodel"),
+	cbmodel::Model<geo3d::VertexPNTT> model = cbmodel::LoadModelData<geo3d::VertexPNTT>(m_FileSystem,
+			floral::build_relative_path("DamagedHelmet.gltf_mesh_0.cbmodel"),
 			cbmodel::VertexAttribute::Position | cbmodel::VertexAttribute::Normal | cbmodel::VertexAttribute::Tangent | cbmodel::VertexAttribute::TexCoord,
 			m_MemoryArena, m_ModelDataArena);
 
@@ -149,7 +129,7 @@ void PBRHelmet::_OnInitialize()
 	{
 		// loading SH
 		m_MemoryArena->free_all();
-		floral::file_info shFile = floral::open_file("out.cbsh");
+		floral::file_info shFile = floral::open_file_read(m_FileSystem, floral::build_relative_path("out.cbsh"));
 		floral::file_stream shStream;
 		shStream.buffer = (p8)m_MemoryArena->allocate(shFile.file_size);
 		floral::read_all_file(shFile, shStream);
@@ -171,18 +151,18 @@ void PBRHelmet::_OnInitialize()
 	m_SceneUB = insigne::copy_create_ub(desc);
 
 	m_MemoryArena->free_all();
-	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(
-			floral::path("tests/tech/pbr/pbr_helmet.mat"), m_MemoryArena);
+	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem,
+			floral::build_relative_path("pbr_helmet.mat"), m_MemoryArena);
 
-	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, matDesc, m_MemoryArena, m_MaterialDataArena);
+	const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_MSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(pbrMaterialResult == true);
 
 	insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Scene", 0, 0, m_SceneUB);
 	insigne::helpers::assign_texture(m_MSPair.material, "u_SplitSumTex", m_SplitSumTexture);
 
 	m_MemoryArena->free_all();
-	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(
-			floral::path("tests/tech/pbr/hdr_pfx.pfx"),
+	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(m_FileSystem,
+			floral::build_relative_path("hdr_pfx.pfx"),
 			m_MemoryArena);
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 	m_PostFXChain.Initialize(m_FileSystem, pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
@@ -211,10 +191,13 @@ void PBRHelmet::_OnUpdate(const f32 i_deltaMs)
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 1.0f, 0.0f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 0.0f, 1.0f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
 
-	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
-	floral::mat4x4f wvp = get_jittered_matrix(m_frameIndex, commonCtx->window_width, commonCtx->window_height) * m_projection * m_view;
-	m_SceneData.viewProjectionMatrix = wvp;
-	insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
+	if (m_PostFXChain.IsTAAEnabled())
+	{
+		calyx::context_attribs* commonCtx = calyx::get_context_attribs();
+		floral::mat4x4f wvp = pfx_chain::get_jittered_matrix(m_frameIndex, commonCtx->window_width, commonCtx->window_height) * m_projection * m_view;
+		m_SceneData.viewProjectionMatrix = wvp;
+		insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
+	}
 	m_frameIndex++;
 }
 
@@ -249,6 +232,8 @@ void PBRHelmet::_OnCleanUp()
 	g_StreammingAllocator.free(m_ModelDataArena);
 	g_StreammingAllocator.free(m_MaterialDataArena);
 	g_StreammingAllocator.free(m_MemoryArena);
+
+	floral::pop_directory(m_FileSystem);
 }
 
 // -------------------------------------------------------------------

@@ -289,18 +289,7 @@ const insigne::texture_handle_t LoadCBTexture(TFileSystem* i_fs, const floral::r
 		case Compression::ETC:
 		{
 			io_desc.compression = insigne::texture_compression_e::etc;
-			switch (header.colorChannel)
-			{
-				case ColorChannel::RGB:
-					io_desc.format = insigne::texture_format_e::rgb;
-					break;
-				case ColorChannel::RGBA:
-					io_desc.format = insigne::texture_format_e::rgba;
-					break;
-				default:
-					FLORAL_ASSERT(false);
-					break;
-			}
+			io_desc.format = insigne::texture_format_e::rgba;
 			break;
 		}
 

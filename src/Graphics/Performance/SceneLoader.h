@@ -81,6 +81,7 @@ private:
 	MaterialArray								m_MaterialArray;
 	floral::aabb3f								m_SceneAABB;
 
+	floral::mat4x4f								m_projection, m_view;
 	SceneData									m_SceneData;
 	LightingData								m_LightingData;
 	insigne::ub_handle_t						m_SceneUB;
@@ -95,6 +96,7 @@ private:
 	insigne::framebuffer_handle_t				m_ShadowMapFb;
 
 	pfx_chain::PostFXChain<LinearArena, FreelistArena>	m_PostFXChain;
+	u64											m_frameIndex;
 
 private:
 	FreelistArena*								m_MemoryArena;

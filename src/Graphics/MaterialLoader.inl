@@ -31,6 +31,11 @@ inline insigne::wrap_e ToInsigneWrap(const mat_parser::TextureWrap i_value)
 template <class TIOAllocator, class TMemoryAllocator>
 const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialDescription& i_matDesc, TIOAllocator* i_ioAllocator, TMemoryAllocator* i_dataAllocator)
 {
+	if (i_matDesc.vertexShaderPath == nullptr || i_matDesc.fragmentShaderPath == nullptr)
+	{
+		return false;
+	}
+
 	// create shader
 	insigne::shader_desc_t shaderDesc = insigne::create_shader_desc();
 	for (size i = 0; i < i_matDesc.buffersCount; i++)
@@ -231,6 +236,11 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 template <class TFileSystem, class TIOAllocator, class TMemoryAllocator>
 const bool CreateMaterial(MaterialShaderPair* o_mat, TFileSystem* i_fs, const mat_parser::MaterialDescription& i_matDesc, TIOAllocator* i_ioAllocator, TMemoryAllocator* i_dataAllocator)
 {
+	if (i_matDesc.vertexShaderPath == nullptr || i_matDesc.fragmentShaderPath == nullptr)
+	{
+		return false;
+	}
+
 	// create shader
 	insigne::shader_desc_t shaderDesc = insigne::create_shader_desc();
 	for (size i = 0; i < i_matDesc.buffersCount; i++)

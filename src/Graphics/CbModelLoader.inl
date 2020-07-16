@@ -6,23 +6,21 @@ namespace cbmodel
 {
 // ------------------------------------------------------------------
 
-template <class TVertex, class TIOAllocator, class TDataAllocator>
-const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttribute i_vtxAttrib, TIOAllocator* i_ioAllocator, TDataAllocator* i_dataAllocator)
+namespace details
 {
-	floral::file_info inp = floral::open_file(i_path);
-	floral::file_stream inpStream;
-	inpStream.buffer = (p8)i_ioAllocator->allocate(inp.file_size);
-	floral::read_all_file(inp, inpStream);
-	floral::close_file(inp);
+// ------------------------------------------------------------------
 
+template <class TVertex, class TDataAllocator>
+const Model<TVertex> LoadModelData(floral::file_stream& i_inpStream, const VertexAttribute i_vtxAttrib, TDataAllocator* i_dataAllocator)
+{
 	ModelHeader header;
-	inpStream.read(&header);
+	i_inpStream.read(&header);
 
 	s32 materialNameLen = 0;
-	inpStream.read(&materialNameLen);
+	i_inpStream.read(&materialNameLen);
 	cstr materialName = (cstr)i_dataAllocator->allocate(materialNameLen + 1);
 	memset(materialName, 0, materialNameLen + 1);
-	inpStream.read_bytes((voidptr)materialName, materialNameLen);
+	i_inpStream.read_bytes((voidptr)materialName, materialNameLen);
 
 	Model<TVertex> modelData;
 	modelData.indicesCount = header.indicesCount;
@@ -55,8 +53,8 @@ const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttri
 	voidptr verticesData = i_dataAllocator->allocate(vtxStride * header.verticesCount);
 
 	// index
-	inpStream.seek_begin(header.indicesOffset);
-	inpStream.read_bytes(indicesData, header.indicesCount * sizeof(s32));
+	i_inpStream.seek_begin(header.indicesOffset);
+	i_inpStream.read_bytes(indicesData, header.indicesCount * sizeof(s32));
 
 	// vertex
 	floral::vec3f minCorner(9999.0f, 9999.0f, 9999.0f);
@@ -65,11 +63,11 @@ const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttri
 	if (floral::test_bit_mask(i_vtxAttrib, VertexAttribute::Position))
 	{
 		aptr offset = startOffset;
-		inpStream.seek_begin(header.positionOffset);
+		i_inpStream.seek_begin(header.positionOffset);
 		for (s32 i = 0; i < header.verticesCount; i++)
 		{
 			voidptr dest = voidptr((aptr)verticesData + offset);
-			inpStream.read_bytes(dest, sizeof(floral::vec3f));
+			i_inpStream.read_bytes(dest, sizeof(floral::vec3f));
 			floral::vec3f* v = (floral::vec3f*)(dest);
 			if (v->x > maxCorner.x) maxCorner.x = v->x;
 			if (v->x < minCorner.x) minCorner.x = v->x;
@@ -87,10 +85,10 @@ const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttri
 	if (floral::test_bit_mask(i_vtxAttrib, VertexAttribute::Normal))
 	{
 		aptr offset = startOffset;
-		inpStream.seek_begin(header.normalOffset);
+		i_inpStream.seek_begin(header.normalOffset);
 		for (s32 i = 0; i < header.verticesCount; i++)
 		{
-			inpStream.read_bytes(voidptr((aptr)verticesData + offset), sizeof(floral::vec3f));
+			i_inpStream.read_bytes(voidptr((aptr)verticesData + offset), sizeof(floral::vec3f));
 			offset += vtxStride;
 		}
 		startOffset += sizeof(floral::vec3f);
@@ -99,10 +97,10 @@ const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttri
 	if (floral::test_bit_mask(i_vtxAttrib, VertexAttribute::Tangent))
 	{
 		aptr offset = startOffset;
-		inpStream.seek_begin(header.tangentOffset);
+		i_inpStream.seek_begin(header.tangentOffset);
 		for (s32 i = 0; i < header.verticesCount; i++)
 		{
-			inpStream.read_bytes(voidptr((aptr)verticesData + offset), sizeof(floral::vec3f));
+			i_inpStream.read_bytes(voidptr((aptr)verticesData + offset), sizeof(floral::vec3f));
 			offset += vtxStride;
 		}
 		startOffset += sizeof(floral::vec3f);
@@ -111,10 +109,10 @@ const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttri
 	if (floral::test_bit_mask(i_vtxAttrib, VertexAttribute::TexCoord))
 	{
 		aptr offset = startOffset;
-		inpStream.seek_begin(header.texcoordOffset);
+		i_inpStream.seek_begin(header.texcoordOffset);
 		for (s32 i = 0; i < header.verticesCount; i++)
 		{
-			inpStream.read_bytes(voidptr((aptr)verticesData + offset), sizeof(floral::vec2f));
+			i_inpStream.read_bytes(voidptr((aptr)verticesData + offset), sizeof(floral::vec2f));
 			offset += vtxStride;
 		}
 		startOffset += sizeof(floral::vec2f);
@@ -123,6 +121,33 @@ const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttri
 	modelData.indicesData = (s32*)indicesData;
 	modelData.verticesData = (TVertex*)verticesData;
 	return modelData;
+}
+
+// ------------------------------------------------------------------
+}
+
+template <class TVertex, class TFileSystem, class TIOAllocator, class TDataAllocator>
+const Model<TVertex> LoadModelData(TFileSystem* i_fs, const floral::relative_path& i_path, const VertexAttribute i_vtxAttrib, TIOAllocator* i_ioAllocator, TDataAllocator* i_dataAllocator)
+{
+	floral::file_info inp = floral::open_file_read(i_fs, i_path);
+	floral::file_stream inpStream;
+	inpStream.buffer = (p8)i_ioAllocator->allocate(inp.file_size);
+	floral::read_all_file(inp, inpStream);
+	floral::close_file(inp);
+
+	return details::LoadModelData<TVertex, TDataAllocator>(inpStream, i_vtxAttrib, i_dataAllocator);
+}
+
+template <class TVertex, class TIOAllocator, class TDataAllocator>
+const Model<TVertex> LoadModelData(const floral::path& i_path, const VertexAttribute i_vtxAttrib, TIOAllocator* i_ioAllocator, TDataAllocator* i_dataAllocator)
+{
+	floral::file_info inp = floral::open_file(i_path);
+	floral::file_stream inpStream;
+	inpStream.buffer = (p8)i_ioAllocator->allocate(inp.file_size);
+	floral::read_all_file(inp, inpStream);
+	floral::close_file(inp);
+
+	return details::LoadModelData<TVertex, TDataAllocator>(inpStream, i_vtxAttrib, i_dataAllocator);
 }
 
 // ------------------------------------------------------------------

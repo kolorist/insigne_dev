@@ -23,6 +23,7 @@
 #include "Graphics/stb_image_resize.h"
 #include "Graphics/stb_image_write.h"
 #include "Graphics/stb_dxt.h"
+//#include "Graphics/etc2comp/Etc/Etc.h"
 #include "Graphics/prt.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/DebugDrawer.h"
@@ -204,6 +205,55 @@ void convert_to_rgbm(f32* i_inpData, p8 o_rgbmData, const s32 i_width, const s32
 }
 
 //--------------------------------------------------------------------
+#if 0
+template <class TAllocator>
+p8 compress_etc2(p8 i_input, const s32 i_width, const s32 i_height, const s32 i_numChannels, size* o_compressedSize, TAllocator* i_allocator)
+{
+	Etc::Image::Format dstFormat;
+	u32 expectedSize = 0;
+	if (i_numChannels == 3)
+	{
+		expectedSize = ceil((f32)i_width / 4.0f) * ceil((f32)i_height / 4.0f) * 8;
+		dstFormat = Etc::Image::Format::RGB8;
+	}
+	else if (i_numChannels == 4)
+	{
+		expectedSize = ceil((f32)i_width / 4.0f) * ceil((f32)i_height / 4.0f) * 16;
+		dstFormat = Etc::Image::Format::RGBA8;
+	}
+	else
+	{
+		FLORAL_ASSERT(false);
+	}
+
+	f32 effort = 90.0f;
+	Etc::ErrorMetric errorMetric = Etc::ErrorMetric::RGBX;
+
+	size pixelsCount = i_width * i_height;
+	// etc2comp always expect alpha channel
+	f32* floatImgData = (f32*)i_allocator->allocate(pixelsCount * 4 * sizeof(f32));
+	for (size p = 0; p < pixelsCount; p++)
+	{
+		floatImgData[p * 4 + 3] = 1.0f; // fill default alpha = 1.0f
+		for (s32 comp = 0; comp < i_numChannels; comp++)
+		{
+			floatImgData[p * 4 + comp] = (f32)i_input[p * i_numChannels + comp] / 255.0f;
+		}
+	}
+
+	p8 dstImage = nullptr;
+	u32 encodedBitBytes = 0;
+	u32 extendedWidth = 0;
+	u32 extendedHeight = 0;
+	s32 encodingTime = 0;
+	Etc::Encode(floatImgData, i_width, i_height, dstFormat, errorMetric, effort, 4, 4, &dstImage,
+			&encodedBitBytes, &extendedWidth, &extendedHeight, &encodingTime, true);
+	FLORAL_ASSERT(encodedBitBytes == expectedSize);
+	*o_compressedSize = encodedBitBytes;
+	i_allocator->free(floatImgData);
+	return dstImage;
+}
+#endif
 
 template <class TAllocator>
 p8 compress_dxt(p8 i_input, const s32 i_width, const s32 i_height, const s32 i_numChannels, size* o_compressedSize, TAllocator* i_allocator)
@@ -683,7 +733,7 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 		header.encodedGamma = 0.5f;
 		header.mipsCount = (s32)log2(k_faceSize) + 1;
 		header.resolution = k_faceSize;
-		header.compression = tex_loader::Compression::DXT;
+		header.compression = tex_loader::Compression::ETC;
 
 		oStream.write(header);
 		for (s32 i = 0; i < 6; i++)
@@ -695,8 +745,10 @@ void SHCalculator::_OnUpdate(const f32 i_deltaMs)
 				convert_to_rgbm(pData, rgbaData, mipSize, mipSize, 0.5f);
 				size compressedSize = 0;
 				p8 compressedData = compress_dxt(rgbaData, mipSize, mipSize, 4, &compressedSize, m_TemporalArena);
+				//p8 compressedData = compress_etc2(rgbaData, mipSize, mipSize, 4, &compressedSize, m_TemporalArena);
 				oStream.write_bytes(compressedData, compressedSize);
 				m_TemporalArena->free(compressedData);
+				//delete[] compressedData;
 				m_TemporalArena->free(rgbaData);
 
 				pData += (mipSize * mipSize * 3);

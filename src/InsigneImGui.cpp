@@ -69,6 +69,7 @@ static floral::vec2f s_CursorPos;
 static bool s_CursorPressed;
 static bool s_CursorHeldThisFrame;
 
+floral::absolute_path s_iniFilePath;
 floral::filesystem<FreelistArena>* s_fileSystem = nullptr;
 
 static FreelistArena* s_MemoryArena = nullptr;
@@ -100,8 +101,10 @@ void InitializeImGui(floral::filesystem<FreelistArena>* i_fs)
 	ImGui::SetCurrentContext(ctx);
 
 	// load cached configs
+	s_iniFilePath = floral::get_application_directory();
 	floral::relative_path configFilePath = floral::build_relative_path("imgui.ini");
-	floral::file_info readConfigFile = floral::open_file_read(i_fs, configFilePath);
+	floral::concat_path(&s_iniFilePath, configFilePath);
+	floral::file_info readConfigFile = floral::open_file_read(i_fs, s_iniFilePath);
 	if (readConfigFile.file_size > 0)
 	{
 		floral::file_stream readConfigStream;
@@ -116,12 +119,12 @@ void InitializeImGui(floral::filesystem<FreelistArena>* i_fs)
 	ImGui::StyleColorsClassic();
 
 	ImGuiStyle& style = ImGui::GetStyle();
-	
+
 #if defined(FLORAL_PLATFORM_WINDOWS)
 #else
 	style.ScrollbarSize *= 3.0f;
-#endif	
-	
+#endif
+
 	ImGuiIO& io = ImGui::GetIO();
 	ImGui::SetAllocatorFunctions(&ImGuiCustomAlloc, &ImGuiCustomFree, nullptr);
 	io.IniFilename = nullptr;
@@ -234,8 +237,7 @@ void UpdateImGui()
 	if (io.WantSaveIniSettings)
 	{
 		CLOVER_DEBUG("Saving ImGui current settings...");
-		floral::relative_path configFilePath = floral::build_relative_path("imgui.ini");
-		floral::file_info configFile = floral::open_file_write(s_fileSystem, configFilePath);
+		floral::file_info configFile = floral::open_file_write(s_fileSystem, s_iniFilePath);
 		floral::output_file_stream configFileOStream;
 		floral::map_output_file(configFile, &configFileOStream);
 		size_t settingsSize = 0;

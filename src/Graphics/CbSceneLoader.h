@@ -39,6 +39,9 @@ struct Scene
 	NodeTransform*								nodeTransforms;
 };
 
+template <class TIOAllocator, class TDataAllocator, class TFileSystem>
+const Scene										LoadSceneData(TFileSystem* i_fs, const floral::relative_path& i_path, TIOAllocator* i_ioAllocator, TDataAllocator* i_dataAllocator);
+
 template <class TIOAllocator, class TDataAllocator>
 const Scene										LoadSceneData(const floral::path& i_path, TIOAllocator* i_ioAllocator, TDataAllocator* i_dataAllocator);
 

@@ -23,6 +23,14 @@ template <class TFileSystem, class TMemoryArena>
 const MaterialDescription ParseMaterial(TFileSystem* i_fs, const floral::relative_path& i_path, TMemoryArena* i_memoryArena)
 {
 	floral::file_info inp = floral::open_file_read(i_fs, i_path);
+	if (inp.file_size == 0)
+	{
+		MaterialDescription emptyMatDesc;
+		emptyMatDesc.vertexShaderPath = nullptr;
+		emptyMatDesc.fragmentShaderPath = nullptr;
+		return emptyMatDesc;
+	}
+
 	floral::file_stream inpStream;
 	inpStream.buffer = (p8)i_memoryArena->allocate(inp.file_size + 1);
 	floral::read_all_file(inp, inpStream);

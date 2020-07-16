@@ -233,6 +233,18 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::Initialize(TFileSystem* 
 		m_TAAEnabled = true;
 		insigne::helpers::assign_texture(m_TAAMSPair.material, "u_MainTex", insigne::extract_color_attachment(m_MainBuffer.fbHandle, 0));
 	}
+	else
+	{
+		m_TAAEnabled = false;
+	}
+
+	insigne::begin_render_pass(m_TAABuffers[0].fbHandle);
+	insigne::end_render_pass(m_TAABuffers[0].fbHandle);
+	insigne::dispatch_render_pass();
+
+	insigne::begin_render_pass(m_TAABuffers[1].fbHandle);
+	insigne::end_render_pass(m_TAABuffers[1].fbHandle);
+	insigne::dispatch_render_pass();
 }
 
 // -------------------------------------------------------------------
@@ -283,6 +295,14 @@ void PostFXChain<TLinearAllocator, TFreelistAllocator>::SetValueVec2(const_cstr 
 			m_UBDataDirty = true;
 		}
 	}
+}
+
+// -------------------------------------------------------------------
+
+template <class TLinearAllocator, class TFreelistAllocator>
+const bool PostFXChain<TLinearAllocator, TFreelistAllocator>::IsTAAEnabled() const
+{
+	return m_TAAEnabled;
 }
 
 // TODO: we are doing TAA wrong

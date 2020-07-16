@@ -22,6 +22,8 @@ namespace pfx_chain
 {
 // -------------------------------------------------------------------
 
+floral::mat4x4f									get_jittered_matrix(const size i_frameIdx, const f32 i_width, const f32 i_height);
+
 struct Framebuffer
 {
 	floral::crc_string							name;
@@ -74,6 +76,7 @@ public:
 	void										CleanUp();
 	void										SetValueVec3(const_cstr i_key, const floral::vec3f& i_value);
 	void										SetValueVec2(const_cstr i_key, const floral::vec2f& i_value);
+	const bool									IsTAAEnabled() const;
 
 	void										BeginMainOutput();
 	void										EndMainOutput();

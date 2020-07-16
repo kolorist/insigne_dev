@@ -49,6 +49,9 @@ inline VertexAttribute operator|(const VertexAttribute a, const VertexAttribute 
 	return (VertexAttribute)(u32(a) | u32(b));
 }
 
+template <class TVertex, class TFileSystem, class TIOAllocator, class TDataAllocator>
+const Model<TVertex>							LoadModelData(TFileSystem* i_fs, const floral::relative_path& i_path, const VertexAttribute i_vtxAttrib, TIOAllocator* i_ioAllocator, TDataAllocator* i_dataAllocator);
+
 template <class TVertex, class TIOAllocator, class TDataAllocator>
 const Model<TVertex>							LoadModelData(const floral::path& i_path, const VertexAttribute i_vtxAttrib, TIOAllocator* i_ioAllocator, TDataAllocator* i_dataAllocator);
 
