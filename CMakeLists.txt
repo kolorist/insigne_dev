@@ -45,6 +45,7 @@ if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-
 	file (GLOB_RECURSE deprecated_files
 		LIST_DIRECTORIES false
 		"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/*.cpp"
+		"${PROJECT_SOURCE_DIR}/src/Graphics/Tools/*.cpp"
 		"${PROJECT_SOURCE_DIR}/src/ImGuiDebug/*.cpp")
 	list (REMOVE_ITEM file_list ${deprecated_files})
 else ()
