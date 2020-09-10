@@ -32,6 +32,7 @@
 #include "Graphics/RenderTech/FragmentPartition.h"
 #include "Graphics/RenderTech/LightProbeGI.h"
 #include "Graphics/RenderTech/HDRBloom.h"
+#include "Graphics/RenderTech/Sky.h"
 
 // tools demo
 #include "Graphics/Tools/SingleAccurateFormFactor.h"
@@ -143,6 +144,7 @@ void DemoHub::Initialize()
 
 	_EmplaceRenderTechSuite<tech::PBRHelmet>();
 	_EmplaceRenderTechSuite<tech::HDRBloom>();
+	_EmplaceRenderTechSuite<tech::Sky>();
 
 #if defined(FLORAL_PLATFORM_WINDOWS)
 	_EmplaceToolSuite<tools::SHCalculator>();
