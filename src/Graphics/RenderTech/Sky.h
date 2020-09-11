@@ -13,6 +13,14 @@ namespace tech
 {
 // ------------------------------------------------------------------
 
+struct Atmosphere
+{
+	f32											TopRadius;
+	f32											BottomRadius;
+};
+
+// ------------------------------------------------------------------
+
 class Sky : public TestSuite
 {
 public:
@@ -24,6 +32,9 @@ public:
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;
+
+private:
+	Atmosphere									m_Atmosphere;
 
 private:
 	void										_OnInitialize() override;
