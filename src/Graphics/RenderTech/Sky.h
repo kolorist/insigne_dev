@@ -13,10 +13,32 @@ namespace tech
 {
 // ------------------------------------------------------------------
 
+struct DensityProfileLayer
+{
+	f32											Width;
+
+	f32											ExpTerm;
+	f32											ExpScale;
+	f32											LinearTerm;
+	f32											ConstantTerm;
+};
+
+struct DensityProfile
+{
+	DensityProfileLayer							Layers[2];
+};
+
 struct Atmosphere
 {
 	f32											TopRadius;
 	f32											BottomRadius;
+
+	f32											RayleighScattering;
+	DensityProfile								RayleighDensity;
+	f32											MieExtinction;
+	DensityProfile								MieDensity;
+	f32											AbsorptionExtinction;
+	DensityProfile								AbsorptionDensity;
 };
 
 // ------------------------------------------------------------------

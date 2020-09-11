@@ -21,6 +21,31 @@ f32 get_unit_range_from_texture_coord(f32 i_u, s32 i_texSize)
 	return (i_u - 0.5f / f32(i_texSize)) / (1.0f - 1.0f / f32(i_texSize));
 }
 
+f32 get_layer_density(const DensityProfileLayer& i_layer, const f32 i_altitude)
+{
+	f32 density = i_layer.ExpTerm * exp(i_layer.ExpScale * i_altitude) +
+		i_layer.LinearTerm * i_altitude + i_layer.ConstantTerm;
+	return floral::clamp(density, 0.0f, 1.0f);
+}
+
+f32 get_profile_density(const DensityProfile& i_profile, const f32 i_altitude)
+{
+	return i_altitude < i_profile.Layers[0].Width ?
+		get_layer_density(i_profile.Layers[0], i_altitude) :
+		get_layer_density(i_profile.Layers[1], i_altitude);
+}
+
+f32 distance_to_top_atmosphere_boundary(const Atmosphere& i_atmosphere, const f32 i_r, const f32 i_mu)
+{
+	FLORAL_ASSERT(i_r <= i_atmosphere.TopRadius);
+	FLORAL_ASSERT(i_mu >= 1.0f && i_mu <= 1.0f);
+
+	f32 discriminant = i_r * i_r * (i_mu * i_mu - 1.0f) +
+		i_atmosphere.TopRadius * i_atmosphere.TopRadius;
+	f32 distance = -i_r * i_mu + floral::max(sqrtf(discriminant), 0.0f);
+	return floral::max(distance, 0.0f);
+}
+
 //-------------------------------------------------------------------
 
 void get_r_mu_from_transmittance_texture_uv(const Atmosphere i_atmosphere, const floral::vec2f& i_fragCoord,
@@ -49,9 +74,42 @@ void get_r_mu_from_transmittance_texture_uv(const Atmosphere i_atmosphere, const
 	*o_mu = mu;
 }
 
+f32 compute_optical_length_to_top_atmosphere_boundary(const Atmosphere& i_atmosphere, const DensityProfile& i_densityProfile,
+		const f32 i_r, const f32 i_mu)
+{
+	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius && i_r <= i_atmosphere.TopRadius);
+	FLORAL_ASSERT(i_mu >= 1.0f && i_mu <= 1.0f);
+
+	const s32 k_sampleCount = 500;
+	f32 dx = distance_to_top_atmosphere_boundary(i_atmosphere, i_r, i_mu) / k_sampleCount;
+	f32 opticalLength = 0.0f;
+	for (s32 i = 0; i < k_sampleCount; i++)
+	{
+		f32 di = i * dx;
+		f32 ri = sqrtf(di * di + 2.0f * i_r * i_mu * di + i_r * i_r);
+		f32 yi = get_profile_density(i_densityProfile, ri - i_atmosphere.BottomRadius);
+		f32 w = 1.0f;
+		if (i == 0 || i == k_sampleCount)
+		{
+			w = 0.5f;
+		}
+		opticalLength += yi * w * dx;
+	}
+	return opticalLength;
+}
+
 f32 compute_transmittance_to_top_atmosphere_boundary(const Atmosphere& i_atmosphere, const f32 i_r, const f32 i_mu)
 {
-	return 0.0f;
+	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius && i_r <= i_atmosphere.TopRadius);
+	FLORAL_ASSERT(i_mu >= 1.0f && i_mu <= 1.0f);
+	f32 rayleigh = i_atmosphere.RayleighScattering *
+		compute_optical_length_to_top_atmosphere_boundary(i_atmosphere, i_atmosphere.RayleighDensity, i_r, i_mu);
+	f32 mie = i_atmosphere.MieExtinction *
+		compute_optical_length_to_top_atmosphere_boundary(i_atmosphere, i_atmosphere.MieDensity, i_r, i_mu);
+	f32 absorption = i_atmosphere.AbsorptionExtinction *
+		compute_optical_length_to_top_atmosphere_boundary(i_atmosphere, i_atmosphere.AbsorptionDensity, i_r, i_mu);
+	f32 transmittance = exp(-(rayleigh + mie + absorption));
+	return transmittance;
 }
 
 // https://ebruneton.github.io/precomputed_atmospheric_scattering/atmosphere/functions.glsl.html#transmittance_precomputation
@@ -84,6 +142,10 @@ const_cstr Sky::GetName() const
 
 void Sky::_OnInitialize()
 {
+	// sky model
+	const f32 k_rayleigh = 1.24062e-6;
+	const f32 k_rayleighScaleHeight = 8000.0f;
+
 	floral::vec2i texSize(128, 128);
 
 	for (s32 u = 0; u < 128; u++)
