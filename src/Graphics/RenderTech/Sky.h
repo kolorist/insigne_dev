@@ -59,6 +59,9 @@ private:
 	Atmosphere									m_Atmosphere;
 
 private:
+	LinearArena*								m_DataArena;
+
+private:
 	void										_OnInitialize() override;
 	void										_OnUpdate(const f32 i_deltaMs) override;
 	void										_OnRender(const f32 i_deltaMs) override;

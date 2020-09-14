@@ -1,6 +1,7 @@
 #include "Sky.h"
 
 #include <clover/Logger.h>
+#include <floral/containers/fast_array.h>
 #include <insigne/ut_render.h>
 
 #include "InsigneImGui.h"
@@ -44,6 +45,39 @@ f32 distance_to_top_atmosphere_boundary(const Atmosphere& i_atmosphere, const f3
 		i_atmosphere.TopRadius * i_atmosphere.TopRadius;
 	f32 distance = -i_r * i_mu + floral::max(sqrtf(discriminant), 0.0f);
 	return floral::max(distance, 0.0f);
+}
+
+f32 interpolate(const floral::fast_fixed_array<f32, LinearArena>& i_waveLengths,
+		const floral::fast_fixed_array<f32, LinearArena>& i_waveLengthFunction,
+		const f32 i_waveLength)
+{
+	FLORAL_ASSERT(i_waveLengths.get_size() == i_waveLengthFunction.get_size());
+	if (i_waveLength < i_waveLengths[0])
+	{
+		return i_waveLengthFunction[0];
+	}
+
+	for (ssize i = 0; i < i_waveLengths.get_size() - 1; i++)
+	{
+		if (i_waveLength < i_waveLengths[i + 1])
+		{
+			f32 u = (i_waveLength - i_waveLengths[i]) / (i_waveLengths[i + 1] - i_waveLengths[i]);
+			f32 rv = i_waveLengthFunction[i] * (1.0f - u) + i_waveLengthFunction[i + 1] * u;
+			return rv;
+		}
+	}
+	return i_waveLengthFunction[i_waveLengthFunction.get_size() - 1];
+}
+
+floral::vec3f to_rgb(const floral::fast_fixed_array<f32, LinearArena>& i_wavelengths,
+		const floral::fast_fixed_array<f32, LinearArena>& i_v,
+		const floral::vec3f i_lambdas, const f32 i_scale)
+{
+	floral::vec3f rgb;
+	rgb.x = interpolate(i_wavelengths, i_v, i_lambdas.x) * i_scale;
+	rgb.y = interpolate(i_wavelengths, i_v, i_lambdas.y) * i_scale;
+	rgb.z = interpolate(i_wavelengths, i_v, i_lambdas.z) * i_scale;
+	return rgb;
 }
 
 //-------------------------------------------------------------------
@@ -142,9 +176,75 @@ const_cstr Sky::GetName() const
 
 void Sky::_OnInitialize()
 {
-	// sky model
+	m_DataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
+
+	const f32 k_lengthUnitInMeters = 1000.0f;
+
+	// sky model: spectrum
+	const s32 k_lambdaMin = 360; // nanometers
+	const s32 k_lambdaMax = 830; // nanometers
+	const s32 k_lambdaCount = (k_lambdaMax - k_lambdaMin) / 10 + 1;
+	const f32 k_lambdaR = 680.0f;
+	const f32 k_lambdaG = 550.0f;
+	const f32 k_lambdaB = 440.0f;
+
+	floral::fast_fixed_array<f32, LinearArena> wavelengths(m_DataArena);
+	wavelengths.reserve(k_lambdaCount);
+	for (s32 l = k_lambdaMin; l <= k_lambdaMax; l += 10)
+	{
+		wavelengths.push_back(l);
+	}
+
+	// sky model: rayleigh
 	const f32 k_rayleigh = 1.24062e-6;
 	const f32 k_rayleighScaleHeight = 8000.0f;
+
+	floral::fast_fixed_array<f32, LinearArena> rayleighScattering(m_DataArena);
+	// compute Rayleigh scattering for each spectrum
+	rayleighScattering.reserve(k_lambdaCount);
+	for (s32 l = k_lambdaMin; l <= k_lambdaMax; l += 10)
+	{
+		f32 lambda = (f32)l * 1e-3; // convert to micrometers
+		// TODO: check this!
+		f32 r = k_rayleigh * powf((f32)lambda, -4.0f);
+		rayleighScattering.push_back(r);
+	}
+	// TODO: check this!
+	floral::vec3f rayleighScatteringRGB = to_rgb(wavelengths, rayleighScattering,
+			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
+
+	// sky model: mie
+	const f32 k_mieScaleHeight = 1200.0f;
+	const f32 k_mieAngstromAlpha = 0.0f;
+	const f32 k_mieAngstromBeta = 5.328e-3;
+	const f32 k_mieSingleScatteringAlbedo = 0.9f;
+	const f32 k_miePhaseFunctionG = 0.8f;
+
+	floral::fast_fixed_array<f32, LinearArena> mieScattering(m_DataArena);
+	floral::fast_fixed_array<f32, LinearArena> mieExtinction(m_DataArena);
+	mieScattering.reserve(k_lambdaCount);
+	mieExtinction.reserve(k_lambdaCount);
+	for (int l = k_lambdaMin; l <= k_lambdaMax; l += 10)
+	{
+		f32 lambda = (f32)l * 1e-3; // convert to micrometers
+		f32 mie = k_mieAngstromBeta / k_mieScaleHeight * powf(lambda, -k_mieAngstromAlpha);
+		f32 mieScatter = mie * k_mieSingleScatteringAlbedo;
+		mieScattering.push_back(mieScatter);
+		mieExtinction.push_back(mie);
+	}
+
+	/*
+	 All of the above is in the spectral space, we have to convert them into RGB color space before continuing
+	 Use this function:
+
+	   auto to_string = [&wavelengths](const std::vector<double>& v,
+	   const vec3& lambdas, double scale) {
+	   double r = Interpolate(wavelengths, v, lambdas[0]) * scale;
+	   double g = Interpolate(wavelengths, v, lambdas[1]) * scale;
+	   double b = Interpolate(wavelengths, v, lambdas[2]) * scale;
+	   return "vec3(" + std::to_string(r) + "," + std::to_string(g) + "," +
+	   std::to_string(b) + ")";
+	 */
 
 	floral::vec2i texSize(128, 128);
 
@@ -177,6 +277,7 @@ void Sky::_OnRender(const f32 i_deltaMs)
 
 void Sky::_OnCleanUp()
 {
+	g_StreammingAllocator.free(m_DataArena);
 }
 
 //-------------------------------------------------------------------
