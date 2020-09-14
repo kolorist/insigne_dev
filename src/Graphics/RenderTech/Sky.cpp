@@ -4,6 +4,8 @@
 #include <floral/containers/fast_array.h>
 #include <insigne/ut_render.h>
 
+#include "Graphics/stb_image_write.h"
+
 #include "InsigneImGui.h"
 
 namespace stone
@@ -132,22 +134,24 @@ f32 compute_optical_length_to_top_atmosphere_boundary(const Atmosphere& i_atmosp
 	return opticalLength;
 }
 
-f32 compute_transmittance_to_top_atmosphere_boundary(const Atmosphere& i_atmosphere, const f32 i_r, const f32 i_mu)
+floral::vec3f compute_transmittance_to_top_atmosphere_boundary(const Atmosphere& i_atmosphere, const f32 i_r, const f32 i_mu)
 {
 	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius && i_r <= i_atmosphere.TopRadius);
 	FLORAL_ASSERT(i_mu >= 1.0f && i_mu <= 1.0f);
-	f32 rayleigh = i_atmosphere.RayleighScattering *
+	floral::vec3f rayleigh = i_atmosphere.RayleighScattering *
 		compute_optical_length_to_top_atmosphere_boundary(i_atmosphere, i_atmosphere.RayleighDensity, i_r, i_mu);
-	f32 mie = i_atmosphere.MieExtinction *
+	floral::vec3f mie = i_atmosphere.MieExtinction *
 		compute_optical_length_to_top_atmosphere_boundary(i_atmosphere, i_atmosphere.MieDensity, i_r, i_mu);
-	f32 absorption = i_atmosphere.AbsorptionExtinction *
+	floral::vec3f absorption = i_atmosphere.AbsorptionExtinction *
 		compute_optical_length_to_top_atmosphere_boundary(i_atmosphere, i_atmosphere.AbsorptionDensity, i_r, i_mu);
-	f32 transmittance = exp(-(rayleigh + mie + absorption));
-	return transmittance;
+	f32 transmittanceR = exp(-(rayleigh.x + mie.x + absorption.x));
+	f32 transmittanceG = exp(-(rayleigh.y + mie.y + absorption.y));
+	f32 transmittanceB = exp(-(rayleigh.z + mie.z + absorption.z));
+	return floral::vec3f(transmittanceR, transmittanceG, transmittanceB);
 }
 
 // https://ebruneton.github.io/precomputed_atmospheric_scattering/atmosphere/functions.glsl.html#transmittance_precomputation
-f32 compute_transmittance_to_top_atmosphere_boundary_texture(const Atmosphere& i_atmosphere, const floral::vec2f& i_fragCoord, const floral::vec2i& i_texSize)
+floral::vec3f compute_transmittance_to_top_atmosphere_boundary_texture(const Atmosphere& i_atmosphere, const floral::vec2f& i_fragCoord, const floral::vec2i& i_texSize)
 {
 	f32 r = 0.0f, mu = 0.0f;
 	get_r_mu_from_transmittance_texture_uv(i_atmosphere, i_fragCoord, i_texSize, &r, &mu);
@@ -177,6 +181,7 @@ const_cstr Sky::GetName() const
 void Sky::_OnInitialize()
 {
 	m_DataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
+	m_TemporalArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
 
 	const f32 k_lengthUnitInMeters = 1000.0f;
 
@@ -205,13 +210,9 @@ void Sky::_OnInitialize()
 	for (s32 l = k_lambdaMin; l <= k_lambdaMax; l += 10)
 	{
 		f32 lambda = (f32)l * 1e-3; // convert to micrometers
-		// TODO: check this!
 		f32 r = k_rayleigh * powf((f32)lambda, -4.0f);
 		rayleighScattering.push_back(r);
 	}
-	// TODO: check this!
-	floral::vec3f rayleighScatteringRGB = to_rgb(wavelengths, rayleighScattering,
-			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
 
 	// sky model: mie
 	const f32 k_mieScaleHeight = 1200.0f;
@@ -233,29 +234,43 @@ void Sky::_OnInitialize()
 		mieExtinction.push_back(mie);
 	}
 
-	/*
-	 All of the above is in the spectral space, we have to convert them into RGB color space before continuing
-	 Use this function:
-
-	   auto to_string = [&wavelengths](const std::vector<double>& v,
-	   const vec3& lambdas, double scale) {
-	   double r = Interpolate(wavelengths, v, lambdas[0]) * scale;
-	   double g = Interpolate(wavelengths, v, lambdas[1]) * scale;
-	   double b = Interpolate(wavelengths, v, lambdas[2]) * scale;
-	   return "vec3(" + std::to_string(r) + "," + std::to_string(g) + "," +
-	   std::to_string(b) + ")";
-	 */
+	// model: initialization
+	// TODO: check this
+	m_Atmosphere.RayleighScattering = to_rgb(wavelengths, rayleighScattering,
+			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
+	m_Atmosphere.RayleighDensity.Layers[0] = DensityProfileLayer {
+		0.0f, 0.0f, 0.0f, 0.0f, 0.0f
+	};
+	m_Atmosphere.RayleighDensity.Layers[1] = DensityProfileLayer {
+		0.0f / k_lengthUnitInMeters, 1.0f, -1.0f / k_rayleighScaleHeight * k_lengthUnitInMeters, 0.0f * k_lengthUnitInMeters, 0.0f
+	};
+	m_Atmosphere.MieExtinction = to_rgb(wavelengths, mieExtinction,
+			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
+	m_Atmosphere.MieDensity.Layers[0] = DensityProfileLayer {
+		0.0f, 0.0f, 0.0f, 0.0f, 0.0f
+	};
+	m_Atmosphere.MieDensity.Layers[1] = DensityProfileLayer {
+		0.0f / k_lengthUnitInMeters, 1.0f, -1.0f / k_mieScaleHeight * k_lengthUnitInMeters, 0.0f * k_lengthUnitInMeters, 0.0f
+	};
 
 	floral::vec2i texSize(128, 128);
-
-	for (s32 u = 0; u < 128; u++)
+	p8 bmp = (p8)m_TemporalArena->allocate(texSize.x * texSize.y * 3);
+	memset(bmp, 0, texSize.x * texSize.y * 3);
+	for (s32 u = 0; u < texSize.x; u++)
 	{
-		for (s32 v = 0; v < 128; v++)
+		for (s32 v = 0; v < texSize.y; v++)
 		{
 			floral::vec2f fragCoord((f32)u / 127.0f, (f32)v / 127.0f);
-			f32 spectrum = compute_transmittance_to_top_atmosphere_boundary_texture(m_Atmosphere, fragCoord, texSize);
+			floral::vec3f transmittance = compute_transmittance_to_top_atmosphere_boundary_texture(m_Atmosphere, fragCoord, texSize);
+			u8 r = (u8)(transmittance.x * 255.0f);
+			u8 g = (u8)(transmittance.y * 255.0f);
+			u8 b = (u8)(transmittance.z * 255.0f);
+			bmp[(u * texSize.x + v) * 3] = r;
+			bmp[(u * texSize.x + v) * 3 + 1] = g;
+			bmp[(u * texSize.x + v) * 3 + 2] = b;
 		}
 	}
+	stbi_write_tga("out.tga", texSize.x, texSize.y, 3, (const void*)bmp);
 }
 
 void Sky::_OnUpdate(const f32 i_deltaMs)
@@ -277,6 +292,7 @@ void Sky::_OnRender(const f32 i_deltaMs)
 
 void Sky::_OnCleanUp()
 {
+	g_StreammingAllocator.free(m_TemporalArena);
 	g_StreammingAllocator.free(m_DataArena);
 }
 

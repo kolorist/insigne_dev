@@ -33,11 +33,11 @@ struct Atmosphere
 	f32											TopRadius;
 	f32											BottomRadius;
 
-	f32											RayleighScattering;
+	floral::vec3f								RayleighScattering;
 	DensityProfile								RayleighDensity;
-	f32											MieExtinction;
+	floral::vec3f								MieExtinction;
 	DensityProfile								MieDensity;
-	f32											AbsorptionExtinction;
+	floral::vec3f								AbsorptionExtinction;
 	DensityProfile								AbsorptionDensity;
 };
 
@@ -60,6 +60,7 @@ private:
 
 private:
 	LinearArena*								m_DataArena;
+	LinearArena*								m_TemporalArena;
 
 private:
 	void										_OnInitialize() override;
