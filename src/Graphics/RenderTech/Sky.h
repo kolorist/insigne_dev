@@ -32,6 +32,7 @@ struct Atmosphere
 {
 	f32											TopRadius;
 	f32											BottomRadius;
+	f32											MuSMin;
 
 	floral::vec3f								RayleighScattering;
 	DensityProfile								RayleighDensity;
