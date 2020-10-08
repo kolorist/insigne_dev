@@ -81,6 +81,11 @@ else ()
 	# set (CMAKE_C_CLANG_TIDY "clang-tidy;-header-filter=.;-checks=-*,portability-*,performance-*")
 endif ()
 
+file (GLOB_RECURSE simd_files
+	LIST_DIRECTORIES false
+	"${PROJECT_SOURCE_DIR}/src/FastMath/*.cpp")
+set_source_files_properties(${simd_files} PROPERTIES COMPILE_FLAGS -ffast-math)
+
 # 8. subdirectories
 add_subdirectory (externals/floral)
 add_subdirectory (externals/helich)

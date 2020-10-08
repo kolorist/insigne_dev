@@ -23,6 +23,7 @@
 #include "Graphics/Performance/Blending.h"
 #include "Graphics/Performance/Textures.h"
 #include "Graphics/Performance/CubeMap.h"
+#include "Graphics/Performance/SIMD.h"
 
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
@@ -141,6 +142,7 @@ void DemoHub::Initialize()
 	_EmplacePerformanceSuite<perf::HDRBlending>();
 	_EmplacePerformanceSuite<perf::Textures>();
 	_EmplacePerformanceSuite<perf::CubeMapTextures>();
+	_EmplacePerformanceSuite<perf::SIMD>();
 
 	_EmplaceRenderTechSuite<tech::PBRHelmet>();
 	_EmplaceRenderTechSuite<tech::HDRBloom>();
