@@ -16,8 +16,6 @@
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/MaterialParser.h"
 
-#define OPTIMIZE_OVERDRAW 1
-
 namespace stone
 {
 namespace perf
@@ -26,6 +24,7 @@ namespace perf
 
 Blending::Blending(const_cstr i_pfxConfig)
 	: m_PostFXConfig(i_pfxConfig)
+	, m_OptimizeOverdraw(false)
 {
 }
 
@@ -67,10 +66,10 @@ void Blending::_OnInitialize()
 
 	{
 		floral::inplace_array<geo3d::VertexPC, 4> vertices;
-		vertices.push_back({ { -0.8f, 0.8f, 0.0f }, { 0.0f, 2.0f, 0.0f, 1.0f } });
-		vertices.push_back({ { -0.8f, -0.8f, 0.0f }, { 0.0f, 2.0f, 0.0f, 1.0f } });
-		vertices.push_back({ { 0.8f, -0.8f, 0.0f }, { 0.0f, 2.0f, 0.0f, 1.0f } });
-		vertices.push_back({ { 0.8f, 0.8f, 0.0f }, { 0.0f, 2.0f, 0.0f, 1.0f } });
+		vertices.push_back({ { -0.8f, 0.8f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
+		vertices.push_back({ { -0.8f, -0.8f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
+		vertices.push_back({ { 0.8f, -0.8f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
+		vertices.push_back({ { 0.8f, 0.8f, 0.0f }, { 0.0f, 1.0f, 0.0f, 1.0f } });
 
 		floral::inplace_array<s32, 6> indices;
 		indices.push_back(0);
@@ -84,7 +83,7 @@ void Blending::_OnInitialize()
 				&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
 	}
 
-#if OPTIMIZE_OVERDRAW
+	// transparent and solid are separated into 2 draw calls
 	{
 		floral::inplace_array<geo3d::VertexPC, 4> vertices;
 		vertices.push_back({ { -0.7f, 0.9f, -0.1f }, { 1.0f, 0.0f, 0.0f, 0.5f } });
@@ -100,7 +99,7 @@ void Blending::_OnInitialize()
 		indices.push_back(3);
 		indices.push_back(0);
 
-		m_TQuad0 = helpers::CreateSurfaceGPU(&vertices[0], 4, sizeof(geo3d::VertexPC),
+		m_TQuad01 = helpers::CreateSurfaceGPU(&vertices[0], 4, sizeof(geo3d::VertexPC),
 				&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
 
 		vertices[0].position = floral::vec3f(-0.7f, 0.5f, -0.1f);
@@ -111,7 +110,8 @@ void Blending::_OnInitialize()
 		m_TQuad00 = helpers::CreateSurfaceGPU(&vertices[0], 4, sizeof(geo3d::VertexPC),
 				&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
 	}
-#else
+
+	// transparent and solid altogether, render as transparent
 	{
 		floral::inplace_array<geo3d::VertexPC, 8> vertices;
 		vertices.push_back({ { -0.7f, 0.9f, -0.1f }, { 1.0f, 0.0f, 0.0f, 0.5f } });
@@ -142,7 +142,6 @@ void Blending::_OnInitialize()
 		m_TQuad0 = helpers::CreateSurfaceGPU(&vertices[0], 8, sizeof(geo3d::VertexPC),
 				&indices[0], 12, insigne::buffer_usage_e::static_draw, true);
 	}
-#endif
 
 	{
 		m_MemoryArena->free_all();
@@ -169,6 +168,9 @@ void Blending::_OnInitialize()
 
 void Blending::_OnUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("Controller##Blending");
+	ImGui::Checkbox("Optimize Overdraw", &m_OptimizeOverdraw);
+	ImGui::End();
 }
 
 //-------------------------------------------------------------------
@@ -176,19 +178,22 @@ void Blending::_OnUpdate(const f32 i_deltaMs)
 void Blending::_OnRender(const f32 i_deltaMs)
 {
 	m_PostFXChain.BeginMainOutput();
-#if OPTIMIZE_OVERDRAW
-	// solid: front to back
-	insigne::draw_surface<geo3d::SurfacePC>(m_TQuad00.vb, m_TQuad00.ib, m_MSPairSolid.material);
-	insigne::draw_surface<geo3d::SurfacePC>(m_Quad0.vb, m_Quad0.ib, m_MSPairSolid.material);
+	if (m_OptimizeOverdraw)
+	{
+		// solid: front to back
+		insigne::draw_surface<geo3d::SurfacePC>(m_TQuad00.vb, m_TQuad00.ib, m_MSPairSolid.material);
+		insigne::draw_surface<geo3d::SurfacePC>(m_Quad0.vb, m_Quad0.ib, m_MSPairSolid.material);
 
-	// transparent
-	insigne::draw_surface<geo3d::SurfacePC>(m_TQuad0.vb, m_TQuad0.ib, m_MSPairTransparent.material);
-#else
-	// background - transparent
-	insigne::draw_surface<geo3d::SurfacePC>(m_Quad0.vb, m_Quad0.ib, m_MSPairTransparent.material);
-	// sprite - transparent
-	insigne::draw_surface<geo3d::SurfacePC>(m_TQuad0.vb, m_TQuad0.ib, m_MSPairTransparent.material);
-#endif
+		// transparent
+		insigne::draw_surface<geo3d::SurfacePC>(m_TQuad01.vb, m_TQuad01.ib, m_MSPairTransparent.material);
+	}
+	else
+	{
+		// background - transparent
+		insigne::draw_surface<geo3d::SurfacePC>(m_Quad0.vb, m_Quad0.ib, m_MSPairTransparent.material);
+		// sprite - transparent
+		insigne::draw_surface<geo3d::SurfacePC>(m_TQuad0.vb, m_TQuad0.ib, m_MSPairTransparent.material);
+	}
 	m_PostFXChain.EndMainOutput();
 
 	m_PostFXChain.Process();

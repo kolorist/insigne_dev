@@ -402,6 +402,11 @@ void DemoHub::_ShowGPUCounters()
 	m_ExtWriteBytes.PushValue(extWriteBytes);
 
 	ImGui::Begin("GPU Counters");
+	if (ImGui::Button("Reinit"))
+	{
+		lotus::init_hardware_counters();
+	}
+
 	if (ImGui::CollapsingHeader("Generals"))
 	{
 		m_GPUCycles.Draw();

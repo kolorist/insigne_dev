@@ -39,9 +39,12 @@ protected:
 	const_cstr									m_PostFXConfig;
 
 private:
+	bool										m_OptimizeOverdraw;
+
 	helpers::SurfaceGPU							m_Quad0;
 	helpers::SurfaceGPU							m_TQuad0;
 	helpers::SurfaceGPU							m_TQuad00;
+	helpers::SurfaceGPU							m_TQuad01;
 	mat_loader::MaterialShaderPair				m_MSPairSolid;
 	mat_loader::MaterialShaderPair				m_MSPairTransparent;
 
@@ -69,6 +72,11 @@ public:
 	~LDRBlending()
 	{
 	}
+
+	const_cstr GetName() const override
+	{
+		return k_name;
+	}
 };
 
 class HDRBlending : public Blending
@@ -84,6 +92,11 @@ public:
 
 	~HDRBlending()
 	{
+	}
+
+	const_cstr GetName() const override
+	{
+		return k_name;
 	}
 };
 
