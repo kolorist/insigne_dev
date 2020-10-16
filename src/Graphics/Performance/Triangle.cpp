@@ -22,6 +22,7 @@ namespace perf
 //-------------------------------------------------------------------
 
 Triangle::Triangle()
+	: m_MaterialIndex(0)
 {
 }
 
@@ -92,9 +93,34 @@ void Triangle::_OnInitialize()
 		insigne::copy_update_ib(m_IB, &indices[0], indices.get_size(), 0);
 	}
 
-	floral::relative_path matPath = floral::build_relative_path("triangle.mat");
+	floral::relative_path matPath = floral::build_relative_path("triangle_lowp.mat");
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
-	bool matLoadResult = mat_loader::CreateMaterial(&m_MSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	bool matLoadResult = mat_loader::CreateMaterial(&m_MSPair[0], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(matLoadResult);
+
+	matPath = floral::build_relative_path("triangle_mediump.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	matLoadResult = mat_loader::CreateMaterial(&m_MSPair[1], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(matLoadResult);
+
+	matPath = floral::build_relative_path("triangle_highp.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	matLoadResult = mat_loader::CreateMaterial(&m_MSPair[2], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(matLoadResult);
+
+	matPath = floral::build_relative_path("triangle_4_lowp.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	matLoadResult = mat_loader::CreateMaterial(&m_MSPair[3], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(matLoadResult);
+
+	matPath = floral::build_relative_path("triangle_4_mediump.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	matLoadResult = mat_loader::CreateMaterial(&m_MSPair[4], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(matLoadResult);
+
+	matPath = floral::build_relative_path("triangle_4_highp.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	matLoadResult = mat_loader::CreateMaterial(&m_MSPair[5], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(matLoadResult);
 }
 
@@ -102,6 +128,33 @@ void Triangle::_OnInitialize()
 
 void Triangle::_OnUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("Controller##Triangle");
+	ImGui::Text("Choose shaders:");
+	if (ImGui::RadioButton("1 varying lowp vec4", m_MaterialIndex == 0))
+	{
+		m_MaterialIndex = 0;
+	}
+	if (ImGui::RadioButton("1 varying mediup vec4", m_MaterialIndex == 1))
+	{
+		m_MaterialIndex = 1;
+	}
+	if (ImGui::RadioButton("1 varying highp vec4", m_MaterialIndex == 2))
+	{
+		m_MaterialIndex = 2;
+	}
+	if (ImGui::RadioButton("4 varying lowp vec4", m_MaterialIndex == 3))
+	{
+		m_MaterialIndex = 3;
+	}
+	if (ImGui::RadioButton("4 varying mediump vec4", m_MaterialIndex == 4))
+	{
+		m_MaterialIndex = 4;
+	}
+	if (ImGui::RadioButton("4 varying highp vec4", m_MaterialIndex == 5))
+	{
+		m_MaterialIndex = 5;
+	}
+	ImGui::End();
 }
 
 //-------------------------------------------------------------------
@@ -110,7 +163,7 @@ void Triangle::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
-	insigne::draw_surface<geo2d::SurfacePC>(m_VB, m_IB, m_MSPair.material);
+	insigne::draw_surface<geo2d::SurfacePC>(m_VB, m_IB, m_MSPair[m_MaterialIndex].material);
 
 	RenderImGui();
 

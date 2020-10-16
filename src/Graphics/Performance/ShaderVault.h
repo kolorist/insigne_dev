@@ -5,6 +5,7 @@
 #include <insigne/commons.h>
 
 #include "Graphics/TestSuite.h"
+#include "Graphics/InsigneHelpers.h"
 #include "Graphics/MaterialLoader.h"
 
 #include "Memory/MemorySystem.h"
@@ -15,14 +16,14 @@ namespace perf
 {
 // ------------------------------------------------------------------
 
-class Triangle : public TestSuite
+class ShaderVault : public TestSuite
 {
 public:
-	static constexpr const_cstr k_name			= "triangle";
+	static constexpr const_cstr k_name			= "shader vault";
 
 public:
-	Triangle();
-	~Triangle();
+	ShaderVault();
+	~ShaderVault();
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;
@@ -34,11 +35,19 @@ private:
 	void										_OnCleanUp() override;
 
 private:
-	insigne::vb_handle_t						m_VB;
-	insigne::ib_handle_t						m_IB;
+	struct SceneData
+	{
+		floral::vec4f							resolution;
+		floral::vec4f							timeSeconds;
+	};
 
+private:
+	SceneData									m_SceneData;
+	insigne::ub_handle_t						m_SceneUB;
+
+	helpers::SurfaceGPU							m_Quad;
 	size										m_MaterialIndex;
-	mat_loader::MaterialShaderPair				m_MSPair[6];
+	mat_loader::MaterialShaderPair				m_MSPair[2];
 
 private:
 	FreelistArena*								m_MemoryArena;

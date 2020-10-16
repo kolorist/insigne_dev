@@ -156,6 +156,8 @@ private:
 	HWCounter									m_FragmentCycles;
 	HWCounter									m_TilerCycles;
 	HWCounter									m_ShaderTextureCycles;
+	HWCounter									m_Varying16BitCycles;
+	HWCounter									m_Varying32BitCycles;
 	HWCounter									m_ExtReadBytes;
 	HWCounter									m_ExtWriteBytes;
 

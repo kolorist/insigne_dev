@@ -10,6 +10,7 @@
 
 // playground
 #include "Graphics/Performance/Vault.h"
+#include "Graphics/Performance/ShaderVault.h"
 #include "Graphics/Misc/GLTFLoader.h"
 #include "Graphics/Performance/PostFX.h"
 
@@ -110,6 +111,8 @@ DemoHub::DemoHub(floral::filesystem<FreelistArena>* i_fs)
 	, m_FragmentCycles(64, "Fragment Cycles")
 	, m_TilerCycles(64, "Tiler Cycles")
 	, m_ShaderTextureCycles(64, "Shader Texture Cycles")
+	, m_Varying16BitCycles(64, "Varying 16bit Cycles")
+	, m_Varying32BitCycles(64, "Varying 32bit Cycles")
 	, m_ExtReadBytes(64, "Ext Read Bytes")
 	, m_ExtWriteBytes(64, "Ext Write Bytes")
 {
@@ -131,7 +134,8 @@ void DemoHub::Initialize()
 	InitializeImGui(m_FileSystem);
 	debugdraw::Initialize();
 
-	_EmplacePlaygroundSuite<perf::Vault>();
+	//_EmplacePlaygroundSuite<perf::Vault>();
+	_EmplacePlaygroundSuite<perf::ShaderVault>();
 	//_EmplacePlaygroundSuite<perf::PostFX>();
 
 	_EmplacePerformanceSuite<perf::Empty>();
@@ -391,6 +395,8 @@ void DemoHub::_ShowGPUCounters()
 	f32 fragmentCycles = insigne::g_hardware_counters->fragment_cycles[validIdx];
 	f32 tilerCycles = insigne::g_hardware_counters->tiler_cycles[validIdx];
 	f32 shaderTextureCycles = insigne::g_hardware_counters->shader_texture_cycles[validIdx];
+	f32 varying16BitCycles = insigne::g_hardware_counters->varying_16_bits[validIdx];
+	f32 varying32BitCycles = insigne::g_hardware_counters->varying_32_bits[validIdx];
 	f32 extReadBytes = insigne::g_hardware_counters->external_memory_read_bytes[validIdx];
 	f32 extWriteBytes = insigne::g_hardware_counters->external_memory_write_bytes[validIdx];
 
@@ -398,6 +404,8 @@ void DemoHub::_ShowGPUCounters()
 	m_FragmentCycles.PushValue(fragmentCycles);
 	m_TilerCycles.PushValue(tilerCycles);
 	m_ShaderTextureCycles.PushValue(shaderTextureCycles);
+	m_Varying16BitCycles.PushValue(varying16BitCycles);
+	m_Varying32BitCycles.PushValue(varying32BitCycles);
 	m_ExtReadBytes.PushValue(extReadBytes);
 	m_ExtWriteBytes.PushValue(extWriteBytes);
 
@@ -417,6 +425,8 @@ void DemoHub::_ShowGPUCounters()
 	if (ImGui::CollapsingHeader("Fragment"))
 	{
 		m_ShaderTextureCycles.Draw();
+		m_Varying16BitCycles.Draw();
+		m_Varying32BitCycles.Draw();
 	}
 
 	if (ImGui::CollapsingHeader("Bandwidth"))
