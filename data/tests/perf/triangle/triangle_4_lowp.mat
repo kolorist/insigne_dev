@@ -1,0 +1,14 @@
+_shader
+	vs	solid_4_lowp.vs
+	fs	solid_4_lowp.fs
+_end_shader
+
+_state
+	depth_write off
+	depth_test off
+	cull_face on back ccw
+	blending off
+_end_state
+
+_params
+_end_params

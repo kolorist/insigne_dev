@@ -1,6 +1,6 @@
 _shader
-	vs	solid.vs
-	fs	solid.fs
+	vs	solid_mediump.vs
+	fs	solid_mediump.fs
 _end_shader
 
 _state
