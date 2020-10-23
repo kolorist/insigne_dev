@@ -3,6 +3,8 @@ precision highp float;
 
 layout (location = 0) out mediump vec4 o_Color;
 
+uniform mediump sampler2D u_MainTex;
+
 in mediump vec2 v_TexCoord;
 
 layout(std140) uniform ub_Scene
@@ -57,10 +59,17 @@ float fbm(vec2 n)
 	return total;
 }
 
+float noise_tex( in vec2 p )
+{
+	mediump vec3 mainColor = texture(u_MainTex, p).rgb;
+	return mainColor.r * 2.0f - 1.0f;
+}
+
 void main()
 {
 	vec2 p = v_TexCoord;
-	vec2 uv = p * vec2(iu_resolution.x / iu_resolution.y, 1.0f); 
+	vec2 uv = p * vec2(iu_resolution.x / iu_resolution.y, 1.0f);
+	
 	float time = iu_timeSeconds.x * speed;
 	float q = fbm(uv * cloudscale * 0.5);
 
@@ -68,9 +77,12 @@ void main()
 	float r = 0.0;
 	uv *= cloudscale;
 	uv -= q - time;
+		float nnnn = noise_tex( uv );
+	o_Color = vec4(nnnn, nnnn, nnnn, 1.0);
+	return;
 	float weight = 0.8;
 	for (int i=0; i<8; i++){
-		r += abs(weight*noise( uv ));
+		r += abs(weight*noise_tex( uv ));
 		uv = m*uv + time;
 		weight *= 0.7;
 	}

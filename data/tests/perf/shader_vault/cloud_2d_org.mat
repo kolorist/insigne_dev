@@ -11,5 +11,14 @@ _state
 _end_state
 
 _params
+	_p_tex u_MainTex
+		dim				tex2d
+		min_filter		linear
+		mag_filter		linear
+		wrap_s			repeat
+		wrap_t			repeat
+		path			simplex_noise.cbtex
+	_end_p_tex
+
 	_p_ub_holder ub_Scene
 _end_params

@@ -41,6 +41,7 @@
 #include "Graphics/Tools/SurfelsGenerator.h"
 #include "Graphics/Tools/Samplers.h"
 #include "Graphics/Tools/SHCalculator.h"
+#include "Graphics/Tools/Noise.h"
 
 // misc demo
 #include "Graphics/Misc/CameraWork.h"
@@ -154,6 +155,7 @@ void DemoHub::Initialize()
 
 #if defined(FLORAL_PLATFORM_WINDOWS)
 	_EmplaceToolSuite<tools::SHCalculator>();
+	_EmplaceToolSuite<tools::Noise>();
 #endif
 
 	//_EmplaceMiscSuite<misc::CameraWork>();
