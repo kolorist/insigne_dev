@@ -11,6 +11,7 @@
 // playground
 #include "Graphics/Performance/Vault.h"
 #include "Graphics/Performance/ShaderVault.h"
+#include "Graphics/Performance/GeometryVault.h"
 #include "Graphics/Misc/GLTFLoader.h"
 #include "Graphics/Performance/PostFX.h"
 
@@ -137,6 +138,7 @@ void DemoHub::Initialize()
 
 	//_EmplacePlaygroundSuite<perf::Vault>();
 	_EmplacePlaygroundSuite<perf::ShaderVault>();
+	_EmplacePlaygroundSuite<perf::GeometryVault>();
 	//_EmplacePlaygroundSuite<perf::PostFX>();
 
 	_EmplacePerformanceSuite<perf::Empty>();
