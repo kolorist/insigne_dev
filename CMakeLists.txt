@@ -94,6 +94,7 @@ add_subdirectory (externals/refrain2)
 add_subdirectory (externals/calyx)
 add_subdirectory (externals/insigne)
 add_subdirectory (externals/imgui)
+add_subdirectory (externals/lua)
 add_subdirectory (externals/lotus)
 
 if (${TARGET_PLATFORM} STREQUAL "arm64-v8a"
@@ -113,6 +114,7 @@ if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-
 		calyx
 		insigne
 		imgui
+		lua
 		lotus
 		GLESv3
 		android
@@ -128,6 +130,7 @@ else ()
 		calyx
 		insigne
 		imgui
+		lua
 		lotus
 		comctl32)
 	set (CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Xlinker /subsystem:console")
