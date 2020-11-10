@@ -39,14 +39,14 @@ void Noise::_OnInitialize()
 
 	// 3 octaves
 	osn_context osnContext[3];
-	open_simplex_noise(1234, &osnContext[0]);
-	open_simplex_noise(2345, &osnContext[1]);
-	open_simplex_noise(3456, &osnContext[2]);
+	open_simplex_noise(0, &osnContext[0]);
+	open_simplex_noise(2, &osnContext[1]);
+	open_simplex_noise(4, &osnContext[2]);
 
 	const s32 k_size = 512;
-	const f32 k_period = 128.0f;
+	const f32 k_period = 1.1f;
 	const f32 k_lacunarity = 2.0f;
-	const f32 k_persistence = 1.0f;
+	const f32 k_persistence = 0.0f;
 	p8 colorData = (p8)m_MemoryArena->allocate(k_size * k_size * 3);
 	for (int y = 0; y < k_size; y++)
 	{
@@ -85,7 +85,7 @@ void Noise::_OnInitialize()
 
 				amp *= k_persistence;
 				max += amp;
-				sum += open_simplex_noise4(&osnContext[i], x2, y2, z2, w2);
+				sum += open_simplex_noise4(&osnContext[i], x2, y2, z2, w2) * amp;
 				i++;
 			}
 			sum /= max;
