@@ -47,7 +47,7 @@ private:
 
 	helpers::SurfaceGPU							m_Quad;
 	size										m_MaterialIndex;
-	mat_loader::MaterialShaderPair				m_MSPair[2];
+	mat_loader::MaterialShaderPair				m_MSPair[3];
 
 private:
 	FreelistArena*								m_MemoryArena;

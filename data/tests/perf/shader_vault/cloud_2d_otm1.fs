@@ -1,5 +1,5 @@
 #version 300 es
-precision highp float;
+precision mediump float;
 
 layout (location = 0) out mediump vec4 o_Color;
 in mediump vec2 v_TexCoord;
@@ -61,31 +61,24 @@ void main()
 {
 	vec2 p = v_TexCoord;
 	vec2 uv = p*vec2(iu_resolution.x/iu_resolution.y,1.0);
-	
+
 	float time = iu_timeSeconds.x * speed;
 	float q = fbm(uv * cloudscale * 0.5);
-
-	//ridged noise shape
+	float weight = 0.0;
 	float r = 0.0;
-	uv *= cloudscale;
-	uv -= q - time;
-	float weight = 0.8;
-	for (int i=0; i<8; i++){
-		r += abs(weight*noise( uv ));
-		uv = m*uv + time;
-		weight *= 0.7;
-	}
-
-	//noise shape
 	float f = 0.0;
-	uv = p*vec2(iu_resolution.x/iu_resolution.y,1.0);
 	uv *= cloudscale;
 	uv -= q - time;
-	weight = 0.7;
-	for (int i=0; i<8; i++){
-		f += weight*noise( uv );
+	float weightR = 0.8;
+	float weightF = 0.7;
+	for (int i = 0; i < 8; i++)
+	{
+		float nv = noise(uv);
+		r += abs(weightR * nv);
+		f += weightF * nv;
 		uv = m*uv + time;
-		weight *= 0.6;
+		weightR *= 0.7;
+		weightF *= 0.6;
 	}
 
 	f *= r + f;

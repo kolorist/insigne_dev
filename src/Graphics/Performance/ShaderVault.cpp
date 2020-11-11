@@ -89,8 +89,19 @@ void ShaderVault::_OnInitialize()
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
 	bool createResult = mat_loader::CreateMaterial(&m_MSPair[0], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(createResult == true);
-
 	insigne::helpers::assign_uniform_block(m_MSPair[0].material, "ub_Scene", 0, 0, m_SceneUB);
+
+	matPath = floral::build_relative_path("cloud_2d_otm0.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_MSPair[1], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+	insigne::helpers::assign_uniform_block(m_MSPair[1].material, "ub_Scene", 0, 0, m_SceneUB);
+
+	matPath = floral::build_relative_path("cloud_2d_otm1.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_MSPair[2], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+	insigne::helpers::assign_uniform_block(m_MSPair[2].material, "ub_Scene", 0, 0, m_SceneUB);
 }
 
 void ShaderVault::_OnUpdate(const f32 i_deltaMs)
@@ -98,6 +109,22 @@ void ShaderVault::_OnUpdate(const f32 i_deltaMs)
 	m_SceneData.timeSeconds.x += (i_deltaMs / 1000.0f);
 	m_SceneData.timeSeconds.y = i_deltaMs / 1000.0f;
 	insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(m_SceneData), 0);
+
+	ImGui::Begin("Controller##ShaderVault");
+	ImGui::Text("Choose shaders:");
+	if (ImGui::RadioButton("original", m_MaterialIndex == 0))
+	{
+		m_MaterialIndex = 0;
+	}
+	if (ImGui::RadioButton("optimize algorithm", m_MaterialIndex == 1))
+	{
+		m_MaterialIndex = 1;
+	}
+	if (ImGui::RadioButton("optimize algorithm + mediump float", m_MaterialIndex == 2))
+	{
+		m_MaterialIndex = 2;
+	}
+	ImGui::End();
 }
 
 void ShaderVault::_OnRender(const f32 i_deltaMs)

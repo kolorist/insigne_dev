@@ -1,6 +1,6 @@
 _shader
 	vs	cloud_2d_org.vs
-	fs	cloud_2d_org.fs
+	fs	cloud_2d_otm1.fs
 _end_shader
 
 _state
