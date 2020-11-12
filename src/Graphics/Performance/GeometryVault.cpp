@@ -1,6 +1,7 @@
 #include "GeometryVault.h"
 
 #include <floral/comgeo/shapegen.h>
+#include <floral/math/rng.h>
 
 #include <calyx/context.h>
 
@@ -23,6 +24,7 @@ namespace perf
 //-------------------------------------------------------------------
 
 GeometryVault::GeometryVault()
+	: m_SurfaceIdx(0)
 {
 }
 
@@ -47,33 +49,85 @@ void GeometryVault::_OnInitialize()
 	floral::push_directory(m_FileSystem, wdir);
 
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(4));
-	m_TemporalArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(2));
+	m_TemporalArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(32));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
 
 	// register surfaces
-	insigne::register_surface_type<geo3d::SurfacePC>();
+	insigne::register_surface_type<geo3d::SurfacePNC>();
 
 	{
 		m_TemporalArena->free_all();
-		floral::fixed_array<VertexPC, LinearArena> sphereVertices;
-		floral::fixed_array<s32, LinearArena> sphereIndices;
+		floral::fast_fixed_array<geo3d::VertexPNC, LinearArena> sphereVertices;
+		floral::fast_fixed_array<s32, LinearArena> sphereIndices;
 
-		sphereVertices.reserve(4096, m_TemporalArena);
-		sphereIndices.reserve(8192, m_TemporalArena);
+		const size numIndices = 1 << 18;
+		sphereVertices.reserve(numIndices, m_TemporalArena);
+		sphereIndices.reserve(numIndices, m_TemporalArena);
 
-		sphereVertices.resize(4096);
+#if 0
+		sphereVertices.resize(8192);
 		sphereIndices.resize(8192);
-
 		floral::reset_generation_transforms_stack();
 		floral::geo_generate_result_t genResult = floral::generate_unit_icosphere_3d(
-				3, 0, sizeof(VertexPC),
-				floral::geo_vertex_format_e::position,
+				3, 0, sizeof(geo3d::VertexPNC),
+				floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
 				&sphereVertices[0], &sphereIndices[0]);
 		sphereVertices.resize(genResult.vertices_generated);
 		sphereIndices.resize(genResult.indices_generated);
+#else
+		floral::rng rng = floral::rng(1234);
+		floral::geo_generate_result_t genResult;
+		int trianglesCount = sphereIndices.get_capacity() / 3;
+		genResult.vertices_generated = trianglesCount * 3;
+		genResult.indices_generated = genResult.vertices_generated;
+		for (int i = 0; i < trianglesCount; i++)
+		{
+			geo3d::VertexPNC p0, p1, p2;
+			p0.position = floral::vec3f(rng.get_f32() * 4.0f - 2.0f, rng.get_f32() * 2.0f - 1.0f, rng.get_f32() * 2.0f - 1.0f);
+			p1.position = p0.position + floral::vec3f(rng.get_f32(), rng.get_f32(), rng.get_f32()) * 0.4f;
+			p2.position = p0.position + floral::vec3f(rng.get_f32(), rng.get_f32(), rng.get_f32()) * 0.4f;
 
-		m_Surface = helpers::CreateSurfaceGPU(&sphereVertices[0], genResult.vertices_generated, sizeof(geo3d::VertexPC),
+			p0.normal = floral::vec3f(rng.get_f32() * 2.0f - 1.0f, rng.get_f32() * 2.0f - 1.0f, rng.get_f32() * 2.0f - 1.0f);
+			p1.normal = p0.normal;
+			p2.normal = p0.normal;
+
+			p0.color = floral::vec4f(0.0f, 0.0f, 0.0f, 0.0f);
+			p1.color = floral::vec4f(0.0f, 0.0f, 0.0f, 0.0f);
+			p2.color = floral::vec4f(0.0f, 0.0f, 0.0f, 0.0f);
+
+			sphereIndices.push_back(i * 3);
+			sphereIndices.push_back(i * 3 + 1);
+			sphereIndices.push_back(i * 3 + 2);
+			sphereVertices.push_back(p0);
+			sphereVertices.push_back(p1);
+			sphereVertices.push_back(p2);
+		}
+#endif
+
+		m_Surface[0] = helpers::CreateSurfaceGPU(&sphereVertices[0], genResult.vertices_generated, sizeof(geo3d::VertexPNC),
 				&sphereIndices[0], genResult.indices_generated, insigne::buffer_usage_e::static_draw, true);
+		insigne::dispatch_render_pass();
+
+		floral::fast_fixed_array<u32, LinearArena> remapTable;
+		floral::fast_fixed_array<u32, LinearArena> remapIndices;
+		floral::fast_fixed_array<geo3d::VertexPNC, LinearArena> remapVertices;
+		remapTable.reserve(genResult.indices_generated, m_TemporalArena);
+		remapTable.resize(genResult.indices_generated);
+		size vtxCount = meshopt_generateVertexRemap(&remapTable[0], (u32*)&sphereIndices[0], genResult.indices_generated,
+				&sphereVertices[0], genResult.vertices_generated, sizeof(geo3d::VertexPNC));
+		remapIndices.reserve(genResult.indices_generated, m_TemporalArena);
+		remapIndices.resize(genResult.indices_generated);
+		remapVertices.reserve(vtxCount, m_TemporalArena);
+		remapVertices.resize(vtxCount);
+		meshopt_remapIndexBuffer(&remapIndices[0], (u32*)&sphereIndices[0], genResult.indices_generated, &remapTable[0]);
+		meshopt_remapVertexBuffer(&remapVertices[0], &sphereVertices[0], vtxCount, sizeof(geo3d::VertexPNC), &remapTable[0]);
+
+		meshopt_optimizeVertexCache(&remapIndices[0], &remapIndices[0], genResult.indices_generated, vtxCount);
+		meshopt_optimizeOverdraw(&remapIndices[0], &remapIndices[0], genResult.indices_generated, &remapVertices[0].position.x, vtxCount, sizeof(geo3d::VertexPNC), 1.05f);
+		meshopt_optimizeVertexFetch(&remapVertices[0], &remapIndices[0], genResult.indices_generated, &remapVertices[0], vtxCount, sizeof(geo3d::VertexPNC));
+
+		m_Surface[1] = helpers::CreateSurfaceGPU(&remapVertices[0], vtxCount, sizeof(geo3d::VertexPNC),
+				&remapIndices[0], genResult.indices_generated, insigne::buffer_usage_e::static_draw, true);
 	}
 
 	m_MemoryArena->free_all();
@@ -105,13 +159,24 @@ void GeometryVault::_OnInitialize()
 
 void GeometryVault::_OnUpdate(const f32 i_deltaMs)
 {
+	ImGui::Begin("Controller##GeometryVault");
+	ImGui::Text("Choose geometry:");
+	if (ImGui::RadioButton("original", m_SurfaceIdx == 0))
+	{
+		m_SurfaceIdx = 0;
+	}
+	if (ImGui::RadioButton("otm step 1", m_SurfaceIdx == 1))
+	{
+		m_SurfaceIdx = 1;
+	}
+	ImGui::End();
 }
 
 void GeometryVault::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
-	insigne::draw_surface<geo3d::SurfacePC>(m_Surface.vb, m_Surface.ib, m_MSPair.material);
+	insigne::draw_surface<geo3d::SurfacePNC>(m_Surface[m_SurfaceIdx].vb, m_Surface[m_SurfaceIdx].ib, m_MSPair.material);
 
 	RenderImGui();
 
@@ -123,7 +188,7 @@ void GeometryVault::_OnRender(const f32 i_deltaMs)
 void GeometryVault::_OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
-	insigne::unregister_surface_type<geo3d::SurfacePC>();
+	insigne::unregister_surface_type<geo3d::SurfacePNC>();
 
 	g_StreammingAllocator.free(m_MaterialDataArena);
 	g_StreammingAllocator.free(m_TemporalArena);

@@ -44,7 +44,8 @@ private:
 	SceneData									m_SceneData;
 	insigne::ub_handle_t						m_SceneUB;
 
-	helpers::SurfaceGPU							m_Surface;
+	size										m_SurfaceIdx;
+	helpers::SurfaceGPU							m_Surface[2];
 	mat_loader::MaterialShaderPair				m_MSPair;
 
 private:

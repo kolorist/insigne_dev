@@ -162,7 +162,7 @@ inline uint64_t rotateleft64(uint64_t v, int x)
 {
 #if defined(_MSC_VER) && !defined(__clang__)
 	return _rotl64(v, x);
-#elif defined(__clang__) && __clang_major__ >= 8
+#elif defined(__clang__) && __clang_major__ >= 8 && !defined(ANDROID)
 	return __builtin_rotateleft64(v, x);
 #else
 	return (v << (x & 63)) | (v >> ((64 - x) & 63));

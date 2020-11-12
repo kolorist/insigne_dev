@@ -62,8 +62,13 @@ static floral::inplace_array<insigne::vb_handle_t, 8> s_ImGuiVB;
 static floral::inplace_array<insigne::ib_handle_t, 8> s_ImGuiIB;
 static insigne::ub_handle_t s_ImGuiUB;
 static insigne::shader_handle_t s_ImGuiShader;
-static insigne::texture_handle_t s_ImGuiTexture;
-static insigne::material_desc_t s_ImGuiMaterial;
+
+struct ImGuiDrawData
+{
+	insigne::material_desc_t Material; 
+	insigne::texture_handle_t Texture;
+};
+static ImGuiDrawData s_ImGuiDefaultDrawData;
 
 static floral::vec2f s_CursorPos;
 static bool s_CursorPressed;
@@ -167,8 +172,7 @@ void InitializeImGui(floral::filesystem<FreelistArena>* i_fs)
 
 	// TODO: memcpy? really?
 	memcpy(uiTexDesc.data, pixels, dataSize);
-	s_ImGuiTexture = insigne::create_texture(uiTexDesc);
-	io.Fonts->TexID = &s_ImGuiTexture;
+	s_ImGuiDefaultDrawData.Texture = insigne::create_texture(uiTexDesc);
 
 	io.RenderDrawListsFn = nullptr;
 
@@ -202,20 +206,22 @@ void InitializeImGui(floral::filesystem<FreelistArena>* i_fs)
 		desc.fs_path = floral::path("/internal/debugui_fs");
 
 		s_ImGuiShader = insigne::create_shader(desc);
-		insigne::infuse_material(s_ImGuiShader, s_ImGuiMaterial);
-		s_ImGuiMaterial.render_state.depth_write = false;
-		s_ImGuiMaterial.render_state.depth_test = false;
-		s_ImGuiMaterial.render_state.cull_face = false;
-		s_ImGuiMaterial.render_state.blending = true;
-		s_ImGuiMaterial.render_state.blend_equation = insigne::blend_equation_e::func_add;
-		s_ImGuiMaterial.render_state.blend_func_sfactor = insigne::factor_e::fact_src_alpha;
-		s_ImGuiMaterial.render_state.blend_func_dfactor = insigne::factor_e::fact_one_minus_src_alpha;
+		insigne::infuse_material(s_ImGuiShader, s_ImGuiDefaultDrawData.Material);
+		s_ImGuiDefaultDrawData.Material.render_state.depth_write = false;
+		s_ImGuiDefaultDrawData.Material.render_state.depth_test = false;
+		s_ImGuiDefaultDrawData.Material.render_state.cull_face = false;
+		s_ImGuiDefaultDrawData.Material.render_state.blending = true;
+		s_ImGuiDefaultDrawData.Material.render_state.blend_equation = insigne::blend_equation_e::func_add;
+		s_ImGuiDefaultDrawData.Material.render_state.blend_func_sfactor = insigne::factor_e::fact_src_alpha;
+		s_ImGuiDefaultDrawData.Material.render_state.blend_func_dfactor = insigne::factor_e::fact_one_minus_src_alpha;
 
-		s32 ubSlot = insigne::get_material_uniform_block_slot(s_ImGuiMaterial, "ub_XForm");
-		s_ImGuiMaterial.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, s_ImGuiUB };
-		s32 texSlot = insigne::get_material_texture_slot(s_ImGuiMaterial, "u_Tex");
-		s_ImGuiMaterial.textures[texSlot].value = s_ImGuiTexture;
+		s32 ubSlot = insigne::get_material_uniform_block_slot(s_ImGuiDefaultDrawData.Material, "ub_XForm");
+		s_ImGuiDefaultDrawData.Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, s_ImGuiUB };
 	}
+
+	s32 texSlot = insigne::get_material_texture_slot(s_ImGuiDefaultDrawData.Material, "u_Tex");
+	s_ImGuiDefaultDrawData.Material.textures[texSlot].value = s_ImGuiDefaultDrawData.Texture;
+	io.Fonts->TexID = &s_ImGuiDefaultDrawData;
 
 	for (ssize i = 0; i < 8; i++)
 	{
@@ -321,10 +327,17 @@ void RenderImGui()
 
 			insigne::setup_scissor<ImGuiSurface>(true, x0, y0, w, h);
 
-			static s32 texSlot = insigne::get_material_texture_slot(s_ImGuiMaterial, "u_Tex");
-			s_ImGuiMaterial.textures[texSlot].value = *((insigne::texture_handle_t*)drawCmd->TextureId);
+			ImGuiDrawData* drawData = (ImGuiDrawData*)drawCmd->TextureId;
+			FLORAL_ASSERT(drawData != nullptr);
+			if (drawData == nullptr)
+			{
+				drawData = &s_ImGuiDefaultDrawData;
+			}
 
-			insigne::draw_surface<ImGuiSurface>(s_ImGuiVB[bufferSlot], s_ImGuiIB[bufferSlot], s_ImGuiMaterial,
+			static s32 texSlot = insigne::get_material_texture_slot(drawData->Material, "u_Tex");
+			drawData->Material.textures[texSlot].value = drawData->Texture;
+
+			insigne::draw_surface<ImGuiSurface>(s_ImGuiVB[bufferSlot], s_ImGuiIB[bufferSlot], drawData->Material,
 					idxBufferOffset, (s32)drawCmd->ElemCount);
 			idxBufferOffset += drawCmd->ElemCount;
 		}
