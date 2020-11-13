@@ -50,12 +50,15 @@ void ShaderVault::_OnInitialize()
 	// register surfaces
 	insigne::register_surface_type<geo2d::SurfacePT>();
 
+	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
+	f32 aspectRatio = (f32)commonCtx->window_height / (f32)commonCtx->window_width;
+	const f32 renderWidth = 800.0f;
+	const f32 renderHeight = 480.0f;
 	{
-		calyx::context_attribs* commonCtx = calyx::get_context_attribs();
-		m_SceneData.resolution.x = commonCtx->window_width;
-		m_SceneData.resolution.y = commonCtx->window_height;
-		m_SceneData.resolution.z = 2.0f / commonCtx->window_width;
-		m_SceneData.resolution.w = 2.0f / commonCtx->window_height;
+		m_SceneData.resolution.x = renderWidth;
+		m_SceneData.resolution.y = renderHeight;
+		m_SceneData.resolution.z = 2.0f / renderWidth;
+		m_SceneData.resolution.w = 2.0f / renderHeight;
 		m_SceneData.timeSeconds.x = 0.0f;
 		m_SceneData.timeSeconds.y = 1.0f / 60.0f;
 
@@ -67,11 +70,14 @@ void ShaderVault::_OnInitialize()
 		m_SceneUB = insigne::copy_create_ub(ubDesc);
 	}
 
+
+	const f32 k_sizeX = renderWidth / (f32)commonCtx->window_width;
+	const f32 k_sizeY = renderHeight / (f32)commonCtx->window_height;
 	floral::inplace_array<geo2d::VertexPT, 4> vertices;
-	vertices.push_back({ { -1.0f, 1.0f }, { 0.0f, 1.0f } });
-	vertices.push_back({ { -1.0f, -1.0f }, { 0.0f, 0.0f } });
-	vertices.push_back({ { 1.0f, -1.0f }, { 1.0f, 0.0f } });
-	vertices.push_back({ { 1.0f, 1.0f }, { 1.0f, 1.0f } });
+	vertices.push_back({ { -k_sizeX, k_sizeY }, { 0.0f, 1.0f } });
+	vertices.push_back({ { -k_sizeX, -k_sizeY }, { 0.0f, 0.0f } });
+	vertices.push_back({ { k_sizeX, -k_sizeY }, { 1.0f, 0.0f } });
+	vertices.push_back({ { k_sizeX, k_sizeY }, { 1.0f, 1.0f } });
 
 	floral::inplace_array<s32, 6> indices;
 	indices.push_back(0);
@@ -102,6 +108,18 @@ void ShaderVault::_OnInitialize()
 	createResult = mat_loader::CreateMaterial(&m_MSPair[2], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(createResult == true);
 	insigne::helpers::assign_uniform_block(m_MSPair[2].material, "ub_Scene", 0, 0, m_SceneUB);
+
+	matPath = floral::build_relative_path("tiny_cloud_2d_notex.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_MSPair[3], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+	insigne::helpers::assign_uniform_block(m_MSPair[3].material, "ub_Scene", 0, 0, m_SceneUB);
+
+	matPath = floral::build_relative_path("tiny_cloud_2d_tex.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_MSPair[4], m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+	insigne::helpers::assign_uniform_block(m_MSPair[4].material, "ub_Scene", 0, 0, m_SceneUB);
 }
 
 void ShaderVault::_OnUpdate(const f32 i_deltaMs)
@@ -112,17 +130,26 @@ void ShaderVault::_OnUpdate(const f32 i_deltaMs)
 
 	ImGui::Begin("Controller##ShaderVault");
 	ImGui::Text("Choose shaders:");
-	if (ImGui::RadioButton("original", m_MaterialIndex == 0))
+	if (ImGui::RadioButton("1.1: original", m_MaterialIndex == 0))
 	{
 		m_MaterialIndex = 0;
 	}
-	if (ImGui::RadioButton("optimize algorithm", m_MaterialIndex == 1))
+	if (ImGui::RadioButton("1.2: optimize algorithm", m_MaterialIndex == 1))
 	{
 		m_MaterialIndex = 1;
 	}
-	if (ImGui::RadioButton("optimize algorithm + mediump float", m_MaterialIndex == 2))
+	if (ImGui::RadioButton("1.3: optimize algorithm + mediump float", m_MaterialIndex == 2))
 	{
 		m_MaterialIndex = 2;
+	}
+
+	if (ImGui::RadioButton("1.4: optimize algorithm + mediump float", m_MaterialIndex == 3))
+	{
+		m_MaterialIndex = 3;
+	}
+	if (ImGui::RadioButton("1.5: optimize algorithm + mediump float", m_MaterialIndex == 4))
+	{
+		m_MaterialIndex = 4;
 	}
 	ImGui::End();
 }

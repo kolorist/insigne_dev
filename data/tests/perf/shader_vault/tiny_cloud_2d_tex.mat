@@ -1,0 +1,23 @@
+_shader
+	vs	cloud_2d_org.vs
+	fs	tiny_cloud_2d_tex.fs
+_end_shader
+
+_state
+	depth_write off
+	depth_test off
+	cull_face on back ccw
+	blending off
+_end_state
+
+_params
+	_p_tex u_MainTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			repeat
+		wrap_t			repeat
+		path			medium_noise.etc.cbtex
+	_end_p_tex
+	_p_ub_holder ub_Scene
+_end_params
