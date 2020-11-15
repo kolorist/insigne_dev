@@ -32,7 +32,7 @@ public:
 	HWCounter(const s32 i_numSamples, const_cstr i_label);
 	~HWCounter();
 
-	void PushValue(const f32 i_value);
+	f32 PushValue(const f32 i_value);
 
 	void Draw();
 
@@ -155,11 +155,13 @@ private:
 	HWCounter									m_GPUCycles;
 	HWCounter									m_FragmentCycles;
 	HWCounter									m_TilerCycles;
+	HWCounter									m_FragElim;
 	HWCounter									m_ShaderTextureCycles;
 	HWCounter									m_Varying16BitCycles;
 	HWCounter									m_Varying32BitCycles;
 	HWCounter									m_ExtReadBytes;
 	HWCounter									m_ExtWriteBytes;
+	HWCounter									m_FrameDurationMs;
 
 private:
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_PlaygroundSuite;

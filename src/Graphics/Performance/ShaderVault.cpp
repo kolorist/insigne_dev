@@ -70,7 +70,6 @@ void ShaderVault::_OnInitialize()
 		m_SceneUB = insigne::copy_create_ub(ubDesc);
 	}
 
-
 	const f32 k_sizeX = renderWidth / (f32)commonCtx->window_width;
 	const f32 k_sizeY = renderHeight / (f32)commonCtx->window_height;
 	floral::inplace_array<geo2d::VertexPT, 4> vertices;
@@ -87,7 +86,7 @@ void ShaderVault::_OnInitialize()
 	indices.push_back(3);
 	indices.push_back(0);
 
-	m_Quad = helpers::CreateSurfaceGPU(&vertices[0], 4, sizeof(geo2d::VertexPT),
+	m_Quad[0] = helpers::CreateSurfaceGPU(&vertices[0], 4, sizeof(geo2d::VertexPT),
 			&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
 
 	m_MemoryArena->free_all();
@@ -142,12 +141,11 @@ void ShaderVault::_OnUpdate(const f32 i_deltaMs)
 	{
 		m_MaterialIndex = 2;
 	}
-
-	if (ImGui::RadioButton("1.4: optimize algorithm + mediump float", m_MaterialIndex == 3))
+	if (ImGui::RadioButton("2.1: original", m_MaterialIndex == 3))
 	{
 		m_MaterialIndex = 3;
 	}
-	if (ImGui::RadioButton("1.5: optimize algorithm + mediump float", m_MaterialIndex == 4))
+	if (ImGui::RadioButton("2.1: precomputed", m_MaterialIndex == 4))
 	{
 		m_MaterialIndex = 4;
 	}

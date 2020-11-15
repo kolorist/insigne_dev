@@ -75,7 +75,7 @@ HWCounter::~HWCounter()
 	//g_PersistanceAllocator.free(m_Values);
 }
 
-void HWCounter::PushValue(const f32 i_value)
+f32 HWCounter::PushValue(const f32 i_value)
 {
 	m_Values[m_CurrentIdx] = i_value;
 	m_PlotIdx = m_CurrentIdx;
@@ -92,6 +92,7 @@ void HWCounter::PushValue(const f32 i_value)
 	}
 	avg /= (f32)m_NumSamples;
 	m_AvgValue = avg;
+	return m_AvgValue;
 }
 
 void HWCounter::Draw()
@@ -113,11 +114,13 @@ DemoHub::DemoHub(floral::filesystem<FreelistArena>* i_fs)
 	, m_GPUCycles(64, "GPU Cycles")
 	, m_FragmentCycles(64, "Fragment Cycles")
 	, m_TilerCycles(64, "Tiler Cycles")
+	, m_FragElim(64, "Transaction Elimination")
 	, m_ShaderTextureCycles(64, "Shader Texture Cycles")
 	, m_Varying16BitCycles(64, "Varying 16bit Cycles")
 	, m_Varying32BitCycles(64, "Varying 32bit Cycles")
 	, m_ExtReadBytes(64, "Ext Read Bytes")
 	, m_ExtWriteBytes(64, "Ext Write Bytes")
+	, m_FrameDurationMs(64, "Frame Duration")
 {
 }
 
@@ -400,20 +403,25 @@ void DemoHub::_ShowGPUCounters()
 	f32 gpuCycles = insigne::g_hardware_counters->gpu_cycles[validIdx];
 	f32 fragmentCycles = insigne::g_hardware_counters->fragment_cycles[validIdx];
 	f32 tilerCycles = insigne::g_hardware_counters->tiler_cycles[validIdx];
+	f32 fragElim = insigne::g_hardware_counters->frag_elim[validIdx];
 	f32 shaderTextureCycles = insigne::g_hardware_counters->shader_texture_cycles[validIdx];
 	f32 varying16BitCycles = insigne::g_hardware_counters->varying_16_bits[validIdx];
 	f32 varying32BitCycles = insigne::g_hardware_counters->varying_32_bits[validIdx];
 	f32 extReadBytes = insigne::g_hardware_counters->external_memory_read_bytes[validIdx];
 	f32 extWriteBytes = insigne::g_hardware_counters->external_memory_write_bytes[validIdx];
+	f32 frameDurationMs = insigne::g_debug_frame_counters[validIdx].frame_duration_ms;
 
 	m_GPUCycles.PushValue(gpuCycles);
 	m_FragmentCycles.PushValue(fragmentCycles);
 	m_TilerCycles.PushValue(tilerCycles);
+	m_FragElim.PushValue(fragElim);
 	m_ShaderTextureCycles.PushValue(shaderTextureCycles);
 	m_Varying16BitCycles.PushValue(varying16BitCycles);
 	m_Varying32BitCycles.PushValue(varying32BitCycles);
 	m_ExtReadBytes.PushValue(extReadBytes);
 	m_ExtWriteBytes.PushValue(extWriteBytes);
+	f32 avgFrameTime = m_FrameDurationMs.PushValue(frameDurationMs);
+
 
 	ImGui::Begin("GPU Counters");
 	if (ImGui::Button("Reinit"))
@@ -421,11 +429,18 @@ void DemoHub::_ShowGPUCounters()
 		lotus::init_hardware_counters();
 	}
 
+	if (ImGui::CollapsingHeader("Noobs"))
+	{
+		ImGui::Text("Avg FPS: %4.2f", 1000.0f / avgFrameTime);
+		m_FrameDurationMs.Draw();
+	}
+
 	if (ImGui::CollapsingHeader("Generals"))
 	{
 		m_GPUCycles.Draw();
 		m_FragmentCycles.Draw();
 		m_TilerCycles.Draw();
+		m_FragElim.Draw();
 	}
 
 	if (ImGui::CollapsingHeader("Fragment"))
