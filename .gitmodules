@@ -25,6 +25,6 @@
 [submodule "externals/lotus"]
 	path = externals/lotus
 	url = https://github.com/kolorist/lotus.git
-[submodule "externals\\lua"]
-	path = externals\\lua
+[submodule "externals/lua"]
+	path = externals/lua
 	url = https://github.com/kolorist/lua.git
