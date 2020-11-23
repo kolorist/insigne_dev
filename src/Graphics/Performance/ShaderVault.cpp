@@ -52,8 +52,8 @@ void ShaderVault::_OnInitialize()
 
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 	f32 aspectRatio = (f32)commonCtx->window_height / (f32)commonCtx->window_width;
-	const f32 renderWidth = 800.0f;
-	const f32 renderHeight = 480.0f;
+	const f32 renderWidth = 1280.0f;
+	const f32 renderHeight = 720.0f;
 	{
 		m_SceneData.resolution.x = renderWidth;
 		m_SceneData.resolution.y = renderHeight;
@@ -86,7 +86,7 @@ void ShaderVault::_OnInitialize()
 	indices.push_back(3);
 	indices.push_back(0);
 
-	m_Quad[0] = helpers::CreateSurfaceGPU(&vertices[0], 4, sizeof(geo2d::VertexPT),
+	m_Quad = helpers::CreateSurfaceGPU(&vertices[0], 4, sizeof(geo2d::VertexPT),
 			&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
 
 	m_MemoryArena->free_all();

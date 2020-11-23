@@ -3,9 +3,11 @@
 #include <insigne/ut_render.h>
 #include <insigne/counters.h>
 
-#include <clover/Logger.h>
+#include <floral/function/simple_callback.h>
 
-#include "InsigneImGui.h"
+#include <clover/Logger.h>
+#include <clover/RedirectOutputSink.h>
+
 #include "Graphics/DebugDrawer.h"
 
 // playground
@@ -115,12 +117,15 @@ DemoHub::DemoHub(floral::filesystem<FreelistArena>* i_fs)
 	, m_FragmentCycles(64, "Fragment Cycles")
 	, m_TilerCycles(64, "Tiler Cycles")
 	, m_FragElim(64, "Transaction Elimination")
+	, m_Tiles(64, "Tiles")
 	, m_ShaderTextureCycles(64, "Shader Texture Cycles")
 	, m_Varying16BitCycles(64, "Varying 16bit Cycles")
 	, m_Varying32BitCycles(64, "Varying 32bit Cycles")
 	, m_ExtReadBytes(64, "Ext Read Bytes")
 	, m_ExtWriteBytes(64, "Ext Write Bytes")
 	, m_FrameDurationMs(64, "Frame Duration")
+
+	, m_LogWindow(&g_LoggerArena)
 {
 }
 
@@ -130,6 +135,10 @@ DemoHub::~DemoHub()
 
 void DemoHub::Initialize()
 {
+	floral::simple_callback<void, const_cstr> logCallback;
+	logCallback.bind<DemoHub, &DemoHub::_AppLogFunc>(this);
+	clover::SetupRedirector(logCallback);
+
 	m_PlaygroundSuite.reserve(4, &g_PersistanceAllocator);
 	m_PerformanceSuite.reserve(16, &g_PersistanceAllocator);
 	m_RenderTechSuite.reserve(16, &g_PersistanceAllocator);
@@ -350,9 +359,11 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 		}
 
 		static bool s_showGPUCounters = false;
-		if (ImGui::BeginMenu("Profiler"))
+		static bool s_showDebugLog = false;
+		if (ImGui::BeginMenu("Debug"))
 		{
 			ImGui::MenuItem("GPU Counters", nullptr, &s_showGPUCounters);
+			ImGui::MenuItem("App Log", nullptr, &s_showDebugLog);
 			ImGui::EndMenu();
 		}
 
@@ -365,6 +376,11 @@ void DemoHub::UpdateFrame(const f32 i_deltaMs)
 		if (s_showGPUCounters)
 		{
 			_ShowGPUCounters();
+		}
+
+		if (s_showDebugLog)
+		{
+			_ShowDebugLogWindow();
 		}
 	}
 
@@ -404,6 +420,7 @@ void DemoHub::_ShowGPUCounters()
 	f32 fragmentCycles = insigne::g_hardware_counters->fragment_cycles[validIdx];
 	f32 tilerCycles = insigne::g_hardware_counters->tiler_cycles[validIdx];
 	f32 fragElim = insigne::g_hardware_counters->frag_elim[validIdx];
+	f32 tiles = insigne::g_hardware_counters->tiles[validIdx];
 	f32 shaderTextureCycles = insigne::g_hardware_counters->shader_texture_cycles[validIdx];
 	f32 varying16BitCycles = insigne::g_hardware_counters->varying_16_bits[validIdx];
 	f32 varying32BitCycles = insigne::g_hardware_counters->varying_32_bits[validIdx];
@@ -415,6 +432,7 @@ void DemoHub::_ShowGPUCounters()
 	m_FragmentCycles.PushValue(fragmentCycles);
 	m_TilerCycles.PushValue(tilerCycles);
 	m_FragElim.PushValue(fragElim);
+	m_Tiles.PushValue(tiles);
 	m_ShaderTextureCycles.PushValue(shaderTextureCycles);
 	m_Varying16BitCycles.PushValue(varying16BitCycles);
 	m_Varying32BitCycles.PushValue(varying32BitCycles);
@@ -440,11 +458,12 @@ void DemoHub::_ShowGPUCounters()
 		m_GPUCycles.Draw();
 		m_FragmentCycles.Draw();
 		m_TilerCycles.Draw();
-		m_FragElim.Draw();
 	}
 
 	if (ImGui::CollapsingHeader("Fragment"))
 	{
+		m_FragElim.Draw();
+		m_Tiles.Draw();
 		m_ShaderTextureCycles.Draw();
 		m_Varying16BitCycles.Draw();
 		m_Varying32BitCycles.Draw();
@@ -456,6 +475,20 @@ void DemoHub::_ShowGPUCounters()
 		m_ExtWriteBytes.Draw();
 	}
 	ImGui::End();
+}
+
+//--------------------------------------------------------------------
+
+void DemoHub::_ShowDebugLogWindow()
+{
+	m_LogWindow.Draw("App Log");
+}
+
+//--------------------------------------------------------------------
+
+void DemoHub::_AppLogFunc(const_cstr logStr)
+{
+	m_LogWindow.AddLog(logStr);
 }
 
 //--------------------------------------------------------------------

@@ -30,6 +30,9 @@ private:
 	void										_OnUpdate(const f32 i_deltaMs) override;
 	void										_OnRender(const f32 i_deltaMs) override;
 	void										_OnCleanUp() override;
+
+private:
+	FreelistArena*								m_LoggerArena;
 };
 
 // ------------------------------------------------------------------

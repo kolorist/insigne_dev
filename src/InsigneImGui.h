@@ -4,6 +4,8 @@
 #include <floral/gpds/vec.h>
 #include <floral/gpds/mat.h>
 #include <floral/io/filesystem.h>
+#include <floral/containers/fast_array.h>
+#include <floral/containers/text.h>
 
 #include <imgui.h>
 
@@ -33,4 +35,21 @@ void											PlotValuesWrap(const_cstr i_title, f32* i_values, const f32 i_min
 
 const bool										DidImGuiConsumeMouse();
 
+// -----------------------------------------------------------------------------
+
+template <class TAllocator>
+struct DebugLogWindow
+{
+	floral::fast_dynamic_text_buffer<TAllocator>	Buffer;
+	floral::fast_dynamic_array<ssize, TAllocator>	LineOffsets;
+	bool										AutoScroll;
+
+	DebugLogWindow(TAllocator* allocator);
+	void										Clear();
+	void										AddLog(const_cstr logStr);
+	void										Draw(const_cstr title);
+};
+
 }
+
+#include "InsigneImGui.hpp"

@@ -8,6 +8,7 @@
 #include <floral/io/filesystem.h>
 
 #include "Memory/MemorySystem.h"
+#include "InsigneImGui.h"
 
 namespace stone
 {
@@ -74,8 +75,10 @@ public:
 
 private:
 	void										_ShowGPUCounters();
+	void										_ShowDebugLogWindow();
 
 private:
+	void										_AppLogFunc(const_cstr logStr);
 	void										_SwitchTestSuite(SuiteRegistry& i_to);
 	void										_ClearAllSuite();
 
@@ -156,12 +159,15 @@ private:
 	HWCounter									m_FragmentCycles;
 	HWCounter									m_TilerCycles;
 	HWCounter									m_FragElim;
+	HWCounter									m_Tiles;
 	HWCounter									m_ShaderTextureCycles;
 	HWCounter									m_Varying16BitCycles;
 	HWCounter									m_Varying32BitCycles;
 	HWCounter									m_ExtReadBytes;
 	HWCounter									m_ExtWriteBytes;
 	HWCounter									m_FrameDurationMs;
+
+	DebugLogWindow<FreelistArena>				m_LogWindow;
 
 private:
 	floral::fast_fixed_array<SuiteRegistry, LinearAllocator>	m_PlaygroundSuite;

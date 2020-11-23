@@ -37,6 +37,8 @@ namespace lotus {
 };
 
 namespace stone {
+	FreelistArena								g_LoggerArena;
+
 	LinearAllocator								g_SystemAllocator;
 	LinearAllocator								g_PersistanceAllocator;
 	LinearAllocator								g_PersistanceResourceAllocator;
@@ -45,7 +47,6 @@ namespace stone {
 	LinearArena									g_TemporalLinearArena;
 	FreelistArena								g_TemporalFreeArena;
 	FreelistArena								g_STBArena;
-	FreelistArena								g_StringArena;
 }
 
 namespace helich {
@@ -56,7 +57,7 @@ void init_memory_system()
 	g_MemoryManager.initialize(
 			memory_region<calyx::stack_allocator_t> 	{ "calyx/subsystems",			SIZE_MB(1),		&calyx::s_allocators.subsystems_allocator },
 
-			memory_region<clover::LinearAllocator>		{ "clover/allocator",			SIZE_MB(1),		&clover::g_LinearAllocator },
+			memory_region<clover::LinearAllocator>		{ "clover/allocator",			SIZE_MB(8),		&clover::g_LinearAllocator },
 
 			memory_region<refrain2::FreelistAllocator>	{ "refrain2/task",				SIZE_MB(4),		&refrain2::g_TaskAllocator },
 			memory_region<refrain2::FreelistAllocator>	{ "refrain2/taskdata",			SIZE_MB(16),	&refrain2::g_TaskDataAllocator },
@@ -67,13 +68,13 @@ void init_memory_system()
 
 			memory_region<lotus::linear_allocator_t>	{ "lotus/main",					SIZE_MB(32),	&lotus::e_main_allocator },
 
+			memory_region<stone::FreelistArena>			{ "stone/logger_arena",			SIZE_MB(8),		&stone::g_LoggerArena },
 			memory_region<stone::LinearAllocator>		{ "stone/system",				SIZE_MB(1),		&stone::g_SystemAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/persist",				SIZE_MB(32),	&stone::g_PersistanceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/persistres",			SIZE_MB(64),	&stone::g_PersistanceResourceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/sceneres",				SIZE_MB(64),	&stone::g_SceneResourceAllocator },
 			memory_region<stone::LinearAllocator>		{ "stone/stream",				SIZE_MB(64),	&stone::g_StreammingAllocator },
-			memory_region<stone::FreelistArena>			{ "stone/stb_arena",			SIZE_MB(32),	&stone::g_STBArena },
-			memory_region<stone::FreelistArena>			{ "stone/string_arena",			SIZE_MB(4),		&stone::g_StringArena }
+			memory_region<stone::FreelistArena>			{ "stone/stb_arena",			SIZE_MB(32),	&stone::g_STBArena }
 			);
 }
 

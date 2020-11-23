@@ -65,7 +65,7 @@ static insigne::shader_handle_t s_ImGuiShader;
 
 struct ImGuiDrawData
 {
-	insigne::material_desc_t Material; 
+	insigne::material_desc_t Material;
 	insigne::texture_handle_t Texture;
 };
 static ImGuiDrawData s_ImGuiDefaultDrawData;

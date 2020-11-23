@@ -3,6 +3,8 @@
 #include <clover/Logger.h>
 #include <insigne/ut_render.h>
 
+#include <floral/containers/text.h>
+
 #include "InsigneImGui.h"
 #include "lua.hpp"
 
@@ -64,6 +66,12 @@ void LuaScripting::_OnInitialize()
 	floral::push_directory(m_FileSystem, wdir);
 
 	s_LuaArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(4));
+	m_LoggerArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(8));
+
+	floral::fast_dynamic_text_buffer<FreelistArena> textBuffer(m_LoggerArena);
+	textBuffer.append("hello");
+	textBuffer.append("world");
+
 	lua_State* luaState = lua_newstate(custom_lua_alloc, nullptr);
 	luaopen_base(luaState);
 	luaopen_table(luaState);
@@ -92,6 +100,7 @@ void LuaScripting::_OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
 
+	g_StreammingAllocator.free(m_LoggerArena);
 	g_StreammingAllocator.free(s_LuaArena);
 
 	floral::pop_directory(m_FileSystem);
