@@ -1,6 +1,7 @@
 #include "LuaScripting.h"
 
 #include <clover/Logger.h>
+#include <clover/SinkTopic.h>
 #include <insigne/ut_render.h>
 
 #include <floral/containers/text.h>
@@ -39,6 +40,20 @@ void* custom_lua_alloc(void* ud, void* ptr, size_t osize, size_t nsize)
 	return nullptr;
 }
 
+s32 custom_lua_print(lua_State* L)
+{
+	LOG_TOPIC("lua");
+	s32 nArgs = lua_gettop(L);
+	c8 buffer[2048];
+	buffer[0] = 0;
+	for (s32 i = 1; i <= nArgs; i++)
+	{
+		strcat(buffer, lua_tostring(L, i));
+	}
+	CLOVER_VERBOSE(buffer);
+	return 0;
+}
+
 //-------------------------------------------------------------------
 
 LuaScripting::LuaScripting()
@@ -66,17 +81,26 @@ void LuaScripting::_OnInitialize()
 	floral::push_directory(m_FileSystem, wdir);
 
 	s_LuaArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(4));
-	m_LoggerArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(8));
-
-	floral::fast_dynamic_text_buffer<FreelistArena> textBuffer(m_LoggerArena);
-	textBuffer.append("hello");
-	textBuffer.append("world");
 
 	lua_State* luaState = lua_newstate(custom_lua_alloc, nullptr);
 	luaopen_base(luaState);
 	luaopen_table(luaState);
 	luaopen_string(luaState);
 	luaopen_math(luaState);
+
+	struct luaL_Reg hookedFunctions[] = {
+		{ "print", custom_lua_print },
+		{ nullptr, nullptr }
+	};
+	lua_getglobal(luaState, "_G");
+	luaL_setfuncs(luaState, hookedFunctions, 0);
+	lua_pop(luaState, 1);
+	const s32 ret = luaL_dostring(luaState, "print(\"hello world\")");
+	if (ret != LUA_OK)
+	{
+		CLOVER_ERROR("Lua error: %s", lua_tostring(luaState, -1));
+		lua_pop(luaState, 1);
+	}
 
 	lua_close(luaState);
 }
@@ -100,7 +124,6 @@ void LuaScripting::_OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
 
-	g_StreammingAllocator.free(m_LoggerArena);
 	g_StreammingAllocator.free(s_LuaArena);
 
 	floral::pop_directory(m_FileSystem);
