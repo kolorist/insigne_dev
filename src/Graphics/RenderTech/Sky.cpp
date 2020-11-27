@@ -22,7 +22,41 @@ static const s32 k_scatteringTextureMuSize = 128;
 static const s32 k_scatteringTextureMuSSize = 32;
 static const s32 k_scatteringTextureNuSize = 8;
 
+static const s32 k_scatteringTextureWidth = k_scatteringTextureNuSize * k_scatteringTextureMuSSize;
+static const s32 k_scatteringTextureHeight = k_scatteringTextureMuSize;
+static const s32 k_scatteringTextureDepth = k_scatteringTextureRSize;
+
+
 //-------------------------------------------------------------------
+
+floral::vec3f lookup_texture2d_rgb(f32* i_texture, const s32 i_x, const s32 i_y, const s32 i_width, const s32 i_height)
+{
+
+	ssize index = ((i_height - 1 - i_y) * i_width + i_x) * 3;
+	f32 r = i_texture[index];
+	f32 g = i_texture[index + 1];
+	f32 b = i_texture[index + 2];
+
+	return floral::vec3f(r, g, b);
+}
+
+floral::vec3f lookup_texture2d_rgb_bilinear(f32* i_texture, const floral::vec2f i_uv, const s32 i_width, const s32 i_height)
+{
+	f32 u = i_uv.x * i_width - 0.5f;
+	f32 v = i_uv.y * i_height - 0.5f;
+	s32 i = floor(u);
+	s32 j = floor(v);
+	u -= i;
+	v -= j;
+    s32 i0 = floral::max(0, floral::min(i_width - 1, i));
+    s32 i1 = floral::max(0, floral::min(i_width - 1, i + 1));
+    s32 j0 = floral::max(0, floral::min(i_height - 1, j));
+    s32 j1 = floral::max(0, floral::min(i_height - 1, j + 1));
+    return lookup_texture2d_rgb(i_texture, i0, j0, i_width, i_height) * ((1.0f - u) * (1.0f - v)) +
+        lookup_texture2d_rgb(i_texture, i1, j0, i_width, i_height) * (u * (1.0f - v)) +
+        lookup_texture2d_rgb(i_texture, i0, j1, i_width, i_height) * ((1.0f - u) * v) +
+        lookup_texture2d_rgb(i_texture, i1, j1, i_width, i_height) * (u * v);
+}
 
 f32 get_texture_coord_from_unit_range(f32 i_x, s32 i_texSize)
 {
@@ -56,6 +90,17 @@ f32 distance_to_top_atmosphere_boundary(const Atmosphere& i_atmosphere, const f3
 	f32 discriminant = i_r * i_r * (i_mu * i_mu - 1.0f) +
 		i_atmosphere.TopRadius * i_atmosphere.TopRadius;
 	f32 distance = -i_r * i_mu + floral::max(sqrtf(discriminant), 0.0f);
+	return floral::max(distance, 0.0f);
+}
+
+f32 distance_to_bottom_atmosphere_boundary(const Atmosphere& i_atmosphere, const f32 i_r, const f32 i_mu)
+{
+	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius);
+	FLORAL_ASSERT(i_mu >= -1.0f && i_mu <= 1.0f);
+
+	f32 discriminant = i_r * i_r * (i_mu * i_mu - 1.0f) +
+		i_atmosphere.BottomRadius * i_atmosphere.BottomRadius;
+	f32 distance = -i_r * i_mu - floral::max(sqrtf(discriminant), 0.0f);
 	return floral::max(distance, 0.0f);
 }
 
@@ -94,7 +139,28 @@ floral::vec3f to_rgb(const floral::fast_fixed_array<f32, LinearArena>& i_wavelen
 
 //-------------------------------------------------------------------
 
-void get_r_mu_from_transmittance_texture_uv(const Atmosphere i_atmosphere, const floral::vec2f& i_fragCoord, f32* o_r, f32* o_mu)
+floral::vec2f get_transmittance_texture_uv_from_r_mu(const Atmosphere& i_atmosphere, const f32 i_r, const f32 i_mu)
+{
+	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius && i_r <= i_atmosphere.TopRadius);
+	FLORAL_ASSERT(i_mu >= -1.0f && i_mu <= 1.0f);
+	// Distance to top atmosphere boundary for a horizontal ray at ground level.
+	f32 H = sqrtf(i_atmosphere.TopRadius * i_atmosphere.TopRadius -
+			i_atmosphere.BottomRadius * i_atmosphere.BottomRadius);
+	// Distance to the horizon.
+	f32 rho =
+		floral::max(sqrtf(i_r * i_r - i_atmosphere.BottomRadius * i_atmosphere.BottomRadius), 0.0f);
+	// Distance to the top atmosphere boundary for the ray (r,mu), and its minimum
+	// and maximum values over all mu - obtained for (r,1) and (r,mu_horizon).
+	f32 d = distance_to_top_atmosphere_boundary(i_atmosphere, i_r, i_mu);
+	f32 dMin = i_atmosphere.TopRadius - i_r;
+	f32 dMax = rho + H;
+	f32 xMu = (d - dMin) / (dMax - dMin);
+	f32 xR = rho / H;
+	return floral::vec2f(get_texture_coord_from_unit_range(xMu, k_transmittanceTextureWidth),
+			get_texture_coord_from_unit_range(xR, k_transmittanceTextureHeight));
+}
+
+void get_r_mu_from_transmittance_texture_uv(const Atmosphere& i_atmosphere, const floral::vec2f& i_fragCoord, f32* o_r, f32* o_mu)
 {
 	FLORAL_ASSERT(i_fragCoord.x >= 0.0f && i_fragCoord.x <= 1.0f);
 	FLORAL_ASSERT(i_fragCoord.y >= 0.0f && i_fragCoord.y <= 1.0f);
@@ -239,13 +305,13 @@ void get_r_mu_muS_nu_from_scattering_texture_uvwz(const Atmosphere& i_atmosphere
 	*o_rayRMuIntersectsGround = rayRMuIntersectsGround;
 }
 
-void get_r_mu_muS_nu_from_scattering_texture_uvw(const Atmosphere& i_atmosphere, const floral::vec3f& i_fragCoord,
+void get_r_mu_muS_nu_from_scattering_fragcoord(const Atmosphere& i_atmosphere, const floral::vec3f& i_fragCoord,
 		f32* o_r, f32* o_mu, f32* o_muS, f32* o_nu, bool* o_rayRMuIntersectsGround)
 {
 	f32 fragCoordNu = floor(i_fragCoord.x / (f32)k_scatteringTextureMuSSize);
 	f32 fragCoordMuS = fmod(i_fragCoord.x, (f32)k_scatteringTextureMuSSize);
 
-	floral::vec4f uvwz = (
+	floral::vec4f uvwz = floral::vec4f(
 			fragCoordNu / f32(k_scatteringTextureNuSize - 1),
 			fragCoordMuS / f32(k_scatteringTextureMuSSize),
 			i_fragCoord.y / f32(k_scatteringTextureMuSize),
@@ -264,12 +330,119 @@ void get_r_mu_muS_nu_from_scattering_texture_uvw(const Atmosphere& i_atmosphere,
 	*o_rayRMuIntersectsGround = rayRMuIntersectsGround;
 }
 
+f32 distance_to_nearest_atmosphere_boundary(const Atmosphere& i_atmosphere, const f32 i_r, const f32 i_mu,
+		const bool i_rayRMuIntersectsGround)
+{
+	if (i_rayRMuIntersectsGround)
+	{
+		return distance_to_bottom_atmosphere_boundary(i_atmosphere, i_r, i_mu);
+	}
+	else
+	{
+		return distance_to_top_atmosphere_boundary(i_atmosphere, i_r, i_mu);
+	}
+}
+
+floral::vec3f get_transmittance_to_top_atmosphere_boundary(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture,
+		const f32 i_r, const f32 i_mu)
+{
+	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius && i_r <= i_atmosphere.TopRadius);
+	floral::vec2f uv = get_transmittance_texture_uv_from_r_mu(i_atmosphere, i_r, i_mu);
+	return lookup_texture2d_rgb_bilinear(i_transmittanceTexture, uv, k_transmittanceTextureWidth, k_transmittanceTextureHeight);
+}
+
+floral::vec3f get_transmittance(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture,
+		const f32 i_r, const f32 i_mu, const f32 i_d,
+		const bool i_rayRMuIntersectsGround)
+{
+	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius && i_r <= i_atmosphere.TopRadius);
+	FLORAL_ASSERT(i_mu >= -1.0f && i_mu <= 1.0f);
+	FLORAL_ASSERT(i_d >= 0.0f);
+
+	f32 rd = sqrtf(i_d * i_d + 2.0f * i_r * i_mu * i_d + i_r * i_r);
+	rd = floral::clamp(rd, i_atmosphere.BottomRadius, i_atmosphere.TopRadius);
+	f32 muD = (i_r * i_mu + i_d) / rd;
+	muD = floral::clamp(muD, -1.0f, 1.0f);
+
+	if (i_rayRMuIntersectsGround)
+	{
+		floral::vec3f t = get_transmittance_to_top_atmosphere_boundary(i_atmosphere, i_transmittanceTexture, rd, -muD) /
+				get_transmittance_to_top_atmosphere_boundary(i_atmosphere, i_transmittanceTexture, i_r, -i_mu);
+		floral::vec3f v(floral::min(t.x, 1.0f), floral::min(t.y, 1.0f), floral::min(t.z, 1.0f));
+		return v;
+	}
+	else
+	{
+		floral::vec3f t = get_transmittance_to_top_atmosphere_boundary(i_atmosphere, i_transmittanceTexture, i_r, i_mu) /
+				get_transmittance_to_top_atmosphere_boundary(i_atmosphere, i_transmittanceTexture, rd, muD);
+		floral::vec3f v(floral::min(t.x, 1.0f), floral::min(t.y, 1.0f), floral::min(t.z, 1.0f));
+		return v;
+	}
+}
+
+floral::vec3f get_transmittance_to_sun(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture,
+		const f32 i_r, const f32 i_muS)
+{
+	f32 sin_theta_h = i_atmosphere.BottomRadius / i_r;
+	f32 cos_theta_h = -sqrtf(floral::max(1.0f - sin_theta_h * sin_theta_h, 0.0f));
+	return get_transmittance_to_top_atmosphere_boundary(i_atmosphere, i_transmittanceTexture, i_r, i_muS)
+		* floral::smoothstep(-sin_theta_h * i_atmosphere.SunAngularRadius,
+				sin_theta_h * i_atmosphere.SunAngularRadius, i_muS - cos_theta_h);
+}
+
+void compute_single_scattering_integrand(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture,
+		const f32 i_r, const f32 i_mu, const f32 i_muS,
+		const f32 i_nu, const f32 i_d, const bool i_rayRMuIntersectsGround,
+		floral::vec3f* o_rayleigh, floral::vec3f* o_mie)
+{
+	f32 rd = sqrtf(i_d * i_d + 2.0f * i_r * i_mu * i_d + i_r * i_r);
+	rd = floral::clamp(rd, i_atmosphere.BottomRadius, i_atmosphere.TopRadius);
+	f32 muSd = (i_r * i_muS + i_d * i_nu) / rd;
+	muSd = floral::clamp(muSd, -1.0f, 1.0f);
+	floral::vec3f transmittance =
+		get_transmittance(i_atmosphere, i_transmittanceTexture, i_r, i_mu, i_d, i_rayRMuIntersectsGround)
+		* get_transmittance_to_sun(i_atmosphere, i_transmittanceTexture, rd, muSd);
+	*o_rayleigh = transmittance * get_profile_density(i_atmosphere.RayleighDensity, rd - i_atmosphere.BottomRadius);
+	*o_mie = transmittance * get_profile_density(i_atmosphere.MieDensity, rd - i_atmosphere.BottomRadius);
+}
+
+void compute_single_scattering(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture,
+		const f32 i_r, const f32 i_mu, const f32 i_muS, const f32 i_nu,
+		const bool i_rayRMuIntersectsGround, floral::vec3f* o_rayleigh, floral::vec3f* o_mie)
+{
+	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius && i_r <= i_atmosphere.TopRadius);
+	FLORAL_ASSERT(i_mu >= -1.0f && i_mu <= 1.0f);
+	FLORAL_ASSERT(i_muS >= -1.0f && i_muS <= 1.0f);
+	FLORAL_ASSERT(i_nu >= -1.0f && i_nu <= 1.0f);
+
+	const s32 k_sampleCount = 50;
+	f32 dx = distance_to_nearest_atmosphere_boundary(i_atmosphere, i_r, i_mu, i_rayRMuIntersectsGround) / k_sampleCount;
+
+	floral::vec3f rayleighSum(0.0f, 0.0f, 0.0f);
+	floral::vec3f mieSum(0.0f, 0.0f, 0.0f);
+	for (s32 i = 0; i <= k_sampleCount; i++)
+	{
+		f32 dI = i * dx;
+		floral::vec3f rayleighI, mieI;
+		compute_single_scattering_integrand(i_atmosphere, i_transmittanceTexture,
+				i_r, i_mu, i_muS, i_nu, dI, i_rayRMuIntersectsGround,
+				&rayleighI, &mieI);
+		f32 weightI = (i == 0 || i == k_sampleCount) ? 0.5f : 1.0f;
+		rayleighSum += rayleighI * weightI;
+		mieSum += mieI * weightI;
+	}
+
+	*o_rayleigh = rayleighSum * dx * i_atmosphere.SolarIrradiance * i_atmosphere.RayleighScattering;
+	*o_mie = mieSum * dx * i_atmosphere.SolarIrradiance * i_atmosphere.MieScattering;
+}
+
 // https://ebruneton.github.io/precomputed_atmospheric_scattering/atmosphere/functions.glsl.html#single_scattering_precomputation
-void compute_single_scattering_texture(const Atmosphere& i_atmosphere, const floral::vec3f& i_fragCoord, floral::vec3f* o_rayleigh, floral::vec3f* o_mie)
+void compute_single_scattering_texture(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture, const floral::vec3f& i_fragCoord, floral::vec3f* o_rayleigh, floral::vec3f* o_mie)
 {
 	f32 r = 0.0f, mu = 0.0f, muS = 0.0f, nu = 0.0f;
 	bool rayRMuIntersectsGround = false;
-	get_r_mu_muS_nu_from_scattering_texture_uvw(i_atmosphere, i_fragCoord, &r, &mu, &muS, &nu, &rayRMuIntersectsGround);
+	get_r_mu_muS_nu_from_scattering_fragcoord(i_atmosphere, i_fragCoord, &r, &mu, &muS, &nu, &rayRMuIntersectsGround);
+	compute_single_scattering(i_atmosphere, i_transmittanceTexture, r, mu, muS, nu, rayRMuIntersectsGround, o_rayleigh, o_mie);
 }
 
 //-------------------------------------------------------------------
@@ -379,6 +552,9 @@ void Sky::_OnInitialize()
 	// model: initialization
 	m_Atmosphere.TopRadius = 6420.0f;
 	m_Atmosphere.BottomRadius = 6360.0f;
+	m_Atmosphere.MuSMin = -0.207912f;
+	m_Atmosphere.SolarIrradiance = floral::vec3f(1.474000f, 1.850400f, 1.911980f); // TODO (compute)
+	m_Atmosphere.SunAngularRadius = 0.004675f;
 	m_Atmosphere.RayleighScattering = to_rgb(wavelengths, rayleighScattering,
 			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
 	m_Atmosphere.RayleighDensity.Layers[0] = DensityProfileLayer {
@@ -388,6 +564,7 @@ void Sky::_OnInitialize()
 		0.0f / k_lengthUnitInMeters, 1.0f, -1.0f / k_rayleighScaleHeight * k_lengthUnitInMeters, 0.0f * k_lengthUnitInMeters, 0.0f
 	};
 
+	m_Atmosphere.MieScattering = floral::vec3f(0.003996f, 0.003996f, 0.003996f); // TODO (compute)
 	m_Atmosphere.MieExtinction = to_rgb(wavelengths, mieExtinction,
 			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
 	m_Atmosphere.MieDensity.Layers[0] = DensityProfileLayer {
@@ -406,12 +583,13 @@ void Sky::_OnInitialize()
 		0.0f / k_lengthUnitInMeters, 0.0f, 0.0f * k_lengthUnitInMeters, -1.0f / 15000.0f * k_lengthUnitInMeters, 8.0f / 3.0f
 	};
 
+	// TODO: note texture directions
+	m_TemporalArena->free_all();
+	ssize transmittanceTextureSizeBytes = k_transmittanceTextureWidth * k_transmittanceTextureHeight * 3 * sizeof(f32);
+	f32* transmittanceTexture = (f32*)m_TemporalArena->allocate(transmittanceTextureSizeBytes);
+	memset(transmittanceTexture, 0, transmittanceTextureSizeBytes);
+
 	{
-		// TODO: note texture directions
-		m_TemporalArena->free_all();
-		ssize bmpSize = k_transmittanceTextureWidth * k_transmittanceTextureHeight * 3;
-		p8 bmp = (p8)m_TemporalArena->allocate(bmpSize);
-		memset(bmp, 0, bmpSize);
 		for (s32 v = 0; v < k_transmittanceTextureHeight; v++)
 		{
 			for (s32 u = 0; u < k_transmittanceTextureWidth; u++)
@@ -420,34 +598,53 @@ void Sky::_OnInitialize()
 						((f32)u + 0.5f) / (f32)k_transmittanceTextureWidth,
 						((f32)v + 0.5f) / (f32)k_transmittanceTextureHeight);
 				floral::vec3f transmittance = compute_transmittance_to_top_atmosphere_boundary_texture(m_Atmosphere, fragCoord);
-				u8 r = (u8)(transmittance.x * 255.0f);
-				u8 g = (u8)(transmittance.y * 255.0f);
-				u8 b = (u8)(transmittance.z * 255.0f);
-				bmp[(v * k_transmittanceTextureWidth + u) * 3] = r;
-				bmp[(v * k_transmittanceTextureWidth + u) * 3 + 1] = g;
-				bmp[(v * k_transmittanceTextureWidth + u) * 3 + 2] = b;
+				FLORAL_ASSERT(transmittance.x > 0.0f && transmittance.x <= 1.0f);
+				FLORAL_ASSERT(transmittance.y > 0.0f && transmittance.y <= 1.0f);
+				FLORAL_ASSERT(transmittance.z > 0.0f && transmittance.z <= 1.0f);
+				s32 pidx = ((k_transmittanceTextureHeight - 1 - v) * k_transmittanceTextureWidth + u) * 3;
+				transmittanceTexture[pidx] = transmittance.x;
+				transmittanceTexture[pidx + 1] = transmittance.y;
+				transmittanceTexture[pidx + 2] = transmittance.z;
 			}
 		}
 		// TODO: check this
-		stbi_write_tga("out.tga", k_transmittanceTextureWidth, k_transmittanceTextureHeight, 3, (const void*)bmp);
+		stbi_write_hdr("transmittance.hdr", k_transmittanceTextureWidth, k_transmittanceTextureHeight,
+				3, transmittanceTexture);
 	}
 
 	{
-		floral::vec3i texSize(128, 128, 128);
-		m_TemporalArena->free_all();
-
-		for (s32 w = 0; w < texSize.z; w++)
+		ssize texSizeBytes = k_scatteringTextureWidth * k_scatteringTextureHeight * 3 * sizeof(f32);
+		f32* rayleighTexture = (f32*)m_TemporalArena->allocate(texSizeBytes);
+		f32* mieTexture = (f32*)m_TemporalArena->allocate(texSizeBytes);
+		for (s32 w = 0; w < k_scatteringTextureDepth; w++)
 		{
-			for (s32 u = 0; u < texSize.x; u++)
+			memset(rayleighTexture, 0, texSizeBytes);
+			memset(mieTexture, 0, texSizeBytes);
+			for (s32 v = 0; v < k_scatteringTextureHeight; v++)
 			{
-				for (s32 v = 0; v < texSize.y; v++)
+				for (s32 u = 0; u < k_scatteringTextureWidth; u++)
 				{
-					floral::vec3f fragCoord(((f32)u + 0.5f) / (f32)texSize.x, ((f32)v + 0.5f) / (f32)texSize.y, ((f32)w + 0.5f) / (f32)texSize.z);
+					floral::vec3f fragCoord(((f32)u + 0.5f), ((f32)v + 0.5f), ((f32)w + 0.5f));
 					floral::vec3f rayleigh;
 					floral::vec3f mie;
-					compute_single_scattering_texture(m_Atmosphere, fragCoord, &rayleigh, &mie);
+					compute_single_scattering_texture(m_Atmosphere, transmittanceTexture, fragCoord, &rayleigh, &mie);
+
+					s32 pidx = (v * k_scatteringTextureWidth + u) * 3;
+					rayleighTexture[pidx] = rayleigh.x;
+					rayleighTexture[pidx + 1] = rayleigh.y;
+					rayleighTexture[pidx + 2] = rayleigh.z;
+
+					mieTexture[pidx] = mie.x;
+					mieTexture[pidx + 1] = mie.y;
+					mieTexture[pidx + 2] = mie.z;
 				}
 			}
+			c8 name[128];
+			sprintf(name, "ss_rayleigh_%d.hdr", w);
+			stbi_write_hdr(name, k_scatteringTextureWidth, k_scatteringTextureHeight, 3, rayleighTexture);
+			sprintf(name, "ss_mie_%d.hdr", w);
+			stbi_write_hdr(name, k_scatteringTextureWidth, k_scatteringTextureHeight, 3, mieTexture);
+			CLOVER_DEBUG("#%d: done", w);
 		}
 	}
 }

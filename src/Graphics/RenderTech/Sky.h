@@ -33,9 +33,12 @@ struct Atmosphere
 	f32											TopRadius;
 	f32											BottomRadius;
 	f32											MuSMin;
+	floral::vec3f								SolarIrradiance;
+	f32											SunAngularRadius;
 
 	floral::vec3f								RayleighScattering;
 	DensityProfile								RayleighDensity;
+	floral::vec3f								MieScattering;
 	floral::vec3f								MieExtinction;
 	DensityProfile								MieDensity;
 	floral::vec3f								AbsorptionExtinction;
