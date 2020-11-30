@@ -13,6 +13,7 @@ namespace perf
 
 
 Empty::Empty()
+	: m_DataArenaRegion { "stone/dynamic/sky", SIZE_MB(32), &m_DataArena }
 {
 }
 
@@ -32,6 +33,7 @@ const_cstr Empty::GetName() const
 
 void Empty::_OnInitialize()
 {
+	g_MemoryManager.initialize_allocator(m_DataArenaRegion);
 }
 
 void Empty::_OnUpdate(const f32 i_deltaMs)
@@ -51,6 +53,7 @@ void Empty::_OnRender(const f32 i_deltaMs)
 
 void Empty::_OnCleanUp()
 {
+	g_MemoryManager.destroy_allocator(m_DataArenaRegion);
 }
 
 //-------------------------------------------------------------------
