@@ -116,8 +116,8 @@ void InitializeImGui(floral::filesystem<FreelistArena>* i_fs)
 		readConfigStream.buffer = (p8)s_MemoryArena->allocate(readConfigFile.file_size);
 		floral::read_all_file(readConfigFile, readConfigStream);
 		ImGui::LoadIniSettingsFromMemory((const_cstr)readConfigStream.buffer, readConfigFile.file_size);
-		floral::close_file(readConfigFile);
 	}
+	floral::close_file(readConfigFile);
 
 	s_MemoryArena->free_all();
 
