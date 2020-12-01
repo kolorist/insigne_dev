@@ -41,8 +41,11 @@ struct Atmosphere
 	floral::vec3f								MieScattering;
 	floral::vec3f								MieExtinction;
 	DensityProfile								MieDensity;
+	f32											MiePhaseFunctionG;
 	floral::vec3f								AbsorptionExtinction;
 	DensityProfile								AbsorptionDensity;
+
+	floral::vec3f								GroundAlbedo;
 };
 
 // ------------------------------------------------------------------
@@ -64,7 +67,8 @@ private:
 
 private:
 	LinearArena*								m_DataArena;
-	LinearArena*								m_TemporalArena;
+	helich::memory_region<LinearArena>			m_TexDataArenaRegion;
+	LinearArena									m_TexDataArena;
 
 private:
 	void										_OnInitialize() override;
