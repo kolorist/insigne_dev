@@ -63,6 +63,9 @@ public:
 	const_cstr									GetName() const override;
 
 private:
+	f32**										AllocateTexture3D(const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel);
+
+private:
 	Atmosphere									m_Atmosphere;
 
 private:

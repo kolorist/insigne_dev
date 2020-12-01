@@ -950,31 +950,16 @@ void Sky::_OnInitialize()
 		stbi_write_hdr("irradiance.hdr", k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3, directIrradianceTexture);
 	}
 
-	ssize texSizeBytes = k_scatteringTextureWidth * k_scatteringTextureHeight * 3 * sizeof(f32);
-	f32** deltaRayleighTexture = (f32**)m_TexDataArena.allocate(k_scatteringTextureDepth * sizeof(f32*));
-	for (s32 i = 0; i < k_scatteringTextureDepth; i++)
-	{
-		deltaRayleighTexture[i] = (f32*)m_TexDataArena.allocate(texSizeBytes);
-	}
-	f32** deltaMieTexture = (f32**)m_TexDataArena.allocate(k_scatteringTextureDepth * sizeof(f32*));
-	for (s32 i = 0; i < k_scatteringTextureDepth; i++)
-	{
-		deltaMieTexture[i] = (f32*)m_TexDataArena.allocate(texSizeBytes);
-	}
-
-	ssize scatteringTexSizeBytes = k_scatteringTextureWidth * k_scatteringTextureHeight * 4 * sizeof(f32);
-	f32** scatteringTexture = (f32**)m_TexDataArena.allocate(scatteringTexSizeBytes * sizeof(f32*));
-	for (s32 i = 0; i < k_scatteringTextureDepth; i++)
-	{
-		scatteringTexture[i] = (f32*)m_TexDataArena.allocate(scatteringTexSizeBytes);
-	}
+	f32** deltaRayleighTexture =
+		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+	f32** deltaMieTexture =
+		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+	f32** scatteringTexture =
+		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 4);
 
 	{
 		for (s32 w = 0; w < k_scatteringTextureDepth; w++)
 		{
-			memset(deltaRayleighTexture[w], 0, texSizeBytes);
-			memset(deltaMieTexture[w], 0, texSizeBytes);
-			memset(scatteringTexture[w], 0, scatteringTexSizeBytes);
 			for (s32 v = 0; v < k_scatteringTextureHeight; v++)
 			{
 				for (s32 u = 0; u < k_scatteringTextureWidth; u++)
@@ -1010,6 +995,26 @@ void Sky::_OnInitialize()
 			CLOVER_DEBUG("#%d: done", w);
 		}
 	}
+
+	f32** scatteringDesnityTexture =
+		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+	f32** deltaMultipleScatteringTexture =
+		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+
+	for (s32 scatteringOrder = 2; scatteringOrder < 4; scatteringOrder++)
+	{
+		for (s32 w = 0; w < k_scatteringTextureDepth; w++)
+		{
+			for (s32 v = 0; v < k_scatteringTextureHeight; v++)
+			{
+				for (s32 u = 0; u < k_scatteringTextureWidth; u++)
+				{
+					floral::vec3f fragCoord(((f32)u + 0.5f), ((f32)v + 0.5f), ((f32)w + 0.5f));
+				}
+			}
+		}
+
+	}
 }
 
 void Sky::_OnUpdate(const f32 i_deltaMs)
@@ -1033,6 +1038,19 @@ void Sky::_OnCleanUp()
 {
 	g_MemoryManager.destroy_allocator(m_TexDataArenaRegion);
 	g_StreammingAllocator.free(m_DataArena);
+}
+
+//-------------------------------------------------------------------
+
+f32** Sky::AllocateTexture3D(const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel)
+{
+	ssize sliceSizeBytes = i_w * i_h * i_channel * sizeof(f32);
+	f32** tex = (f32**)m_TexDataArena.allocate(i_d * sizeof(f32*));
+	for (s32 i = 0; i < i_d; i++)
+	{
+		tex[i] = (f32*)m_TexDataArena.allocate(sliceSizeBytes);
+		memset(tex[i], 0, sliceSizeBytes);
+	}
 }
 
 //-------------------------------------------------------------------
