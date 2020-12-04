@@ -1,7 +1,10 @@
 #include "Sky.h"
 
 #include <clover/Logger.h>
+
+#include <floral/io/filesystem.h>
 #include <floral/containers/fast_array.h>
+
 #include <insigne/ut_render.h>
 
 #include "Graphics/stb_image_write.h"
@@ -33,7 +36,7 @@ static const s32 k_irrandianceTextureHeight = 16;
 
 floral::vec3f lookup_texture2d_rgb(f32* i_texture, const s32 i_x, const s32 i_y, const s32 i_width, const s32 i_height)
 {
-	ssize index = ((i_height - 1 - i_y) * i_width + i_x) * 3;
+	ssize index = (i_y * i_width + i_x) * 3;
 	f32 r = i_texture[index];
 	f32 g = i_texture[index + 1];
 	f32 b = i_texture[index + 2];
@@ -63,7 +66,7 @@ floral::vec3f lookup_texture3d_rgb(f32** i_texture, const s32 i_x, const s32 i_y
 		const s32 i_width, const s32 i_height, const s32 i_depth)
 {
 	f32* texture = i_texture[i_z];
-	ssize index = ((i_height - 1 - i_y) * i_width + i_x) * 3;
+	ssize index = (i_y * i_width + i_x) * 3;
 	f32 r = texture[index];
 	f32 g = texture[index + 1];
 	f32 b = texture[index + 2];
@@ -354,10 +357,10 @@ const floral::vec4f get_scattering_texture_uvwz_from_r_mu_muS_nu(const Atmospher
 void get_r_mu_muS_nu_from_scattering_texture_uvwz(const Atmosphere& i_atmosphere, const floral::vec4f& i_uvwz,
 		f32* o_r, f32* o_mu, f32* o_muS, f32* o_nu, bool* o_rayRMuIntersectsGround)
 {
-	assert(i_uvwz.x >= 0.0 && i_uvwz.x <= 1.0);
-	assert(i_uvwz.y >= 0.0 && i_uvwz.y <= 1.0);
-	assert(i_uvwz.z >= 0.0 && i_uvwz.z <= 1.0);
-	assert(i_uvwz.w >= 0.0 && i_uvwz.w <= 1.0);
+	FLORAL_ASSERT(i_uvwz.x >= 0.0 && i_uvwz.x <= 1.0);
+	FLORAL_ASSERT(i_uvwz.y >= 0.0 && i_uvwz.y <= 1.0);
+	FLORAL_ASSERT(i_uvwz.z >= 0.0 && i_uvwz.z <= 1.0);
+	FLORAL_ASSERT(i_uvwz.w >= 0.0 && i_uvwz.w <= 1.0);
 
 	f32 r = 0.0f, mu = 0.0f, muS = 0.0f, nu = 0.0f;
 	bool rayRMuIntersectsGround = false;
@@ -679,7 +682,11 @@ const floral::vec3f compute_scattering_density(const Atmosphere& i_atmosphere, f
 			// last bounce is on the ground. This contribution is the product of the
 			// transmittance to the ground, the ground albedo, the ground BRDF, and
 			// the irradiance received on the ground after n-2 bounces.
-			floral::vec3f groundNormal = floral::normalize(zenithDirection * i_r + omegaI * distanceToGround);
+			floral::vec3f tmp = zenithDirection * i_r + omegaI * distanceToGround;
+			floral::vec3<f64> tmpHighPrecision(tmp.x, tmp.y, tmp.z);
+			floral::vec3<f64> tmpHighPrecisionNormalized = floral::normalize(tmpHighPrecision);
+
+			floral::vec3f groundNormal((f32)tmpHighPrecisionNormalized.x, (f32)tmpHighPrecisionNormalized.y, (f32)tmpHighPrecisionNormalized.z);
 			floral::vec3f groundIrradiance = get_irradiance(
 					i_atmosphere, i_irradianceTexture, i_atmosphere.BottomRadius,
 					floral::dot(groundNormal, omegaS));
@@ -748,9 +755,91 @@ floral::vec3f compute_direct_irradiance_texture(const Atmosphere& i_atmosphere, 
 	return compute_direct_irradiance(i_atmosphere, i_transmittanceTexture, r, muS);
 }
 
-/*
-const floral::vec3f compute_multiple_scattering_texture(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture, f32* i_scatteringDensityTexture,
-		const floral::vec3f& i_fragCoord, f32* o_nu)
+floral::vec3f compute_indirect_irradiance(const Atmosphere& i_atmosphere,
+		f32** i_singleRayleighScatteringTexture, f32** i_singleMieScatteringTexture, f32** i_multipleScatteringTexture,
+		const f32 i_r, const f32 i_muS, const s32 i_scatteringOrder)
+{
+	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius && i_r <= i_atmosphere.TopRadius);
+	FLORAL_ASSERT(i_muS >= -1.0f && i_muS <= 1.0f);
+	FLORAL_ASSERT(i_scatteringOrder >= 1);
+
+	const s32 k_sampleCount = 32;
+	const f32 dphi = floral::pi / f32(k_sampleCount);
+	const f32 dtheta = floral::pi / f32(k_sampleCount);
+
+	floral::vec3f result(0.0f, 0.0f, 0.0f);
+	floral::vec3f omegaS(sqrtf(1.0f - i_muS * i_muS), 0.0f, i_muS);
+	for (s32 j = 0; j < k_sampleCount / 2; ++j)
+	{
+		f32 theta = (f32(j) + 0.5f) * dtheta;
+		for (s32 i = 0; i < 2 * k_sampleCount; ++i)
+		{
+			f32 phi = (f32(i) + 0.5f) * dphi;
+			floral::vec3f omega(cosf(phi) * sinf(theta), sinf(phi) * sinf(theta), cosf(theta));
+			f32 domega = dtheta * dphi * sinf(theta);
+
+			f32 nu = dot(omega, omegaS);
+			result += get_scattering(i_atmosphere,
+					i_singleRayleighScatteringTexture, i_singleMieScatteringTexture, i_multipleScatteringTexture,
+					i_r, omega.z, i_muS, nu, false /* i_rayRMuIntersectsGround */,
+					i_scatteringOrder) * omega.z * domega;
+		}
+	}
+	return result;
+}
+
+floral::vec3f compute_indirect_irradiance_texture(const Atmosphere& i_atmosphere,
+		f32** i_singleRayleighScatteringTexture, f32** i_singleMieScatteringTexture, f32** i_multipleScatteringTexture,
+		const floral::vec2f& i_fragCoord, const s32 i_scatteringOrder)
+{
+	f32 r = 0.0f, muS = 0.0f;
+	get_r_muS_from_irradiance_texture_uv(i_atmosphere,
+			i_fragCoord / floral::vec2f(k_irrandianceTextureWidth, k_irrandianceTextureHeight), &r, &muS);
+	return compute_indirect_irradiance(i_atmosphere,
+			i_singleRayleighScatteringTexture, i_singleMieScatteringTexture, i_multipleScatteringTexture,
+			r, muS, i_scatteringOrder);
+}
+
+const floral::vec3f compute_multiple_scattering(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture,
+		f32** i_scatteringDensityTexture, const f32 i_r, const f32 i_mu, const f32 i_muS, const f32 i_nu, const bool i_rayRMuIntersectsGround)
+{
+	FLORAL_ASSERT(i_r >= i_atmosphere.BottomRadius && i_r <= i_atmosphere.TopRadius);
+	FLORAL_ASSERT(i_mu >= -1.0f && i_mu <= 1.0f);
+	FLORAL_ASSERT(i_muS >= -1.0f && i_muS <= 1.0f);
+	FLORAL_ASSERT(i_nu >= -1.0f && i_nu <= 1.0f);
+
+	// Number of intervals for the numerical integration.
+	const s32 k_sampleCount = 50;
+	// The integration step, i.e. the length of each integration interval.
+	f32 dx = distance_to_nearest_atmosphere_boundary(i_atmosphere, i_r, i_mu, i_rayRMuIntersectsGround) / f32(k_sampleCount);
+	// Integration loop.
+	floral::vec3f rayleighMieSum(0.0f, 0.0f, 0.0f);
+	for (s32 i = 0; i <= k_sampleCount; ++i)
+	{
+		f32 dI = f32(i) * dx;
+
+		// The i_r, i_mu and i_muS parameters at the current integration point (see the
+		// single scattering section for a detailed explanation).
+		f32 rI = sqrtf(dI * dI + 2.0 * i_r * i_mu * dI + i_r * i_r);
+		rI = floral::clamp(rI, i_atmosphere.BottomRadius, i_atmosphere.TopRadius);
+
+		f32 muI = floral::clamp((i_r * i_mu + dI) / rI, -1.0f, 1.0f);
+		f32 muSI = floral::clamp((i_r * i_muS + dI * i_nu) / rI, -1.0f, 1.0f);
+
+		// The Rayleigh and Mie multiple scattering at the current sample point.
+		floral::vec3f rayleighMieI =
+			get_scattering(i_atmosphere, i_scatteringDensityTexture, rI, muI, muSI, i_nu, i_rayRMuIntersectsGround) *
+			get_transmittance(i_atmosphere, i_transmittanceTexture, i_r, i_mu, dI, i_rayRMuIntersectsGround) *
+			dx;
+		// Sample weight (from the trapezoidal rule).
+		f32 weightI = (i == 0 || i == k_sampleCount) ? 0.5f : 1.0f;
+		rayleighMieSum += rayleighMieI * weightI;
+	}
+	return rayleighMieSum;
+}
+
+const floral::vec3f compute_multiple_scattering_texture(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture,
+	f32** i_scatteringDensityTexture, const floral::vec3f& i_fragCoord, f32* o_nu)
 {
 	f32 r = 0.0f, mu = 0.0f, muS = 0.0f;
 	bool rayRMuIntersectsGround = false;
@@ -758,12 +847,11 @@ const floral::vec3f compute_multiple_scattering_texture(const Atmosphere& i_atmo
 	return compute_multiple_scattering(i_atmosphere, i_transmittanceTexture, i_scatteringDensityTexture,
 			r, mu, muS, *o_nu, rayRMuIntersectsGround);
 }
-*/
 
 //-------------------------------------------------------------------
 
 Sky::Sky()
-	: m_TexDataArenaRegion { "stone/dynamic/sky", SIZE_MB(64), &m_TexDataArena }
+	: m_TexDataArenaRegion { "stone/dynamic/sky", SIZE_MB(128), &m_TexDataArena }
 {
 }
 
@@ -783,7 +871,11 @@ const_cstr Sky::GetName() const
 
 void Sky::_OnInitialize()
 {
-	m_DataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
+	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
+	floral::relative_path wdir = floral::build_relative_path("tests/tech/sky");
+	floral::push_directory(m_FileSystem, wdir);
+
+	m_DataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(20));
 	g_MemoryManager.initialize_allocator(m_TexDataArenaRegion);
 
 	const f32 k_lengthUnitInMeters = 1000.0f;
@@ -871,6 +963,7 @@ void Sky::_OnInitialize()
 	m_Atmosphere.MuSMin = -0.207912f;
 	m_Atmosphere.SolarIrradiance = floral::vec3f(1.474000f, 1.850400f, 1.911980f); // TODO (compute)
 	m_Atmosphere.SunAngularRadius = 0.004675f;
+
 	m_Atmosphere.RayleighScattering = to_rgb(wavelengths, rayleighScattering,
 			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
 	m_Atmosphere.RayleighDensity.Layers[0] = DensityProfileLayer {
@@ -904,10 +997,10 @@ void Sky::_OnInitialize()
 
 	// TODO: note texture directions
 	m_TexDataArena.free_all();
-	ssize transmittanceTextureSizeBytes = k_transmittanceTextureWidth * k_transmittanceTextureHeight * 3 * sizeof(f32);
-	f32* transmittanceTexture = (f32*)m_TexDataArena.allocate(transmittanceTextureSizeBytes);
-	memset(transmittanceTexture, 0, transmittanceTextureSizeBytes);
+	f32* transmittanceTexture = LoadCacheTex2D("transmittance.dat", k_transmittanceTextureWidth, k_transmittanceTextureHeight, 3);
+	if (transmittanceTexture == nullptr)
 	{
+		transmittanceTexture = AllocateTexture2D(k_transmittanceTextureWidth, k_transmittanceTextureHeight, 3);
 		for (s32 v = 0; v < k_transmittanceTextureHeight; v++)
 		{
 			for (s32 u = 0; u < k_transmittanceTextureWidth; u++)
@@ -917,21 +1010,23 @@ void Sky::_OnInitialize()
 				FLORAL_ASSERT(transmittance.x > 0.0f && transmittance.x <= 1.0f);
 				FLORAL_ASSERT(transmittance.y > 0.0f && transmittance.y <= 1.0f);
 				FLORAL_ASSERT(transmittance.z > 0.0f && transmittance.z <= 1.0f);
-				s32 pidx = ((k_transmittanceTextureHeight - 1 - v) * k_transmittanceTextureWidth + u) * 3;
+				s32 pidx = (v * k_transmittanceTextureWidth + u) * 3;
 				transmittanceTexture[pidx] = transmittance.x;
 				transmittanceTexture[pidx + 1] = transmittance.y;
 				transmittanceTexture[pidx + 2] = transmittance.z;
 			}
 		}
-		// TODO: check this
-		stbi_write_hdr("transmittance.hdr", k_transmittanceTextureWidth, k_transmittanceTextureHeight,
-				3, transmittanceTexture);
+		WriteCacheTex2D("transmittance.dat", transmittanceTexture, k_transmittanceTextureWidth, k_transmittanceTextureHeight, 3);
 	}
+	// TODO: check this
+	stbi_write_hdr("transmittanceTexture.hdr", k_transmittanceTextureWidth, k_transmittanceTextureHeight, 3, transmittanceTexture);
 
-	ssize directIrradianceTextureSizeBytes = k_irrandianceTextureWidth * k_irrandianceTextureHeight * 3 * sizeof(f32);
-	f32* directIrradianceTexture = (f32*)m_TexDataArena.allocate(directIrradianceTextureSizeBytes);
-	memset(directIrradianceTexture, 0, directIrradianceTextureSizeBytes);
+	// we won't cache this, because we won't write onto it in this section
+	f32* irradianceTexture = AllocateTexture2D(k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3);
+	f32* deltaIrradianceTexture = LoadCacheTex2D("delta_irradiance.dat", k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3);
+	if (deltaIrradianceTexture == nullptr)
 	{
+		deltaIrradianceTexture = AllocateTexture2D(k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3);
 		for (s32 v = 0; v < k_irrandianceTextureHeight; v++)
 		{
 			for (s32 u = 0; u < k_irrandianceTextureWidth; u++)
@@ -939,24 +1034,40 @@ void Sky::_OnInitialize()
 				floral::vec2f fragCoord((f32)u + 0.5f, (f32)v + 0.5f);
 				floral::vec3f deltaIrradiance = compute_direct_irradiance_texture(m_Atmosphere, transmittanceTexture, fragCoord);
 
-				s32 pidx = ((k_irrandianceTextureHeight - 1 - v) * k_irrandianceTextureWidth + u) * 3;
-				directIrradianceTexture[pidx] = deltaIrradiance.x;
-				directIrradianceTexture[pidx + 1] = deltaIrradiance.y;
-				directIrradianceTexture[pidx + 2] = deltaIrradiance.z;
+				s32 pidx = (v * k_irrandianceTextureWidth + u) * 3;
+				deltaIrradianceTexture[pidx] = deltaIrradiance.x;
+				deltaIrradianceTexture[pidx + 1] = deltaIrradiance.y;
+				deltaIrradianceTexture[pidx + 2] = deltaIrradiance.z;
 			}
 		}
+		WriteCacheTex2D("delta_irradiance.dat", deltaIrradianceTexture, k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3);
+	}
+	// TODO: check this
+	stbi_write_hdr("deltaIrradianceTexture.hdr", k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3, deltaIrradianceTexture);
 
-		// TODO: check this
-		stbi_write_hdr("irradiance.hdr", k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3, directIrradianceTexture);
+	bool needCompute = false;
+	f32** deltaRayleighScatteringTexture =
+		LoadCacheTex3D("delta_rayleigh_scattering.dat", k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+	if (deltaRayleighScatteringTexture == nullptr)
+	{
+		needCompute = true;
+		deltaRayleighScatteringTexture = AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+	}
+	f32** deltaMieScatteringTexture =
+		LoadCacheTex3D("delta_mie_scattering.dat", k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+	if (deltaMieScatteringTexture == nullptr)
+	{
+		needCompute = true;
+		deltaMieScatteringTexture = AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+	}
+	f32** scatteringTexture =
+		LoadCacheTex3D("scattering.dat", k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 4);
+	if (scatteringTexture == nullptr)
+	{
+		scatteringTexture = AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 4);
 	}
 
-	f32** deltaRayleighTexture =
-		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
-	f32** deltaMieTexture =
-		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
-	f32** scatteringTexture =
-		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 4);
-
+	if (needCompute)
 	{
 		for (s32 w = 0; w < k_scatteringTextureDepth; w++)
 		{
@@ -970,39 +1081,136 @@ void Sky::_OnInitialize()
 					compute_single_scattering_texture(m_Atmosphere, transmittanceTexture, fragCoord, &rayleigh, &mie);
 
 					s32 pidx = (v * k_scatteringTextureWidth + u) * 3;
-					deltaRayleighTexture[w][pidx] = rayleigh.x;
-					deltaRayleighTexture[w][pidx + 1] = rayleigh.y;
-					deltaRayleighTexture[w][pidx + 2] = rayleigh.z;
+					deltaRayleighScatteringTexture[w][pidx] = rayleigh.x;
+					deltaRayleighScatteringTexture[w][pidx + 1] = rayleigh.y;
+					deltaRayleighScatteringTexture[w][pidx + 2] = rayleigh.z;
 
-					deltaMieTexture[w][pidx] = mie.x;
-					deltaMieTexture[w][pidx + 1] = mie.y;
-					deltaMieTexture[w][pidx + 2] = mie.z;
+					deltaMieScatteringTexture[w][pidx] = mie.x;
+					deltaMieScatteringTexture[w][pidx + 1] = mie.y;
+					deltaMieScatteringTexture[w][pidx + 2] = mie.z;
 
 					s32 pidx2 = (v * k_scatteringTextureWidth + u) * 4;
 					scatteringTexture[w][pidx2] = rayleigh.x;
 					scatteringTexture[w][pidx2 + 1] = rayleigh.y;
 					scatteringTexture[w][pidx2 + 2] = rayleigh.z;
-					scatteringTexture[w][pidx2 + 3] = rayleigh.x;
+					scatteringTexture[w][pidx2 + 3] = mie.x;
 				}
 			}
-			c8 name[128];
-			sprintf(name, "ss_rayleigh_%d.hdr", w);
-			stbi_write_hdr(name, k_scatteringTextureWidth, k_scatteringTextureHeight, 3, deltaRayleighTexture[w]);
-			sprintf(name, "ss_mie_%d.hdr", w);
-			stbi_write_hdr(name, k_scatteringTextureWidth, k_scatteringTextureHeight, 3, deltaMieTexture[w]);
-			sprintf(name, "ss_scattering_%d.hdr", w);
-			stbi_write_hdr(name, k_scatteringTextureWidth, k_scatteringTextureHeight, 4, scatteringTexture[w]);
 			CLOVER_DEBUG("#%d: done", w);
 		}
+		WriteCacheTex3D("delta_rayleigh_scattering.dat", deltaRayleighScatteringTexture,
+				k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+		WriteCacheTex3D("delta_mie_scattering.dat", deltaMieScatteringTexture,
+				k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+		WriteCacheTex3D("scattering.dat", scatteringTexture,
+				k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 4);
 	}
 
-	f32** scatteringDesnityTexture =
-		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
-	f32** deltaMultipleScatteringTexture =
-		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
-
-	for (s32 scatteringOrder = 2; scatteringOrder < 4; scatteringOrder++)
+	_DebugWriteHDR3D("deltaRayleighScatteringTexture.hdr", k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3, deltaRayleighScatteringTexture);
+	_DebugWriteHDR3D("deltaMieScatteringTexture.hdr", k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3, deltaMieScatteringTexture);
+	_DebugWriteHDR3D("scatteringTexture.hdr", k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 4, scatteringTexture);
+/*
+	for (s32 w = 0; w < k_scatteringTextureDepth; w++)
 	{
+		c8 name[128];
+		sprintf(name, "delta_rayleigh_scattering_%02d.hdr", w);
+		stbi_write_hdr(name, k_scatteringTextureWidth, k_scatteringTextureHeight, 3, deltaRayleighScatteringTexture[w]);
+		sprintf(name, "delta_mie_scattering_%02d.hdr", w);
+		stbi_write_hdr(name, k_scatteringTextureWidth, k_scatteringTextureHeight, 3, deltaMieScatteringTexture[w]);
+		sprintf(name, "scattering_%02d.hdr", w);
+		stbi_write_hdr(name, k_scatteringTextureWidth, k_scatteringTextureHeight, 4, scatteringTexture[w]);
+	}
+	*/
+
+	f32** deltaScatteringDensityTexture =
+		AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+	f32** deltaMultipleScatteringTexture = deltaRayleighScatteringTexture;
+		//AllocateTexture3D(k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+
+	for (s32 scatteringOrder = 2; scatteringOrder <= 4; scatteringOrder++)
+	{
+		// Compute the scattering density, and store it in
+		// deltaScatteringDensityTexture
+		bool needUpdateCache = false;
+		for (s32 w = 0; w < k_scatteringTextureDepth; w++)
+		{
+			c8 cacheName[256];
+			sprintf(cacheName, "ms_order_%d_delta_scattering_density.dat%02d", scatteringOrder, w);
+			ssize cacheSize = k_scatteringTextureWidth * k_scatteringTextureHeight * 3 * sizeof(f32);
+			voidptr cacheData = LoadCache(cacheName, cacheSize, (voidptr)deltaScatteringDensityTexture[w]);
+
+			if (cacheData == nullptr)
+			{
+				CLOVER_DEBUG("Cache miss: %s", cacheName);
+				needUpdateCache = true;
+				for (s32 v = 0; v < k_scatteringTextureHeight; v++)
+				{
+					for (s32 u = 0; u < k_scatteringTextureWidth; u++)
+					{
+						floral::vec3f fragCoord(((f32)u + 0.5f), ((f32)v + 0.5f), ((f32)w + 0.5f));
+
+						floral::vec3f scatteringDensity = compute_scattering_density_texture(m_Atmosphere,
+								transmittanceTexture, deltaRayleighScatteringTexture, deltaMieScatteringTexture,
+								deltaMultipleScatteringTexture, deltaIrradianceTexture, fragCoord, scatteringOrder);
+
+						s32 pidx = (v * k_scatteringTextureWidth + u) * 3;
+						deltaScatteringDensityTexture[w][pidx] = scatteringDensity.x;
+						deltaScatteringDensityTexture[w][pidx + 1] = scatteringDensity.y;
+						deltaScatteringDensityTexture[w][pidx + 2] = scatteringDensity.z;
+					}
+				}
+			}
+			else
+			{
+				CLOVER_DEBUG("Cache hit: %s", cacheName);
+			}
+
+			CLOVER_DEBUG("Order %d @ #%d: done", scatteringOrder, w);
+/*
+			c8 name[128];
+			sprintf(name, "ms_order_%d_scattering_density_%02d.hdr", scatteringOrder, w);
+			stbi_write_hdr(name, k_scatteringTextureWidth, k_scatteringTextureHeight, 3, deltaScatteringDensityTexture[w]);
+			*/
+		}
+
+		if (needUpdateCache)
+		{
+			c8 cacheName[256];
+			sprintf(cacheName, "ms_order_%d_delta_scattering_density.dat", scatteringOrder);
+			WriteCacheTex3D(cacheName, deltaScatteringDensityTexture, k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3);
+		}
+
+		c8 name[128];
+		sprintf(name, "ms_order_%d_deltaScatteringDensityTexture.hdr", scatteringOrder);
+		_DebugWriteHDR3D(name, k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3, deltaScatteringDensityTexture);
+
+		// Compute the indirect irradiance, store it in deltaIrradianceTexture and
+		// accumulate it in irradianceTexture
+		for (s32 v = 0; v < k_irrandianceTextureHeight; v++)
+		{
+			for (s32 u = 0; u < k_irrandianceTextureWidth; u++)
+			{
+				floral::vec2f fragCoord((f32)u + 0.5f, (f32)v + 0.5f);
+				floral::vec3f deltaIrradiance = compute_indirect_irradiance_texture(m_Atmosphere,
+						deltaRayleighScatteringTexture, deltaMieScatteringTexture, deltaMultipleScatteringTexture,
+						fragCoord, scatteringOrder - 1);
+				floral::vec3f irradiance = deltaIrradiance;
+
+				s32 pidx = (v * k_irrandianceTextureWidth + u) * 3;
+				deltaIrradianceTexture[pidx] = deltaIrradiance.x;
+				deltaIrradianceTexture[pidx + 1] = deltaIrradiance.y;
+				deltaIrradianceTexture[pidx + 2] = deltaIrradiance.z;
+
+				irradianceTexture[pidx] += deltaIrradiance.x;
+				irradianceTexture[pidx + 1] += deltaIrradiance.y;
+				irradianceTexture[pidx + 2] += deltaIrradiance.z;
+			}
+		}
+		sprintf(name, "ms_order_%d_deltaIrradianceTexture.hdr", scatteringOrder);
+		stbi_write_hdr(name, k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3, deltaIrradianceTexture);
+		sprintf(name, "ms_order_%d_irradianceTexture.hdr", scatteringOrder);
+		stbi_write_hdr(name, k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3, irradianceTexture);
+
 		for (s32 w = 0; w < k_scatteringTextureDepth; w++)
 		{
 			for (s32 v = 0; v < k_scatteringTextureHeight; v++)
@@ -1010,10 +1218,36 @@ void Sky::_OnInitialize()
 				for (s32 u = 0; u < k_scatteringTextureWidth; u++)
 				{
 					floral::vec3f fragCoord(((f32)u + 0.5f), ((f32)v + 0.5f), ((f32)w + 0.5f));
+
+					f32 nu = 0.0f;
+					floral::vec3f deltaMultipleScattering = compute_multiple_scattering_texture(m_Atmosphere,
+							transmittanceTexture, deltaScatteringDensityTexture,
+							fragCoord, &nu);
+					floral::vec4f scattering(0.0f, 0.0f, 0.0f, 0.0f);
+					scattering.x = deltaMultipleScattering.x / rayleigh_phase_function(nu);
+					scattering.y = deltaMultipleScattering.y / rayleigh_phase_function(nu);
+					scattering.z = deltaMultipleScattering.z / rayleigh_phase_function(nu);
+
+					s32 pidx = (v * k_scatteringTextureWidth + u) * 3;
+					deltaMultipleScatteringTexture[w][pidx] = deltaMultipleScattering.x;
+					deltaMultipleScatteringTexture[w][pidx + 1] = deltaMultipleScattering.y;
+					deltaMultipleScatteringTexture[w][pidx + 2] = deltaMultipleScattering.z;
+
+					s32 pidx2 = (v * k_scatteringTextureWidth + u) * 4;
+					scatteringTexture[w][pidx2] += scattering.x;
+					scatteringTexture[w][pidx2 + 1] += scattering.y;
+					scatteringTexture[w][pidx2 + 2] += scattering.z;
+					scatteringTexture[w][pidx2 + 3] += scattering.w;
 				}
 			}
+
+			CLOVER_DEBUG("Order %d @ #%d: done", scatteringOrder, w);
 		}
 
+		sprintf(name, "ms_order_%d_deltaRayleighScatteringTexture.hdr", scatteringOrder);
+		_DebugWriteHDR3D(name, k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 3, deltaMultipleScatteringTexture);
+		sprintf(name, "ms_order_%d_scatteringTexture.hdr", scatteringOrder);
+		_DebugWriteHDR3D(name, k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 4, scatteringTexture);
 	}
 }
 
@@ -1036,8 +1270,12 @@ void Sky::_OnRender(const f32 i_deltaMs)
 
 void Sky::_OnCleanUp()
 {
+	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
+
 	g_MemoryManager.destroy_allocator(m_TexDataArenaRegion);
 	g_StreammingAllocator.free(m_DataArena);
+
+	floral::pop_directory(m_FileSystem);
 }
 
 //-------------------------------------------------------------------
@@ -1051,6 +1289,112 @@ f32** Sky::AllocateTexture3D(const s32 i_w, const s32 i_h, const s32 i_d, const 
 		tex[i] = (f32*)m_TexDataArena.allocate(sliceSizeBytes);
 		memset(tex[i], 0, sliceSizeBytes);
 	}
+	return tex;
+}
+
+f32* Sky::AllocateTexture2D(const s32 i_w, const s32 i_h, const s32 i_channel)
+{
+	ssize texSizeBytes = i_w * i_h * i_channel * sizeof(f32);
+	f32* tex = (f32*)m_TexDataArena.allocate(texSizeBytes);
+	memset(tex, 0, texSizeBytes);
+
+	return tex;
+}
+
+void Sky::WriteCacheTex2D(const_cstr i_cacheFileName, f32* i_data, const s32 i_w, const s32 i_h, const s32 i_channel)
+{
+	ssize sizeBytes = i_w * i_h * i_channel * sizeof(f32);
+	WriteCache(i_cacheFileName, i_data, sizeBytes);
+}
+
+void Sky::WriteCacheTex3D(const_cstr i_cacheFileName, f32** i_data, const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel)
+{
+	ssize sizeBytes = i_w * i_h * i_channel * sizeof(f32);
+	for (s32 i = 0; i < i_d; i++)
+	{
+		c8 cacheFileName[256];
+		sprintf(cacheFileName, "%s%02d", i_cacheFileName, i);
+		WriteCache(cacheFileName, i_data[i], sizeBytes);
+	}
+}
+
+void Sky::WriteCache(const_cstr i_cacheFileName, voidptr i_data, const ssize i_size)
+{
+	floral::relative_path oFilePath = floral::build_relative_path(i_cacheFileName);
+	floral::file_info oFile = floral::open_file_write(m_FileSystem, oFilePath);
+	floral::output_file_stream oStream;
+	floral::map_output_file(oFile, &oStream);
+	oStream.write_bytes(i_data, i_size);
+	floral::close_file(oFile);
+}
+
+f32* Sky::LoadCacheTex2D(const_cstr i_cacheFileName, const s32 i_w, const s32 i_h, const s32 i_channel)
+{
+	ssize sizeBytes = i_w * i_h * i_channel * sizeof(f32);
+	return (f32*)LoadCache(i_cacheFileName, sizeBytes);
+}
+
+f32** Sky::LoadCacheTex3D(const_cstr i_cacheFileName, const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel)
+{
+	c8 cacheFileName[256];
+	sprintf(cacheFileName, "%s00", i_cacheFileName);
+
+	// try loading the first slice
+	floral::relative_path iFilePath = floral::build_relative_path(cacheFileName);
+	floral::file_info iFile = floral::open_file_read(m_FileSystem, iFilePath);
+	if (iFile.file_size == 0)
+	{
+		return nullptr;
+	}
+
+	f32** data = (f32**)m_TexDataArena.allocate(i_d * sizeof(f32*));
+	ssize sizeBytes = i_w * i_h * i_channel * sizeof(f32);
+	for (s32 i = 0; i < i_d; i++)
+	{
+		sprintf(cacheFileName, "%s%02d", i_cacheFileName, i);
+		data[i] = (f32*)LoadCache(cacheFileName, sizeBytes);
+	}
+
+	return data;
+}
+
+voidptr Sky::LoadCache(const_cstr i_cacheFileName, const ssize i_size, const voidptr i_buffer /* = nullptr */)
+{
+	floral::relative_path iFilePath = floral::build_relative_path(i_cacheFileName);
+	floral::file_info iFile = floral::open_file_read(m_FileSystem, iFilePath);
+	if (iFile.file_size == 0)
+	{
+		return nullptr;
+	}
+	floral::file_stream iStream;
+	FLORAL_ASSERT(iFile.file_size == i_size);
+	if (i_buffer == nullptr)
+	{
+		iStream.buffer = (p8)m_TexDataArena.allocate(iFile.file_size);
+	}
+	else
+	{
+		iStream.buffer = (p8)i_buffer;
+	}
+	floral::read_all_file(iFile, iStream);
+	floral::close_file(iFile);
+	return (voidptr)iStream.buffer;
+}
+
+void Sky::_DebugWriteHDR3D(const_cstr i_fileName, const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel, f32** i_data)
+{
+	m_DataArena->free_all();
+	const ssize sliceSizeBytes = i_w * i_h * i_channel * sizeof(f32);
+
+	p8 data = (p8)m_DataArena->allocate(i_d * sliceSizeBytes);
+	p8 outData = data;
+	for (s32 i = 0; i < i_d; i++)
+	{
+		memcpy(outData, i_data[i], sliceSizeBytes);
+		outData += sliceSizeBytes;
+	}
+
+	stbi_write_hdr(i_fileName, i_w, i_h * i_d, i_channel, (f32*)data);
 }
 
 //-------------------------------------------------------------------

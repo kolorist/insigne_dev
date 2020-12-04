@@ -64,6 +64,15 @@ public:
 
 private:
 	f32**										AllocateTexture3D(const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel);
+	f32*										AllocateTexture2D(const s32 i_w, const s32 i_h, const s32 i_channel);
+	void										WriteCacheTex2D(const_cstr i_cacheFileName, f32* i_data, const s32 i_w, const s32 i_h, const s32 i_channel);
+	void										WriteCacheTex3D(const_cstr i_cacheFileName, f32** i_data, const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel);
+	void										WriteCache(const_cstr i_cacheFileName, voidptr i_data, const ssize i_size);
+	f32*										LoadCacheTex2D(const_cstr i_cacheFileName, const s32 i_w, const s32 i_h, const s32 i_channel);
+	f32**										LoadCacheTex3D(const_cstr i_cacheFileName, const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel);
+	voidptr										LoadCache(const_cstr i_cacheFileName, const ssize i_size, const voidptr i_buffer = nullptr);
+
+	void										_DebugWriteHDR3D(const_cstr i_fileName, const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel, f32** i_data);
 
 private:
 	Atmosphere									m_Atmosphere;
