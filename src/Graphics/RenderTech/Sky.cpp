@@ -1249,6 +1249,14 @@ void Sky::_OnInitialize()
 		sprintf(name, "ms_order_%d_scatteringTexture.hdr", scatteringOrder);
 		_DebugWriteHDR3D(name, k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 4, scatteringTexture);
 	}
+
+	// now we have to write down
+	// transmittanceTexture - 2d
+	WriteRawTextureHDR2D("transmittance_texture.rtex2d", k_transmittanceTextureWidth, k_transmittanceTextureHeight, 3, transmittanceTexture);
+	// scatteringTexture - 3d
+	WriteRawTextureHDR3D("scattering_texture.rtex3d", k_scatteringTextureWidth, k_scatteringTextureHeight, k_scatteringTextureDepth, 4, scatteringTexture);
+	// irradianceTexture - 2d
+	WriteRawTextureHDR2D("irradiance_texture.rtex2d", k_irrandianceTextureWidth, k_irrandianceTextureHeight, 3, irradianceTexture);
 }
 
 void Sky::_OnUpdate(const f32 i_deltaMs)
@@ -1395,6 +1403,31 @@ void Sky::_DebugWriteHDR3D(const_cstr i_fileName, const s32 i_w, const s32 i_h, 
 	}
 
 	stbi_write_hdr(i_fileName, i_w, i_h * i_d, i_channel, (f32*)data);
+}
+
+void Sky::WriteRawTextureHDR2D(const_cstr i_texFileName, const ssize i_w, const ssize i_h, const s32 i_channel, f32* i_data)
+{
+	floral::relative_path oFilePath = floral::build_relative_path(i_texFileName);
+	floral::file_info oFile = floral::open_file_write(m_FileSystem, oFilePath);
+	floral::output_file_stream oStream;
+	floral::map_output_file(oFile, &oStream);
+	ssize sizeBytes = i_w * i_h * i_channel * sizeof(f32);
+	oStream.write_bytes((voidptr)i_data, sizeBytes);
+	floral::close_file(oFile);
+}
+
+void Sky::WriteRawTextureHDR3D(const_cstr i_texFileName, const ssize i_w, const ssize i_h, const s32 i_d, const s32 i_channel, f32** i_data)
+{
+	floral::relative_path oFilePath = floral::build_relative_path(i_texFileName);
+	floral::file_info oFile = floral::open_file_write(m_FileSystem, oFilePath);
+	floral::output_file_stream oStream;
+	floral::map_output_file(oFile, &oStream);
+	ssize sizeBytes = i_w * i_h * i_channel * sizeof(f32);
+	for (s32 i = 0; i < i_d; i++)
+	{
+		oStream.write_bytes((voidptr)i_data[i], sizeBytes);
+	}
+	floral::close_file(oFile);
 }
 
 //-------------------------------------------------------------------

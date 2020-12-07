@@ -71,6 +71,8 @@ private:
 	f32*										LoadCacheTex2D(const_cstr i_cacheFileName, const s32 i_w, const s32 i_h, const s32 i_channel);
 	f32**										LoadCacheTex3D(const_cstr i_cacheFileName, const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel);
 	voidptr										LoadCache(const_cstr i_cacheFileName, const ssize i_size, const voidptr i_buffer = nullptr);
+	void										WriteRawTextureHDR2D(const_cstr i_texFileName, const ssize i_w, const ssize i_h, const s32 i_channel, f32* i_data);
+	void										WriteRawTextureHDR3D(const_cstr i_texFileName, const ssize i_w, const ssize i_h, const s32 i_d, const s32 i_channel, f32** i_data);
 
 	void										_DebugWriteHDR3D(const_cstr i_fileName, const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel, f32** i_data);
 

@@ -439,7 +439,7 @@ const_cstr _ParseParams(const TokenArray<TMemoryArena>& i_tokenArray, size& io_t
 				{
 					o_material->textureDescriptions[parsedTextures].dimension = TextureDimension::Texture2D;
 				}
-				if (strcmp(expectedDim.strValue, "tex3d") == 0)
+				else if (strcmp(expectedDim.strValue, "tex3d") == 0)
 				{
 					o_material->textureDescriptions[parsedTextures].dimension = TextureDimension::Texture3D;
 				}
