@@ -439,6 +439,10 @@ const_cstr _ParseParams(const TokenArray<TMemoryArena>& i_tokenArray, size& io_t
 				{
 					o_material->textureDescriptions[parsedTextures].dimension = TextureDimension::Texture2D;
 				}
+				if (strcmp(expectedDim.strValue, "tex3d") == 0)
+				{
+					o_material->textureDescriptions[parsedTextures].dimension = TextureDimension::Texture3D;
+				}
 				else if (strcmp(expectedDim.strValue, "texcube") == 0)
 				{
 					o_material->textureDescriptions[parsedTextures].dimension = TextureDimension::TextureCube;
@@ -625,6 +629,10 @@ const_cstr _ParseTexture(const TokenArray<TMemoryArena>& i_tokenArray, size& io_
 			if (strcmp(expectedToken.strValue, "tex2d") == 0)
 			{
 				o_texDescription->dimension = TextureDimension::Texture2D;
+			}
+			else if (strcmp(expectedToken.strValue, "tex3d") == 0)
+			{
+				o_texDescription->dimension = TextureDimension::Texture3D;
 			}
 			else if (strcmp(expectedToken.strValue, "texcube") == 0)
 			{

@@ -53,6 +53,10 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 			shaderDesc.reflection.textures->push_back(
 					insigne::shader_param_t(texDesc.identifier, insigne::param_data_type_e::param_sampler2d));
 			break;
+		case mat_parser::TextureDimension::Texture3D:
+			shaderDesc.reflection.textures->push_back(
+					insigne::shader_param_t(texDesc.identifier, insigne::param_data_type_e::param_sampler3d));
+			break;
 		case mat_parser::TextureDimension::TextureCube:
 			shaderDesc.reflection.textures->push_back(
 					insigne::shader_param_t(texDesc.identifier, insigne::param_data_type_e::param_sampler_cube));
@@ -202,6 +206,7 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, const mat_parser::MaterialD
 			switch (desc.dimension)
 			{
 			case mat_parser::TextureDimension::TextureCube:
+			case mat_parser::TextureDimension::Texture3D:
 			{
 				texDesc.wrap_s = ToInsigneWrap(desc.wrapS);
 				texDesc.wrap_t = ToInsigneWrap(desc.wrapT);
@@ -257,6 +262,10 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, TFileSystem* i_fs, const ma
 		case mat_parser::TextureDimension::Texture2D:
 			shaderDesc.reflection.textures->push_back(
 					insigne::shader_param_t(texDesc.identifier, insigne::param_data_type_e::param_sampler2d));
+			break;
+		case mat_parser::TextureDimension::Texture3D:
+			shaderDesc.reflection.textures->push_back(
+					insigne::shader_param_t(texDesc.identifier, insigne::param_data_type_e::param_sampler3d));
 			break;
 		case mat_parser::TextureDimension::TextureCube:
 			shaderDesc.reflection.textures->push_back(
@@ -409,6 +418,7 @@ const bool CreateMaterial(MaterialShaderPair* o_mat, TFileSystem* i_fs, const ma
 			switch (desc.dimension)
 			{
 			case mat_parser::TextureDimension::TextureCube:
+			case mat_parser::TextureDimension::Texture3D:
 			{
 				texDesc.wrap_s = ToInsigneWrap(desc.wrapS);
 				texDesc.wrap_t = ToInsigneWrap(desc.wrapT);

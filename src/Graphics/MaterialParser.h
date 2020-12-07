@@ -123,6 +123,7 @@ enum class TextureDimension
 {
 	Invalid = 0,
 	Texture2D,
+	Texture3D,
 	TextureCube,
 	Count
 };
