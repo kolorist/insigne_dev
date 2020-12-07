@@ -36,6 +36,8 @@ static const s32 k_scatteringTextureDepth = k_scatteringTextureRSize;
 static const s32 k_irrandianceTextureWidth = 64;
 static const s32 k_irrandianceTextureHeight = 16;
 
+static const f32 k_LengthUnitInMeters = 1000.0f;
+
 //-------------------------------------------------------------------
 
 SkyRuntime::SkyRuntime()
@@ -81,12 +83,11 @@ void SkyRuntime::_OnInitialize()
 	// register surfaces
 	insigne::register_surface_type<geo2d::SurfacePT>();
 
-	const f32 k_size = 0.8f;
 	floral::inplace_array<geo2d::VertexPT, 4> vertices;
-	vertices.push_back({ { -k_size * aspectRatio, k_size }, { 0.0f, 1.0f } });
-	vertices.push_back({ { -k_size * aspectRatio, -k_size }, { 0.0f, 0.0f } });
-	vertices.push_back({ { k_size * aspectRatio, -k_size }, { 1.0f, 0.0f } });
-	vertices.push_back({ { k_size * aspectRatio, k_size }, { 1.0f, 1.0f } });
+	vertices.push_back({ { -1.0f, 1.0f }, { 0.0f, 1.0f } });
+	vertices.push_back({ { -1.0f, -1.0f }, { 0.0f, 0.0f } });
+	vertices.push_back({ { 1.0f, -1.0f }, { 1.0f, 0.0f } });
+	vertices.push_back({ { 1.0f, 1.0f }, { 1.0f, 1.0f } });
 
 	floral::inplace_array<s32, 6> indices;
 	indices.push_back(0);
@@ -112,36 +113,39 @@ void SkyRuntime::_OnInitialize()
 	insigne::helpers::assign_texture(m_MSPair.material, "u_TransmittanceTex", m_TransmittanceTexture);
 	insigne::helpers::assign_texture(m_MSPair.material, "u_ScatteringTex", m_ScatteringTexture);
 	insigne::helpers::assign_texture(m_MSPair.material, "u_IrradianceTex", m_IrradianceTexture);
-#if 0
-	m_TexData = m_TexDataArena.allocate_array<floral::vec3f>(256 * 32 * 32);
-	for (s32 d = 0; d < 32; d++)
-	{
-		for (s32 h = 0; h < 32; h++)
-		{
-			for (s32 w = 0; w < 256; w++)
-			{
-				m_TexData[d * 256 * 32 + h * 256 + w] = floral::vec3f(w, h, d);
-			}
-		}
-	}
 
-	insigne::texture_desc_t texDesc;
-	texDesc.width = 256;
-	texDesc.height = 32;
-	texDesc.depth = 32;
-	texDesc.format = insigne::texture_format_e::hdr_rgb_high;
-	texDesc.min_filter = insigne::filtering_e::linear;
-	texDesc.mag_filter = insigne::filtering_e::linear;
-	texDesc.wrap_s = insigne::wrap_e::clamp_to_edge;
-	texDesc.wrap_t = insigne::wrap_e::clamp_to_edge;
-	texDesc.wrap_r = insigne::wrap_e::clamp_to_edge;
-	texDesc.dimension = insigne::texture_dimension_e::tex_3d;
-	texDesc.has_mipmap = false;
-	texDesc.data = m_TexData;
+	const f32 k_FovY = 50.0f / 180.0f * floral::pi;
+	const f32 k_tanFovY = tanf(k_FovY / 2.0f);
+	m_SceneData.viewFromClip = floral::mat4x4f(
+			floral::vec4f(k_tanFovY * aspectRatio, 0.0f, 0.0f, 0.0f),
+			floral::vec4f(0.0f, k_tanFovY, 0.0f, 0.0f),
+			floral::vec4f(0.0f, 0.0f, 0.0f, -1.0f),
+			floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+    f32 viewDistanceMeters = 9000.0f;
+	f32 viewZenithAngleRad = 1.47f;
+    f32 viewAzimuthAngleRad = -0.1f;
+	f32 cosZ = cosf(viewZenithAngleRad);
+	f32 sinZ = sinf(viewZenithAngleRad);
+	f32 cosA = cosf(viewAzimuthAngleRad);
+	f32 sinA = sinf(viewAzimuthAngleRad);
+	floral::vec3f ux(-sinA, cosA, 0.0f);
+	floral::vec3f uy(-cosZ * cosA, -cosZ * sinA, sinZ);
+	floral::vec3f uz(sinZ * cosA, sinZ * sinZ, cosZ);
+	f32 l = viewDistanceMeters / k_LengthUnitInMeters;
+	m_SceneData.modelFromView = floral::mat4x4f(
+			floral::vec4f(ux.x, uy.x, uz.x, uz.x * l),
+			floral::vec4f(ux.y, uy.y, uz.y, uz.y * l),
+			floral::vec4f(ux.z, uy.z, uz.z, uz.z * l),
+			floral::vec4f(0.0f, 0.0f, 0.0f, 1.0f));
 
-	m_Texture = insigne::create_texture(texDesc);
-	insigne::helpers::assign_texture(m_MSPair[5].material, "u_MainTex", m_Texture);
-#endif
+	insigne::ubdesc_t desc;
+	desc.region_size = floral::next_pow2(size(sizeof(SceneData)));
+	desc.data = &m_SceneData;
+	desc.data_size = sizeof(SceneData);
+	desc.usage = insigne::buffer_usage_e::dynamic_draw;
+	m_SceneUB = insigne::copy_create_ub(desc);
+
+	insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Scene", 0, 0, m_SceneUB);
 }
 
 //-------------------------------------------------------------------
