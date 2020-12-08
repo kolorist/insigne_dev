@@ -1,6 +1,6 @@
 _shader
 	vs	quad.vs
-	fs	sky.fs
+	fs	sky_simplified.fs
 _end_shader
 
 _state
