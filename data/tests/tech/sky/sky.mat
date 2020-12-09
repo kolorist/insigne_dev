@@ -14,7 +14,9 @@ _params
 	_p_tex_holder tex2d u_TransmittanceTex
 	_p_tex_holder tex3d u_ScatteringTex
 	_p_tex_holder tex2d u_IrradianceTex
-	_p_tex_holder tex3d single_mie_scattering_texture
 	
 	_p_ub_holder ub_Scene
+	_p_ub_holder ub_TextureInfo
+	_p_ub_holder ub_Atmosphere
+	_p_ub_holder ub_Configs
 _end_params

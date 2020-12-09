@@ -8,6 +8,7 @@
 #include <insigne/ut_render.h>
 
 #include "Graphics/stb_image_write.h"
+#include "precomputed_sky.h"
 
 #include "InsigneImGui.h"
 
@@ -880,13 +881,32 @@ void Sky::_OnInitialize()
 
 	const f32 k_lengthUnitInMeters = 1000.0f;
 
-	// sky model: spectrum
+	// Values from "Reference Solar Spectral Irradiance: ASTM G-173", ETR column
+	// (see http://rredc.nrel.gov/solar/spectra/am1.5/ASTMG173/ASTMG173.html),
+	// summed and averaged in each bin (e.g. the value for 360nm is the average
+	// of the ASTM G-173 values for all wavelengths between 360 and 370nm).
+	// Values in W.m^-2.
 	const s32 k_lambdaMin = 360; // nanometers
 	const s32 k_lambdaMax = 830; // nanometers
+	const f32 k_solarIrradiance[48] = {
+		1.11776f, 1.14259f, 1.01249f, 1.14716f, 1.72765f, 1.73054f, 1.6887f, 1.61253f,
+		1.91198f, 2.03474f, 2.02042f, 2.02212f, 1.93377f, 1.95809f, 1.91686f, 1.8298f,
+		1.8685f, 1.8931f, 1.85149f, 1.8504f, 1.8341f, 1.8345f, 1.8147f, 1.78158f, 1.7533f,
+		1.6965f, 1.68194f, 1.64654f, 1.6048f, 1.52143f, 1.55622f, 1.5113f, 1.474f, 1.4482f,
+		1.41018f, 1.36775f, 1.34188f, 1.31429f, 1.28303f, 1.26758f, 1.2367f, 1.2082f,
+		1.18737f, 1.14683f, 1.12362f, 1.1058f, 1.07124f, 1.04992
+	};
 	const s32 k_lambdaCount = (k_lambdaMax - k_lambdaMin) / 10 + 1;
 	const f32 k_lambdaR = 680.0f;
 	const f32 k_lambdaG = 550.0f;
 	const f32 k_lambdaB = 440.0f;
+
+	floral::fast_fixed_array<f32, LinearArena> solarIrradiance(m_DataArena);
+	solarIrradiance.reserve(k_lambdaCount);
+	for (s32 l = k_lambdaMin; l <= k_lambdaMax; l += 10)
+	{
+		solarIrradiance.push_back(k_solarIrradiance[(l - k_lambdaMin) / 10]);
+	}
 
 	floral::fast_fixed_array<f32, LinearArena> wavelengths(m_DataArena);
 	wavelengths.reserve(k_lambdaCount);
@@ -930,6 +950,10 @@ void Sky::_OnInitialize()
 	}
 
 	// sky model: absorption
+	// Values from http://www.iup.uni-bremen.de/gruppen/molspec/databases/
+	// referencespectra/o3spectra2011/index.html for 233K, summed and averaged in
+	// each bin (e.g. the value for 360nm is the average of the original values
+	// for all wavelengths between 360 and 370nm). Values in m^2.
 	const f32 k_ozoneCrossSection[48] = {
 		1.18e-27f, 2.182e-28f, 2.818e-28f, 6.636e-28f, 1.527e-27f, 2.763e-27f, 5.52e-27f,
 		8.451e-27f, 1.582e-26f, 2.316e-26f, 3.669e-26f, 4.924e-26f, 7.752e-26f, 9.016e-26f,
@@ -939,7 +963,11 @@ void Sky::_OnInitialize()
 		6.566e-26f, 5.105e-26f, 4.15e-26f, 4.228e-26f, 3.237e-26f, 2.451e-26f, 2.801e-26f,
 		2.534e-26f, 1.624e-26f, 1.465e-26f, 2.078e-26f, 1.383e-26f, 7.105e-27f
 	};
+	// From https://en.wikipedia.org/wiki/Dobson_unit, in molecules.m^-2.
 	const f32 k_dobsonUnit = 2.687e20f;
+	// Maximum number density of ozone molecules, in m^-3 (computed so at to get
+	// 300 Dobson units of ozone - for this we divide 300 DU by the integral of
+	// the ozone density profile defined below, which is equal to 15km).
 	const f32 k_maxOzoneNumberDensity = 300.0f * k_dobsonUnit / 15000.0f;
 	const bool k_useOzone = true;
 	floral::fast_fixed_array<f32, LinearArena> absorptionExtinction(m_DataArena);
@@ -957,11 +985,14 @@ void Sky::_OnInitialize()
 		}
 	}
 
+	const f32 k_maxSunZenithAngle = floral::to_radians(102.0f);
+
 	// model: initialization
 	m_Atmosphere.TopRadius = 6420.0f;
 	m_Atmosphere.BottomRadius = 6360.0f;
-	m_Atmosphere.MuSMin = -0.207912f;
-	m_Atmosphere.SolarIrradiance = floral::vec3f(1.474000f, 1.850400f, 1.911980f); // TODO (compute)
+	m_Atmosphere.MuSMin = cosf(k_maxSunZenithAngle);
+	m_Atmosphere.SolarIrradiance = to_rgb(wavelengths, solarIrradiance,
+			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), 1.0f);
 	m_Atmosphere.SunAngularRadius = 0.004675f;
 
 	m_Atmosphere.RayleighScattering = to_rgb(wavelengths, rayleighScattering,
@@ -973,7 +1004,8 @@ void Sky::_OnInitialize()
 		0.0f / k_lengthUnitInMeters, 1.0f, -1.0f / k_rayleighScaleHeight * k_lengthUnitInMeters, 0.0f * k_lengthUnitInMeters, 0.0f
 	};
 
-	m_Atmosphere.MieScattering = floral::vec3f(0.003996f, 0.003996f, 0.003996f); // TODO (compute)
+	m_Atmosphere.MieScattering = to_rgb(wavelengths, mieScattering,
+			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
 	m_Atmosphere.MieExtinction = to_rgb(wavelengths, mieExtinction,
 			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
 	m_Atmosphere.MieDensity.Layers[0] = DensityProfileLayer {
@@ -986,6 +1018,11 @@ void Sky::_OnInitialize()
 
 	m_Atmosphere.AbsorptionExtinction = to_rgb(wavelengths, absorptionExtinction,
 			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);
+	// AbsorptionDensity == OzoneDensity
+	// Density profile increasing linearly from 0 to 1 between 10 and 25km, and
+	// decreasing linearly from 1 to 0 between 25 and 40km. This is an approximate
+	// profile from http://www.kln.ac.lk/science/Chemistry/Teaching_Resources/
+	// Documents/Introduction%20to%20atmospheric%20chemistry.pdf (page 10).
 	m_Atmosphere.AbsorptionDensity.Layers[0] = DensityProfileLayer {
 		25000.0f/ k_lengthUnitInMeters, 0.0f, 0.0f * k_lengthUnitInMeters, 1.0f / 15000.0f * k_lengthUnitInMeters, -2.0f / 3.0f
 	};
@@ -994,6 +1031,40 @@ void Sky::_OnInitialize()
 	};
 
 	m_Atmosphere.GroundAlbedo = floral::vec3f(0.1f, 0.1f, 0.1f);
+
+	BakedDataInfos bakedDataInfos;
+	bakedDataInfos.transmittanceTextureWidth = k_transmittanceTextureWidth;
+	bakedDataInfos.transmittanceTextureHeight = k_transmittanceTextureHeight;
+	bakedDataInfos.scatteringTextureRSize = k_scatteringTextureRSize;
+	bakedDataInfos.scatteringTextureMuSize = k_scatteringTextureMuSize;
+	bakedDataInfos.scatteringTextureMuSSize = k_scatteringTextureMuSSize;
+	bakedDataInfos.scatteringTextureNuSize = k_scatteringTextureNuSize;
+	bakedDataInfos.scatteringTextureWidth = k_scatteringTextureWidth;
+	bakedDataInfos.scatteringTextureHeight = k_scatteringTextureHeight;
+	bakedDataInfos.scatteringTextureDepth = k_scatteringTextureDepth;
+	bakedDataInfos.irrandianceTextureWidth = k_irrandianceTextureWidth;
+	bakedDataInfos.irrandianceTextureHeight = k_irrandianceTextureHeight;
+
+	SkyFixedConfigs skyFixedConfigs;
+	skyFixedConfigs.solarIrradiance = m_Atmosphere.SolarIrradiance;
+	skyFixedConfigs.rayleighScattering = m_Atmosphere.RayleighScattering;
+	skyFixedConfigs.mieScattering = m_Atmosphere.MieScattering;
+	skyFixedConfigs.sunAngularRadius = m_Atmosphere.SunAngularRadius;
+	skyFixedConfigs.bottomRadius = m_Atmosphere.BottomRadius;
+	skyFixedConfigs.topRadius = m_Atmosphere.TopRadius;
+	skyFixedConfigs.miePhaseFunctionG = m_Atmosphere.MiePhaseFunctionG;
+	skyFixedConfigs.muSMin = m_Atmosphere.MuSMin;
+	skyFixedConfigs.unitLengthInMeters = k_lengthUnitInMeters;
+
+	{
+		floral::relative_path oFilePath = floral::build_relative_path("sky.meta");
+		floral::file_info oFile = floral::open_file_write(m_FileSystem, oFilePath);
+		floral::output_file_stream oStream;
+		floral::map_output_file(oFile, &oStream);
+		oStream.write(bakedDataInfos);
+		oStream.write(skyFixedConfigs);
+		floral::close_file(oFile);
+	}
 
 	// TODO: note texture directions
 	m_TexDataArena.free_all();
