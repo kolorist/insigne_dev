@@ -17,6 +17,8 @@
 *.bin
 *.prb
 *.png
+*.dat
+*.dat*
 imgui.ini
 
 # User-specific files (MonoDevelop/Xamarin Studio)

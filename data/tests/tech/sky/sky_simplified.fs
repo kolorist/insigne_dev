@@ -77,11 +77,13 @@ const vec3 SKY_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(114974.916437,71305.954816,
 const vec3 SUN_SPECTRAL_RADIANCE_TO_LUMINANCE = vec3(98242.786222,69954.398112,66475.012354);
 
 const float kLengthUnitInMeters = 1000.000000;
-const vec3 camera = vec3(8.90958500, -0.893940210, 0.905631602);
+//const vec3 camera = vec3(8.90958500, -0.893940210, 0.905631602);
+const vec3 camera = vec3(8.9543, 0, 0.9056);
 const float exposure = 10.0;
 const vec3 white_point = vec3(1.0, 1.0, 1.0);
 const vec3 earth_center = vec3(0.0, 0.0, -6360.0f);
-const vec3 sun_direction = vec3(cos(2.9) * sin(1.3), sin(2.9) * sin(1.3), cos(1.3));
+//const vec3 sun_direction = vec3(cos(-3.0) * sin(1.564), sin(-3.0) * sin(1.564), cos(1.564)); //1.564, -3.0
+const vec3 sun_direction = vec3(-0.9900, -0.1411, 0.0068);
 const vec2 sun_size = vec2(tan(0.004675), cos(0.004675));
 const float PI = 3.14159265;
 const vec3 kSphereCenter = vec3(0.0, 0.0, 1000.0) / kLengthUnitInMeters;
@@ -246,28 +248,23 @@ vec3 GetSkyRadiance(vec3 camera, vec3 view_ray, vec3 sun_direction, out vec3 tra
 		scattering * RayleighPhaseFunction(nu) +
 		single_mie_scattering * MiePhaseFunction(0.8, nu);
 }
-#if 0
-void main()
+
+vec3 GetSolarRadiance()
 {
-	mediump vec3 mainColor0 = texture(u_ScatteringTex, vec3(v_TexCoord, 0.5f)).rgb;
-	mediump vec3 mainColor1 = texture(u_TransmittanceTex, v_TexCoord).rgb;
-	mediump vec3 mainColor2 = texture(u_IrradianceTex, v_TexCoord).rgb;
-	//mainColor = pow(mainColor, vec3(0.454545f));
-	o_Color = vec4(mainColor0 + mainColor1 + mainColor2, 1.0f);
+  return ATMOSPHERE.solar_irradiance / (PI * ATMOSPHERE.sun_angular_radius * ATMOSPHERE.sun_angular_radius);
 }
-#else
+
 void main()
 {
 	vec3 view_direction = normalize(view_ray);
 	vec3 transmittance;
 	vec3 radiance = GetSkyRadiance(camera - earth_center, view_direction, sun_direction, transmittance);
 
-	//if (dot(view_direction, sun_direction) > sun_size.y)
-	//{
+	if (dot(view_direction, sun_direction) > sun_size.y)
+	{
 		//radiance = radiance + transmittance * GetSolarRadiance();
-	//}
+	}
 
 	o_Color.rgb = pow(vec3(1.0) - exp(-radiance / white_point * exposure), vec3(1.0 / 2.2));
 	o_Color.a = 1.0;
 }
-#endif

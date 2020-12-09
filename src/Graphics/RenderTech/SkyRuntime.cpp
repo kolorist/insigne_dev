@@ -120,23 +120,23 @@ void SkyRuntime::_OnInitialize()
 			floral::vec4f(k_tanFovY * aspectRatio, 0.0f, 0.0f, 0.0f),
 			floral::vec4f(0.0f, k_tanFovY, 0.0f, 0.0f),
 			floral::vec4f(0.0f, 0.0f, 0.0f, -1.0f),
-			floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
+			floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f)).get_transpose();
     f32 viewDistanceMeters = 9000.0f;
 	f32 viewZenithAngleRad = 1.47f;
-    f32 viewAzimuthAngleRad = -0.1f;
+    f32 viewAzimuthAngleRad = 0.0f;
 	f32 cosZ = cosf(viewZenithAngleRad);
 	f32 sinZ = sinf(viewZenithAngleRad);
 	f32 cosA = cosf(viewAzimuthAngleRad);
 	f32 sinA = sinf(viewAzimuthAngleRad);
 	floral::vec3f ux(-sinA, cosA, 0.0f);
 	floral::vec3f uy(-cosZ * cosA, -cosZ * sinA, sinZ);
-	floral::vec3f uz(sinZ * cosA, sinZ * sinZ, cosZ);
+	floral::vec3f uz(sinZ * cosA, sinZ * sinA, cosZ);
 	f32 l = viewDistanceMeters / k_LengthUnitInMeters;
 	m_SceneData.modelFromView = floral::mat4x4f(
 			floral::vec4f(ux.x, uy.x, uz.x, uz.x * l),
 			floral::vec4f(ux.y, uy.y, uz.y, uz.y * l),
 			floral::vec4f(ux.z, uy.z, uz.z, uz.z * l),
-			floral::vec4f(0.0f, 0.0f, 0.0f, 1.0f));
+			floral::vec4f(0.0f, 0.0f, 0.0f, 1.0f)).get_transpose();
 
 	insigne::ubdesc_t desc;
 	desc.region_size = floral::next_pow2(size(sizeof(SceneData)));
