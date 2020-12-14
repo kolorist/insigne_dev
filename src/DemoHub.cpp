@@ -29,6 +29,7 @@
 #include "Graphics/Performance/CubeMap.h"
 #include "Graphics/Performance/SIMD.h"
 #include "Graphics/Performance/LuaScripting.h"
+#include "Graphics/Performance/Matrices.h"
 
 // tech demo
 #include "Graphics/RenderTech/FrameBuffer.h"
@@ -165,6 +166,7 @@ void DemoHub::Initialize()
 	_EmplacePerformanceSuite<perf::CubeMapTextures>();
 	_EmplacePerformanceSuite<perf::SIMD>();
 	_EmplacePerformanceSuite<perf::LuaScripting>();
+	_EmplacePerformanceSuite<perf::Matrices>();
 
 	_EmplaceRenderTechSuite<tech::PBRHelmet>();
 	_EmplaceRenderTechSuite<tech::HDRBloom>();
@@ -176,7 +178,7 @@ void DemoHub::Initialize()
 	_EmplaceToolSuite<tools::Noise>();
 #endif
 
-	//_EmplaceMiscSuite<misc::CameraWork>();
+	_EmplaceMiscSuite<misc::CameraWork>();
 	_EmplaceMiscSuite<misc::GameOfLife>();
 
 	_EmplaceImGuiSuite<gui::ImGuiDemoWindow>();

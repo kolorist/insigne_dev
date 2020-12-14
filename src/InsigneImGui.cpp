@@ -426,7 +426,7 @@ bool DebugMat4fColumnOrder(const char* i_label, floral::mat4x4f* i_mat)
 	{
 		ImGui::BeginTooltip();
 		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-		ImGui::Text("Here, matrix of size 4x4 is displayed in column by column order. Memory storage order is left-to-right and top-to-bottom");
+		ImGui::Text("Here, matrix of size 4x4 is displayed in column by column order.\nm0  m1  m2  m3\nm4  m5  m6  m7\nm8  m9  m10 m11\nm12 m13 m14 m15");
 		ImGui::PopTextWrapPos();
 		ImGui::EndTooltip();
 	}
@@ -487,6 +487,7 @@ bool DebugMat3fRowOrder(const char* i_label, floral::mat3x3f* i_mat)
 
 bool DebugMat4fRowOrder(const char* i_label, floral::mat4x4f* i_mat)
 {
+	ImGui::BeginGroup();
 	ImGui::Text("%s", i_label);
 
 	ImGuiStyle& style = ImGui::GetStyle();
@@ -502,7 +503,7 @@ bool DebugMat4fRowOrder(const char* i_label, floral::mat4x4f* i_mat)
 	{
 		ImGui::BeginTooltip();
 		ImGui::PushTextWrapPos(ImGui::GetFontSize() * 35.0f);
-		ImGui::Text("Here, matrix of size 4x4 is displayed in row by row order. Memory storage order is top-to-bottom and left-to-right");
+		ImGui::Text("Here, matrix of size 4x4 is displayed in row by row order.\nm0  m4  m8  m12\nm1  m5  m9  m13\nm2  m6  m10 m14\nm3  m7  m11 m15");
 		ImGui::PopTextWrapPos();
 		ImGui::EndTooltip();
 	}
@@ -529,6 +530,7 @@ bool DebugMat4fRowOrder(const char* i_label, floral::mat4x4f* i_mat)
 	}
 
 	ImGui::PopID();
+	ImGui::EndGroup();
 	return false;
 }
 

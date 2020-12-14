@@ -8,12 +8,10 @@ layout(std140) uniform ub_Scene
 	highp mat4 view_from_clip;
 };
 
-out mediump vec2 v_TexCoord;
 out highp vec3 view_ray;
 
 void main()
 {
-	v_TexCoord = l_TexCoord;
 	view_ray = (model_from_view * vec4((view_from_clip * vec4(l_Position, 0.0f, 1.0f)).xyz, 0.0)).xyz;
 	gl_Position = vec4(l_Position, 0.0f, 1.0f);
 }

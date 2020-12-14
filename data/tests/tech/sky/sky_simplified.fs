@@ -42,9 +42,9 @@ layout(std140) uniform ub_Atmosphere
 
 layout(std140) uniform ub_Configs
 {
-	highp vec3 configs_camera;
+	mediump vec3 configs_camera;
 	mediump vec3 configs_whitePoint;
-	highp vec3 configs_earthCenter;
+	mediump vec3 configs_earthCenter;
 	mediump vec3 configs_sunDirection;
 	mediump vec2 configs_sunSize;
 	mediump float configs_exposure;
@@ -55,7 +55,6 @@ uniform mediump sampler2D u_TransmittanceTex;
 uniform mediump sampler2D u_IrradianceTex;
 uniform mediump sampler3D u_ScatteringTex;
 
-in mediump vec2 v_TexCoord;
 in highp vec3 view_ray;
 
 float SafeSqrt(float a)
@@ -97,7 +96,7 @@ vec2 GetTransmittanceTextureUvFromRMu(float r, float mu)
 			GetTextureCoordFromUnitRange(x_r, textureInfo_transmittanceTextureHeight));
 }
 
-vec3 GetTransmittanceToTopAtmosphereBoundary(float r, float mu)
+mediump vec3 GetTransmittanceToTopAtmosphereBoundary(float r, float mu)
 {
 	vec2 uv = GetTransmittanceTextureUvFromRMu(r, mu);
 	return texture(u_TransmittanceTex, uv).rgb;
@@ -140,7 +139,7 @@ vec4 GetScatteringTextureUvwzFromRMuMuSNu(float r, float mu, float mu_s, float n
 	return vec4(u_nu, u_mu_s, u_mu, u_r);
 }
 
-vec3 GetExtrapolatedSingleMieScattering(vec4 scattering)
+mediump vec3 GetExtrapolatedSingleMieScattering(mediump vec4 scattering)
 {
 	if (scattering.r <= 0.0)
 	{
@@ -151,8 +150,8 @@ vec3 GetExtrapolatedSingleMieScattering(vec4 scattering)
 		(atmosphere_mieScattering / atmosphere_rayleighScattering);
 }
 
-vec3 GetCombinedScattering(float r, float mu, float mu_s, float nu, bool ray_r_mu_intersects_ground,
-		out vec3 single_mie_scattering)
+mediump vec3 GetCombinedScattering(float r, float mu, float mu_s, float nu, bool ray_r_mu_intersects_ground,
+		out mediump vec3 single_mie_scattering)
 {
 	vec4 uvwz = GetScatteringTextureUvwzFromRMuMuSNu(r, mu, mu_s, nu, ray_r_mu_intersects_ground);
 	float tex_coord_x = uvwz.x * float(textureInfo_scatteringTextureNuSize - 1);
@@ -161,25 +160,25 @@ vec3 GetCombinedScattering(float r, float mu, float mu_s, float nu, bool ray_r_m
 	vec3 uvw0 = vec3((tex_x + uvwz.y) / float(textureInfo_scatteringTextureNuSize), uvwz.z, uvwz.w);
 	vec3 uvw1 = vec3((tex_x + 1.0 + uvwz.y) / float(textureInfo_scatteringTextureNuSize), uvwz.z, uvwz.w);
 
-	vec4 combined_scattering = texture(u_ScatteringTex, uvw0) * (1.0 - lerp) + texture(u_ScatteringTex, uvw1) * lerp;
-	vec3 scattering = combined_scattering.rgb;
+	mediump vec4 combined_scattering = texture(u_ScatteringTex, uvw0) * (1.0 - lerp) + texture(u_ScatteringTex, uvw1) * lerp;
+	mediump vec3 scattering = combined_scattering.rgb;
 	single_mie_scattering = GetExtrapolatedSingleMieScattering(combined_scattering);
 	return scattering;
 }
 
-float RayleighPhaseFunction(float nu)
+mediump float RayleighPhaseFunction(mediump float nu)
 {
-	float k = 3.0 / (16.0 * PI);
+	mediump float k = 3.0 / (16.0 * PI);
 	return k * (1.0 + nu * nu);
 }
 
-float MiePhaseFunction(float g, float nu)
+mediump float MiePhaseFunction(mediump float g, mediump float nu)
 {
-	float k = 3.0 / (8.0 * PI) * (1.0 - g * g) / (2.0 + g * g);
+	mediump float k = 3.0 / (8.0 * PI) * (1.0 - g * g) / (2.0 + g * g);
 	return k * (1.0 + nu * nu) / pow(1.0 + g * g - 2.0 * g * nu, 1.5);
 }
 
-vec3 GetSkyRadiance(vec3 camera, vec3 view_ray, vec3 sun_direction, out vec3 transmittance)
+vec3 GetSkyRadiance(vec3 camera, vec3 view_ray, vec3 sun_direction, out mediump vec3 transmittance)
 {
 	float r = length(camera);
 	float rmu = dot(camera, view_ray);
@@ -199,28 +198,29 @@ vec3 GetSkyRadiance(vec3 camera, vec3 view_ray, vec3 sun_direction, out vec3 tra
 
 	float mu = rmu / r;
 	float mu_s = dot(camera, sun_direction) / r;
-	float nu = dot(view_ray, sun_direction);
+	mediump float nu = dot(view_ray, sun_direction);
 	bool ray_r_mu_intersects_ground = RayIntersectsGround(r, mu);
 
 	transmittance = ray_r_mu_intersects_ground ? vec3(0.0) : GetTransmittanceToTopAtmosphereBoundary(r, mu);
 
-	vec3 single_mie_scattering;
-	vec3 scattering;
+	mediump vec3 single_mie_scattering;
+	mediump vec3 scattering;
 
 	scattering = GetCombinedScattering(r, mu, mu_s, nu, ray_r_mu_intersects_ground, single_mie_scattering);
 	return scattering * RayleighPhaseFunction(nu) +
 		single_mie_scattering * MiePhaseFunction(atmosphere_miePhaseFunctionG, nu);
 }
 
-vec3 GetSolarRadiance()
+mediump vec3 GetSolarRadiance()
 {
 	return atmosphere_solarIrradiance / (PI * atmosphere_sunAngularRadius * atmosphere_sunAngularRadius);
 }
 
 void main()
 {
-	vec3 view_direction = normalize(view_ray);
-	vec3 transmittance;
+	mediump vec3 view_direction = normalize(view_ray);
+
+	mediump vec3 transmittance;
 	vec3 radiance = GetSkyRadiance(configs_camera - configs_earthCenter, view_direction, configs_sunDirection, transmittance);
 
 	if (dot(view_direction, configs_sunDirection) > configs_sunSize.y)

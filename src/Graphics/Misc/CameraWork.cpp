@@ -124,8 +124,16 @@ void CameraWork::_OnUpdate(const f32 i_deltaMs)
 	}
 
 	ImGui::Text("calculated matrices");
-	DebugMat4fRowOrder("view", &m_ViewMatrix);
-	DebugMat4fRowOrder("projection", &m_ProjectionMatrix);
+	f32 fullWidth = ImGui::CalcItemWidth();
+	ImGui::PushItemWidth(fullWidth / 2.0f);
+	DebugMat4fRowOrder("view", &m_ViewMatrix); ImGui::SameLine();
+	floral::mat4x4f iv = m_ViewMatrix.get_inverse();
+	DebugMat4fRowOrder("inversed view", &iv);
+
+	DebugMat4fRowOrder("projection", &m_ProjectionMatrix); ImGui::SameLine();
+	floral::mat4x4f ip = m_ProjectionMatrix.get_inverse();
+	DebugMat4fRowOrder("inversed projection", &ip);
+	ImGui::PopItemWidth();
 
 	ImGui::End();
 

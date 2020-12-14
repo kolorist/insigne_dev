@@ -120,7 +120,7 @@ void SkyRuntime::_OnInitialize()
 			floral::vec4f(0.0f, k_tanFovY, 0.0f, 0.0f),
 			floral::vec4f(0.0f, 0.0f, 0.0f, -1.0f),
 			floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f)).get_transpose();
-	m_ViewDistance = 9000.0f;
+	m_ViewDistance = 150.0f;
 	m_ViewZenith = 1.47f;
 	m_ViewAzimuth = 0.0f;
 	f32 cosZ = cosf(m_ViewZenith);
@@ -131,10 +131,11 @@ void SkyRuntime::_OnInitialize()
 	floral::vec3f uy(-cosZ * cosA, -cosZ * sinA, sinZ);
 	floral::vec3f uz(sinZ * cosA, sinZ * sinA, cosZ);
 	f32 l = m_ViewDistance / m_SkyFixedConfigs.unitLengthInMeters;
+	// TODO: is this the inverse of the look-at matrix (?)
 	m_SceneData.modelFromView = floral::mat4x4f(
-			floral::vec4f(ux.x, uy.x, uz.x, uz.x * l),
-			floral::vec4f(ux.y, uy.y, uz.y, uz.y * l),
-			floral::vec4f(ux.z, uy.z, uz.z, uz.z * l),
+			floral::vec4f(ux.x, uy.x, uz.x, /*uz.x * l*/0.0f),
+			floral::vec4f(ux.y, uy.y, uz.y, /*uz.y * l*/0.0f),
+			floral::vec4f(ux.z, uy.z, uz.z, /*uz.z * l*/l),
 			floral::vec4f(0.0f, 0.0f, 0.0f, 1.0f)).get_transpose();
 	{
 		insigne::ubdesc_t desc;
@@ -148,7 +149,8 @@ void SkyRuntime::_OnInitialize()
 
 	m_SunZenith = 1.564f;
 	m_SunAzimuth = -3.0f;
-	m_ConfigsData.camera = floral::vec4f(uz.x * l, uz.y * l, uz.z * l, 1.0f);
+	//m_ConfigsData.camera = floral::vec4f(uz.x * l, uz.y * l, uz.z * l, 1.0f);
+	m_ConfigsData.camera = floral::vec4f(0.0f, 0.0f, l, 1.0f);
 	m_ConfigsData.whitePoint = floral::vec4f(1.0f);
 	m_ConfigsData.earthCenter = floral::vec4f(0.0f, 0.0f, -m_SkyFixedConfigs.bottomRadius, 1.0f);
 	m_ConfigsData.sunDirection = floral::vec4f(
@@ -225,7 +227,7 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 	{
 		viewConfigChanged = true;
 	}
-	if (ImGui::SliderFloat("View Distance", &m_ViewDistance, 0.0f, 60000000.0f, "%.2f"))
+	if (ImGui::SliderFloat("View Distance (m)", &m_ViewDistance, 0.0f, 1000.0f, "%.2f"))
 	{
 		viewConfigChanged = true;
 	}
@@ -237,6 +239,8 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 	{
 		sunConfigChanged = true;
 	}
+	DebugMat4fRowOrder("ModelFromView", &m_SceneData.modelFromView);
+	DebugMat4fRowOrder("ViewFromClip", &m_SceneData.viewFromClip);
 	ImGui::End();
 
 	if (viewConfigChanged)
@@ -250,12 +254,12 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 		floral::vec3f uz(sinZ * cosA, sinZ * sinA, cosZ);
 		f32 l = m_ViewDistance / m_SkyFixedConfigs.unitLengthInMeters;
 		m_SceneData.modelFromView = floral::mat4x4f(
-				floral::vec4f(ux.x, uy.x, uz.x, uz.x * l),
-				floral::vec4f(ux.y, uy.y, uz.y, uz.y * l),
-				floral::vec4f(ux.z, uy.z, uz.z, uz.z * l),
+				floral::vec4f(ux.x, uy.x, uz.x, /*uz.x * l*/0.0f),
+				floral::vec4f(ux.y, uy.y, uz.y, /*uz.y * l*/0.0f),
+				floral::vec4f(ux.z, uy.z, uz.z, /*uz.z * l*/l),
 				floral::vec4f(0.0f, 0.0f, 0.0f, 1.0f)).get_transpose();
 		insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
-		m_ConfigsData.camera = floral::vec4f(uz.x * l, uz.y * l, uz.z * l, 1.0f);
+		//m_ConfigsData.camera = floral::vec4f(uz.x * l, uz.y * l, uz.z * l, 1.0f);
 	}
 
 	if (sunConfigChanged || viewConfigChanged)
