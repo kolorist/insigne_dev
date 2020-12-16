@@ -52,6 +52,7 @@
 // misc demo
 #include "Graphics/Misc/CameraWork.h"
 #include "Graphics/Misc/GameOfLife.h"
+#include "Graphics/Misc/Font.h"
 
 // imgui demo
 #include "Graphics/ImGui/ImGuiDemoWindow.h"
@@ -149,7 +150,7 @@ void DemoHub::Initialize()
 	m_ImGuiSuite.reserve(8, &g_PersistanceAllocator);
 
 	InitializeImGui(m_FileSystem);
-	debugdraw::Initialize();
+	debugdraw::Initialize(m_FileSystem);
 
 	//_EmplacePlaygroundSuite<perf::Vault>();
 	_EmplacePlaygroundSuite<perf::ShaderVault>();
@@ -180,6 +181,7 @@ void DemoHub::Initialize()
 
 	_EmplaceMiscSuite<misc::CameraWork>();
 	_EmplaceMiscSuite<misc::GameOfLife>();
+	_EmplaceMiscSuite<misc::Font>();
 
 	_EmplaceImGuiSuite<gui::ImGuiDemoWindow>();
 	_EmplaceImGuiSuite<gui::ValuePlotter>();

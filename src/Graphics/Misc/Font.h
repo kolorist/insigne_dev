@@ -9,21 +9,24 @@
 
 namespace stone
 {
-namespace perf
+namespace misc
 {
 // ------------------------------------------------------------------
 
-class Empty : public TestSuite
+class Font : public TestSuite
 {
 public:
-	static constexpr const_cstr k_name			= "empty";
+	static constexpr const_cstr k_name			= "font";
 
 public:
-	Empty();
-	~Empty();
+	Font();
+	~Font();
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;
+
+private:
+	LinearArena*								m_MemoryArena;
 
 private:
 	void										_OnInitialize() override;

@@ -1,11 +1,13 @@
 #pragma once
 
 #include <floral.h>
+#include <floral/io/filesystem.h>
 
 #include <insigne/commons.h>
 
 #include "Memory/MemorySystem.h"
 #include "Graphics/SurfaceDefinitions.h"
+#include "Graphics/stb_truetype.h"
 
 namespace stone
 {
@@ -14,6 +16,8 @@ class DebugDrawer
 {
 typedef floral::fixed_array<VertexPC, LinearArena> VerticesArray;
 typedef floral::fixed_array<u32, LinearArena> IndicesArray;
+
+typedef floral::fixed_array<DebugTextVertex, LinearArena> TextVerticesArray;
 
 public:
 	DebugDrawer();
@@ -31,8 +35,10 @@ public:
 
 	void										DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral::vec4f& i_color);
 	void										DrawSolidBox3D(const floral::vec3f& i_minCorner, const floral::vec3f& i_maxCorner, const floral::vec4f& i_color);
+
+	void										DrawText3D(const_cstr i_str, const floral::vec3f& i_position);
 	// -------------------------------------
-	void										Initialize();
+	void										Initialize(floral::filesystem<FreelistArena>* i_fs);
 	void										CleanUp();
 
 	void										Render(const floral::mat4x4f& i_wvp);
@@ -46,6 +52,9 @@ private:
 	IndicesArray								m_DebugIndices[2];
 	VerticesArray								m_DebugSurfaceVertices[2];
 	IndicesArray								m_DebugSurfaceIndices[2];
+	TextVerticesArray							m_DebugTextVertices[2];
+	IndicesArray								m_DebugTextIndices[2];
+	stbtt_bakedchar*							m_CharacterData;
 
 	struct MyData {
 		floral::mat4x4f							WVP;
@@ -56,9 +65,14 @@ private:
 	insigne::ib_handle_t						m_IB;
 	insigne::vb_handle_t						m_SurfaceVB;
 	insigne::ib_handle_t						m_SurfaceIB;
+	insigne::vb_handle_t						m_TextVB;
+	insigne::ib_handle_t						m_TextIB;
 	insigne::ub_handle_t						m_UB;
 	insigne::shader_handle_t					m_Shader;
 	insigne::material_desc_t					m_Material;
+	insigne::texture_handle_t					m_FontAtlas;
+	insigne::shader_handle_t					m_TextShader;
+	insigne::material_desc_t					m_TextMaterial;
 
 	LinearArena*								m_MemoryArena;
 
@@ -73,7 +87,7 @@ private:
 //----------------------------------------------
 namespace debugdraw
 {
-void											Initialize();
+void											Initialize(floral::filesystem<FreelistArena>* i_fs);
 void											CleanUp();
 
 void											BeginFrame();
@@ -86,6 +100,8 @@ void											DrawAABB3D(const floral::aabb3f& i_aabb, const floral::vec4f& i_c
 
 void											DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral::vec4f& i_color);
 void											DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const size i_colorIdx);
+
+void											DrawText3D(const_cstr i_str, const floral::vec3f& i_position);
 }
 
 }

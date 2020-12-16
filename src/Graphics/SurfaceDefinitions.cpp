@@ -34,6 +34,7 @@ ssize SurfaceP::index = -1;
 ssize Surface3DPT::index = -1;
 ssize SurfacePC::index = -1;
 ssize SurfacePT::index = -1;
+ssize DebugTextSurface::index = -1;
 ssize DebugLine::index = -1;
 ssize DebugSurface::index = -1;
 ssize SurfacePN::index = -1;

@@ -2,6 +2,7 @@
 
 #include <calyx/context.h>
 
+#include <floral/comgeo/shapegen.h>
 #include <floral/containers/array.h>
 
 #include <clover/Logger.h>
@@ -64,6 +65,7 @@ void SkyRuntime::_OnInitialize()
 
 	// register surfaces
 	insigne::register_surface_type<geo2d::SurfacePT>();
+	insigne::register_surface_type<geo3d::SurfacePNC>();
 
 	floral::inplace_array<geo2d::VertexPT, 4> vertices;
 	vertices.push_back({ { -1.0f, 1.0f }, { 0.0f, 1.0f } });
@@ -81,6 +83,25 @@ void SkyRuntime::_OnInitialize()
 
 	m_Quad = helpers::CreateSurfaceGPU(&vertices[0], 4, sizeof(geo2d::VertexPT),
 			&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
+
+	floral::fast_fixed_array<geo3d::VertexPNC, FreelistArena> sphereVertices;
+	floral::fast_fixed_array<s32, FreelistArena> sphereIndices;
+
+	m_MemoryArena->free_all();
+	const size numIndices = 1 << 18;
+	sphereVertices.reserve(numIndices, m_MemoryArena);
+	sphereIndices.reserve(numIndices, m_MemoryArena);
+	sphereVertices.resize(8192);
+	sphereIndices.resize(8192);
+	floral::reset_generation_transforms_stack();
+	floral::geo_generate_result_t genResult = floral::generate_unit_icosphere_3d(
+			3, 0, sizeof(geo3d::VertexPNC),
+			floral::geo_vertex_format_e::position | floral::geo_vertex_format_e::normal,
+			&sphereVertices[0], &sphereIndices[0]);
+	sphereVertices.resize(genResult.vertices_generated);
+	sphereIndices.resize(genResult.indices_generated);
+	m_Surface = helpers::CreateSurfaceGPU(&sphereVertices[0], genResult.vertices_generated, sizeof(geo3d::VertexPNC),
+			&sphereIndices[0], genResult.indices_generated, insigne::buffer_usage_e::static_draw, true);
 
 	BakedDataInfos bakedDataInfos;
 	{
@@ -100,6 +121,11 @@ void SkyRuntime::_OnInitialize()
 	floral::relative_path matPath = floral::build_relative_path("sky.mat");
 	mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
 	bool createResult = mat_loader::CreateMaterial(&m_MSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+
+	matPath = floral::build_relative_path("sphere.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_SphereMSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(createResult == true);
 
 	m_TransmittanceTexture = LoadRawHDRTexture2D("transmittance_texture.rtex2d",
@@ -292,6 +318,7 @@ void SkyRuntime::_OnRender(const f32 i_deltaMs)
 void SkyRuntime::_OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
+	insigne::unregister_surface_type<geo3d::SurfacePNC>();
 	insigne::unregister_surface_type<geo2d::SurfacePT>();
 
 	g_MemoryManager.destroy_allocator(m_TexDataArenaRegion);

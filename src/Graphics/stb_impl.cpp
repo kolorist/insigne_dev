@@ -44,3 +44,6 @@ void free(voidptr i_data)
 
 #define STB_DXT_IMPLEMENTATION
 #include "stb_dxt.h"
+
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"

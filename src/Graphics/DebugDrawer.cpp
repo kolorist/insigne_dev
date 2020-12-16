@@ -45,6 +45,42 @@ void main()
 }
 )";
 
+static const_cstr s_TextVS = R"(#version 300 es
+layout (location = 0) in highp vec3 l_Position_L;
+layout (location = 1) in mediump vec4 l_Corner;
+layout (location = 2) in mediump vec4 l_Color;
+
+layout(std140) uniform ub_XForm
+{
+	highp mat4 iu_WVP;
+};
+
+out mediump vec2 v_TexCoord;
+out mediump vec4 v_Color;
+
+void main() {
+	v_Color = l_Color;
+	v_TexCoord = l_Corner.zw;
+	highp vec4 pos = iu_WVP * vec4(l_Position_L, 1.0f);
+	gl_Position = pos / pos.w;
+	gl_Position.xy += l_Corner.xy;
+}
+)";
+
+static const_cstr s_TextFS = R"(#version 300 es
+layout (location = 0) out mediump vec4 o_Color;
+
+in mediump vec2 v_TexCoord;
+in mediump vec4 v_Color;
+
+uniform mediump sampler2D u_Tex;
+
+void main()
+{
+	o_Color = mix(vec4(0.3f, 0.4f, 0.5f, 1.0f), v_Color, texture(u_Tex, v_TexCoord).r);
+}
+)";
+
 DebugDrawer::DebugDrawer()
 	: m_CurrentBufferIdx(0)
 {
@@ -245,9 +281,63 @@ void DebugDrawer::DrawSolidBox3D(const floral::vec3f& i_minCorner, const floral:
 	m_DebugSurfaceIndices[m_CurrentBufferIdx].push_back(currentIdx + 3);
 }
 
+void DebugDrawer::DrawText3D(const_cstr i_str, const floral::vec3f& i_position)
+{
+	s32 len = strlen(i_str);
+	f32 strLenFrag = 0;
+	for (s32 i = 0; i < len; i++)
+	{
+		u8 ascii = i_str[i];
+		const stbtt_bakedchar& charInfo = m_CharacterData[ascii - 32];
+		strLenFrag += charInfo.xadvance;
+	}
+
+	// TODO: remove hardcode
+	floral::vec2f px = floral::vec2f(2.0f, 2.0f) / floral::vec2f(1280.0f, 720.0f);
+	floral::vec2f dt = floral::vec2f(1.0f, 1.0f) / 1024.0f;
+	floral::vec2f leftOrg(-strLenFrag * 0.5f * px.x, 0.0f);
+	floral::vec4f i_color = floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f);
+
+	for (s32 i = 0; i < len; i++)
+	{
+		u8 ascii = i_str[i];
+		const stbtt_bakedchar& charInfo = m_CharacterData[ascii - 32];
+
+		if (ascii != ' ')
+		{
+			const floral::vec2f s0(charInfo.x0 * dt.x, charInfo.y1 * dt.y);
+			const floral::vec2f s1(charInfo.x1 * dt.x, charInfo.y0 * dt.y);
+
+			DebugTextVertex v[4];
+			floral::vec2f dim = floral::vec2f(charInfo.x1 - charInfo.x0, charInfo.y1 - charInfo.y0) * px;
+			floral::vec2f pos = leftOrg + floral::vec2f(charInfo.xoff, -charInfo.yoff * 0.5f) * px;
+			v[0] = DebugTextVertex { i_position, floral::vec4f(pos.x, pos.y - dim.y * 0.5f, s0.x, s0.y), i_color };
+			v[1] = DebugTextVertex { i_position, floral::vec4f(pos.x + dim.x, pos.y - dim.y * 0.5f, s1.x, s0.y), i_color };
+			v[2] = DebugTextVertex { i_position, floral::vec4f(pos.x + dim.x, pos.y + dim.y * 0.5f, s1.x, s1.y), i_color };
+			v[3] = DebugTextVertex { i_position, floral::vec4f(pos.x, pos.y + dim.y * 0.5f, s0.x, s1.y), i_color };
+
+			u32 currentIdx = m_DebugTextVertices[m_CurrentBufferIdx].get_size();
+			m_DebugTextVertices[m_CurrentBufferIdx].push_back(v[0]);
+			m_DebugTextVertices[m_CurrentBufferIdx].push_back(v[1]);
+			m_DebugTextVertices[m_CurrentBufferIdx].push_back(v[2]);
+			m_DebugTextVertices[m_CurrentBufferIdx].push_back(v[3]);
+
+			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 0);
+			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 1);
+			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 2);
+
+			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 2);
+			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 3);
+			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 0);
+		}
+
+		leftOrg.x += charInfo.xadvance * px.x;
+	}
+}
+
 // ---------------------------------------------
 
-void DebugDrawer::Initialize()
+void DebugDrawer::Initialize(floral::filesystem<FreelistArena>* i_fs)
 {
 	CLOVER_VERBOSE("Initializing DebugDrawer");
 	// snapshot begin state
@@ -256,8 +346,37 @@ void DebugDrawer::Initialize()
 	m_TextureBeginStateId = insigne::get_textures_resource_state();
 	m_RenderBeginStateId = insigne::get_render_resource_state();
 
-	// DebugLine and DebugSurface has already been registered
+	LinearArena* tempArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
 
+	tempArena->free_all();
+	floral::absolute_path iFilePath = floral::get_application_directory();
+	floral::relative_path fontPath = floral::build_relative_path("NotoSans-Regular.ttf");
+	floral::concat_path(&iFilePath, fontPath);
+	floral::file_info iFile = floral::open_file_read(i_fs, iFilePath);
+	FLORAL_ASSERT(iFile.file_size > 0);
+	p8 ttfData = (p8)tempArena->allocate(iFile.file_size);
+	floral::read_all_file(iFile, ttfData);
+	floral::close_file(iFile);
+
+	insigne::texture_desc_t texDesc;
+	texDesc.width = 1024;
+	texDesc.height = 1024;
+	texDesc.format = insigne::texture_format_e::r;
+	texDesc.min_filter = insigne::filtering_e::linear;
+	texDesc.mag_filter = insigne::filtering_e::linear;
+	texDesc.dimension = insigne::texture_dimension_e::tex_2d;
+	texDesc.has_mipmap = false;
+	texDesc.compression = insigne::texture_compression_e::no_compression;
+	texDesc.data = nullptr;
+
+	insigne::prepare_texture_desc(texDesc);
+
+	m_CharacterData = m_MemoryArena->allocate_array<stbtt_bakedchar>(96);
+	stbtt_BakeFontBitmap(ttfData, 0, 40.0f, (p8)texDesc.data, 1024, 1024, 32, 96, m_CharacterData);
+
+	m_FontAtlas = insigne::create_texture(texDesc);
+
+	// DebugLine and DebugSurface has already been registered
 	static const u32 s_verticesLimit = 1u << 17;
 	static const s32 s_indicesLimit = 1u << 18;
 	m_DebugVertices[0].init(s_verticesLimit, m_MemoryArena);
@@ -268,6 +387,10 @@ void DebugDrawer::Initialize()
 	m_DebugSurfaceVertices[1].init(s_verticesLimit, m_MemoryArena);
 	m_DebugSurfaceIndices[0].init(s_indicesLimit, m_MemoryArena);
 	m_DebugSurfaceIndices[1].init(s_indicesLimit, m_MemoryArena);
+	m_DebugTextVertices[0].init(s_verticesLimit, m_MemoryArena);
+	m_DebugTextVertices[1].init(s_verticesLimit, m_MemoryArena);
+	m_DebugTextIndices[0].init(s_indicesLimit, m_MemoryArena);
+	m_DebugTextIndices[1].init(s_indicesLimit, m_MemoryArena);
 
 	{
 		insigne::vbdesc_t desc;
@@ -316,6 +439,29 @@ void DebugDrawer::Initialize()
 	}
 
 	{
+		insigne::vbdesc_t desc;
+		desc.region_size = SIZE_MB(16);
+		desc.stride = sizeof(DebugTextVertex);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::vb_handle_t newVB = insigne::create_vb(desc);
+		m_TextVB = newVB;
+	}
+
+	{
+		insigne::ibdesc_t desc;
+		desc.region_size = SIZE_MB(8);
+		desc.data = nullptr;
+		desc.count = 0;
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+
+		insigne::ib_handle_t newIB = insigne::create_ib(desc);
+		m_TextIB = newIB;
+	}
+
+	{
 		insigne::ubdesc_t desc;
 		desc.region_size = SIZE_KB(4);
 		desc.data = nullptr;
@@ -349,8 +495,34 @@ void DebugDrawer::Initialize()
 		m_Material.render_state.blend_func_sfactor = insigne::factor_e::fact_src_alpha;
 		m_Material.render_state.blend_func_dfactor = insigne::factor_e::fact_one_minus_src_alpha;
 	}
+
+	{
+		insigne::shader_desc_t desc = insigne::create_shader_desc();
+		desc.reflection.uniform_blocks->push_back(insigne::shader_param_t("ub_XForm", insigne::param_data_type_e::param_ub));
+		desc.reflection.textures->push_back(insigne::shader_param_t("u_Tex", insigne::param_data_type_e::param_sampler2d));
+
+		strcpy(desc.vs, s_TextVS);
+		strcpy(desc.fs, s_TextFS);
+		desc.vs_path = floral::path("/internal/debug_text_draw_vs");
+		desc.fs_path = floral::path("/internal/debug_text_draw_fs");
+
+		m_TextShader = insigne::create_shader(desc);
+		insigne::infuse_material(m_TextShader, m_TextMaterial);
+
+		insigne::helpers::assign_uniform_block(m_TextMaterial, "ub_XForm", 0, 0, m_UB);
+		insigne::helpers::assign_texture(m_TextMaterial, "u_Tex", m_FontAtlas);
+
+		m_TextMaterial.render_state.depth_write = false;
+		m_TextMaterial.render_state.depth_test = false;
+		m_TextMaterial.render_state.cull_face = true;
+		m_TextMaterial.render_state.blending = true;
+		m_TextMaterial.render_state.blend_equation = insigne::blend_equation_e::func_add;
+		m_TextMaterial.render_state.blend_func_sfactor = insigne::factor_e::fact_src_alpha;
+		m_TextMaterial.render_state.blend_func_dfactor = insigne::factor_e::fact_one_minus_src_alpha;
+	}
 	// flush the initialization pass
 	insigne::dispatch_render_pass();
+	g_StreammingAllocator.free(tempArena);
 }
 
 void DebugDrawer::CleanUp()
@@ -380,6 +552,11 @@ void DebugDrawer::Render(const floral::mat4x4f& i_wvp)
 	{
 		insigne::draw_surface<DebugSurface>(m_SurfaceVB, m_SurfaceIB, m_Material);
 	}
+
+	if (m_DebugTextIndices[m_CurrentBufferIdx].get_size() > 0)
+	{
+		insigne::draw_surface<DebugTextSurface>(m_TextVB, m_TextIB, m_TextMaterial);
+	}
 }
 
 void DebugDrawer::BeginFrame()
@@ -389,6 +566,8 @@ void DebugDrawer::BeginFrame()
 	m_DebugIndices[m_CurrentBufferIdx].empty();
 	m_DebugSurfaceVertices[m_CurrentBufferIdx].empty();
 	m_DebugSurfaceIndices[m_CurrentBufferIdx].empty();
+	m_DebugTextVertices[m_CurrentBufferIdx].empty();
+	m_DebugTextIndices[m_CurrentBufferIdx].empty();
 }
 
 void DebugDrawer::EndFrame()
@@ -408,6 +587,14 @@ void DebugDrawer::EndFrame()
 	if (m_DebugSurfaceIndices[m_CurrentBufferIdx].get_size() > 0)
 		insigne::update_ib(m_SurfaceIB, &(m_DebugSurfaceIndices[m_CurrentBufferIdx][0]), m_DebugSurfaceIndices[m_CurrentBufferIdx].get_size(), 0);
 	else insigne::update_ib(m_SurfaceIB, nullptr, 0, 0);
+
+	if (m_DebugTextVertices[m_CurrentBufferIdx].get_size() > 0)
+		insigne::update_vb(m_TextVB, &(m_DebugTextVertices[m_CurrentBufferIdx][0]), m_DebugTextVertices[m_CurrentBufferIdx].get_size(), 0);
+	else insigne::update_vb(m_TextVB, nullptr, 0, 0);
+
+	if (m_DebugTextIndices[m_CurrentBufferIdx].get_size() > 0)
+		insigne::update_ib(m_TextIB, &(m_DebugTextIndices[m_CurrentBufferIdx][0]), m_DebugTextIndices[m_CurrentBufferIdx].get_size(), 0);
+	else insigne::update_ib(m_TextIB, nullptr, 0, 0);
 }
 
 //----------------------------------------------
@@ -445,11 +632,11 @@ static const size k_ColorsCount = 25;
 namespace debugdraw
 {
 
-void Initialize()
+void Initialize(floral::filesystem<FreelistArena>* i_fs)
 {
 	FLORAL_ASSERT(s_DebugDrawer == nullptr);
 	s_DebugDrawer = g_PersistanceResourceAllocator.allocate<DebugDrawer>();
-	s_DebugDrawer->Initialize();
+	s_DebugDrawer->Initialize(i_fs);
 }
 
 void CleanUp()
@@ -495,6 +682,11 @@ void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const floral
 void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const size i_colorIdx)
 {
 	s_DebugDrawer->DrawPoint3D(i_position, i_size, k_Colors[i_colorIdx % k_ColorsCount]);
+}
+
+void DrawText3D(const_cstr i_str, const floral::vec3f& i_position)
+{
+	s_DebugDrawer->DrawText3D(i_str, i_position);
 }
 
 }

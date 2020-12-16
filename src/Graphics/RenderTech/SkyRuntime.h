@@ -102,8 +102,10 @@ private:
 	f32											m_SunAzimuth; // in rad
 
 	helpers::SurfaceGPU							m_Quad;
+	helpers::SurfaceGPU							m_Surface;
 
 	mat_loader::MaterialShaderPair				m_MSPair;
+	mat_loader::MaterialShaderPair				m_SphereMSPair;
 	insigne::texture_handle_t					m_TransmittanceTexture;
 	insigne::texture_handle_t					m_ScatteringTexture;
 	insigne::texture_handle_t					m_IrradianceTexture;
