@@ -30,6 +30,11 @@ private:
 		floral::mat4x4f							viewFromClip;
 	};
 
+	struct ObjectSceneData
+	{
+		floral::mat4x4f							viewProjectionMatrix;
+	};
+
 	struct TextureInfoData
 	{
 		s32										transmittanceTextureWidth;	// N
@@ -92,12 +97,16 @@ private:
 	SkyFixedConfigs								m_SkyFixedConfigs;
 
 	SceneData									m_SceneData;
+	ObjectSceneData								m_ObjectSceneData;
 	TextureInfoData								m_TextureInfoData;
 	AtmosphereData								m_AtmosphereData;
 	ConfigsData									m_ConfigsData;
-	f32											m_ViewDistance; // in meters
-	f32											m_ViewZenith; // in rad
-	f32											m_ViewAzimuth; // in rad
+	floral::vec3f								m_LookAt;
+	floral::vec3f								m_CamPos;
+	f32											m_AspectRatio;
+	f32											m_FovY;
+	floral::mat4x4f								m_ProjectionMatrix;
+	floral::mat4x4f								m_ViewProjectionMatrix;
 	f32											m_SunZenith; // in rad
 	f32											m_SunAzimuth; // in rad
 
@@ -111,6 +120,7 @@ private:
 	insigne::texture_handle_t					m_IrradianceTexture;
 
 	insigne::ub_handle_t						m_SceneUB;
+	insigne::ub_handle_t						m_ObjectSceneUB;
 	insigne::ub_handle_t						m_TextureInfoUB;
 	insigne::ub_handle_t						m_AtmosphereUB;
 	insigne::ub_handle_t						m_ConfigsUB;

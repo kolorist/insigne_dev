@@ -16,12 +16,15 @@
 #include "InsigneImGui.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/MaterialParser.h"
+#include "Graphics/DebugDrawer.h"
 
 namespace stone
 {
 namespace tech
 {
 //-------------------------------------------------------------------
+
+static const floral::vec3f k_upDirection = floral::vec3f(0.0f, 0.0f, 1.0f);
 
 SkyRuntime::SkyRuntime()
 	: m_TexDataArenaRegion { "stone/dynamic/sky runtime", SIZE_MB(128), &m_TexDataArena }
@@ -61,7 +64,7 @@ void SkyRuntime::_OnInitialize()
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_KB(256));
 
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
-	f32 aspectRatio = (f32)commonCtx->window_width / (f32)commonCtx->window_height;
+	m_AspectRatio = (f32)commonCtx->window_width / (f32)commonCtx->window_height;
 
 	// register surfaces
 	insigne::register_surface_type<geo2d::SurfacePT>();
@@ -136,33 +139,28 @@ void SkyRuntime::_OnInitialize()
 			bakedDataInfos.irrandianceTextureWidth, bakedDataInfos.irrandianceTextureHeight, 3);
 
 	insigne::helpers::assign_texture(m_MSPair.material, "u_TransmittanceTex", m_TransmittanceTexture);
+	insigne::helpers::assign_texture(m_SphereMSPair.material, "u_TransmittanceTex", m_TransmittanceTexture);
 	insigne::helpers::assign_texture(m_MSPair.material, "u_ScatteringTex", m_ScatteringTexture);
 	insigne::helpers::assign_texture(m_MSPair.material, "u_IrradianceTex", m_IrradianceTexture);
+	insigne::helpers::assign_texture(m_SphereMSPair.material, "u_IrradianceTex", m_IrradianceTexture);
 
-	const f32 k_FovY = floral::to_radians(50.0f);
-	const f32 k_tanFovY = tanf(k_FovY / 2.0f);
-	m_SceneData.viewFromClip = floral::mat4x4f(
-			floral::vec4f(k_tanFovY * aspectRatio, 0.0f, 0.0f, 0.0f),
-			floral::vec4f(0.0f, k_tanFovY, 0.0f, 0.0f),
-			floral::vec4f(0.0f, 0.0f, 0.0f, -1.0f),
-			floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f)).get_transpose();
-	m_ViewDistance = 150.0f;
-	m_ViewZenith = 1.47f;
-	m_ViewAzimuth = 0.0f;
-	f32 cosZ = cosf(m_ViewZenith);
-	f32 sinZ = sinf(m_ViewZenith);
-	f32 cosA = cosf(m_ViewAzimuth);
-	f32 sinA = sinf(m_ViewAzimuth);
-	floral::vec3f ux(-sinA, cosA, 0.0f);
-	floral::vec3f uy(-cosZ * cosA, -cosZ * sinA, sinZ);
-	floral::vec3f uz(sinZ * cosA, sinZ * sinA, cosZ);
-	f32 l = m_ViewDistance / m_SkyFixedConfigs.unitLengthInMeters;
-	// TODO: is this the inverse of the look-at matrix (?)
-	m_SceneData.modelFromView = floral::mat4x4f(
-			floral::vec4f(ux.x, uy.x, uz.x, /*uz.x * l*/0.0f),
-			floral::vec4f(ux.y, uy.y, uz.y, /*uz.y * l*/0.0f),
-			floral::vec4f(ux.z, uy.z, uz.z, /*uz.z * l*/l),
-			floral::vec4f(0.0f, 0.0f, 0.0f, 1.0f)).get_transpose();
+	m_FovY = 50.0f;
+	m_ProjectionMatrix = floral::construct_infinity_perspective_lh(0.01f, m_FovY, m_AspectRatio);
+	/*
+	const f32 k_orthoSize = 20.0f;
+	const f32 k_orthoWidth = k_orthoSize * m_AspectRatio;
+	m_ProjectionMatrix = floral::construct_orthographic_lh(-k_orthoWidth * 0.5f, k_orthoWidth * 0.5f,
+			k_orthoSize * 0.5f, -k_orthoSize * 0.5f, 0.0f, 100.0f);
+	*/
+	m_SceneData.viewFromClip = m_ProjectionMatrix.get_inverse();
+	m_CamPos = floral::vec3f(-3.0f, 1.0f, 1.0f);
+	m_LookAt = floral::vec3f(0.0f, 0.0f, 0.0f);
+	floral::mat4x4f v = floral::construct_lookat_point_lh(
+			k_upDirection,
+			m_CamPos, m_LookAt);
+	m_ViewProjectionMatrix = m_ProjectionMatrix * v;
+	m_SceneData.modelFromView = v.get_inverse();
+
 	{
 		insigne::ubdesc_t desc;
 		desc.region_size = floral::next_pow2(size(sizeof(SceneData)));
@@ -173,10 +171,20 @@ void SkyRuntime::_OnInitialize()
 		insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Scene", 0, 0, m_SceneUB);
 	}
 
+	m_ObjectSceneData.viewProjectionMatrix = m_ViewProjectionMatrix;
+	{
+		insigne::ubdesc_t desc;
+		desc.region_size = floral::next_pow2(size(sizeof(ObjectSceneData)));
+		desc.data = &m_ObjectSceneData;
+		desc.data_size = sizeof(ObjectSceneData);
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+		m_ObjectSceneUB = insigne::copy_create_ub(desc);
+		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_Scene", 0, 0, m_ObjectSceneUB);
+	}
+
 	m_SunZenith = 1.564f;
-	m_SunAzimuth = -3.0f;
-	//m_ConfigsData.camera = floral::vec4f(uz.x * l, uz.y * l, uz.z * l, 1.0f);
-	m_ConfigsData.camera = floral::vec4f(0.0f, 0.0f, l, 1.0f);
+	m_SunAzimuth = 0.0f;
+	m_ConfigsData.camera = floral::vec4f(m_CamPos, 1.0f);
 	m_ConfigsData.whitePoint = floral::vec4f(1.0f);
 	m_ConfigsData.earthCenter = floral::vec4f(0.0f, 0.0f, -m_SkyFixedConfigs.bottomRadius, 1.0f);
 	m_ConfigsData.sunDirection = floral::vec4f(
@@ -194,6 +202,7 @@ void SkyRuntime::_OnInitialize()
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 		m_ConfigsUB = insigne::copy_create_ub(desc);
 		insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Configs", 0, 0, m_ConfigsUB);
+		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_Configs", 0, 0, m_ConfigsUB);
 	}
 
 	m_TextureInfoData.transmittanceTextureWidth = bakedDataInfos.transmittanceTextureWidth;
@@ -216,6 +225,7 @@ void SkyRuntime::_OnInitialize()
 		desc.usage = insigne::buffer_usage_e::static_draw;
 		m_TextureInfoUB = insigne::copy_create_ub(desc);
 		insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_TextureInfo", 0, 0, m_TextureInfoUB);
+		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_TextureInfo", 0, 0, m_TextureInfoUB);
 	}
 
 	m_AtmosphereData.solarIrradiance = floral::vec4f(m_SkyFixedConfigs.solarIrradiance, 0.0f);
@@ -235,6 +245,7 @@ void SkyRuntime::_OnInitialize()
 		desc.usage = insigne::buffer_usage_e::static_draw;
 		m_AtmosphereUB = insigne::copy_create_ub(desc);
 		insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Atmosphere", 0, 0, m_AtmosphereUB);
+		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_Atmosphere", 0, 0, m_AtmosphereUB);
 	}
 }
 
@@ -244,19 +255,8 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 {
 	bool viewConfigChanged = false;
 	bool sunConfigChanged = false;
+	bool projectionConfigChanged = false;
 	ImGui::Begin("Controller##SkyRuntime");
-	if (ImGui::SliderFloat("View Azimuth", &m_ViewAzimuth, 0.0f, 2.0f * floral::pi, "%.2f"))
-	{
-		viewConfigChanged = true;
-	}
-	if (ImGui::SliderFloat("View Zenith", &m_ViewZenith, 0.0f, floral::pi, "%.2f"))
-	{
-		viewConfigChanged = true;
-	}
-	if (ImGui::SliderFloat("View Distance (m)", &m_ViewDistance, 0.0f, 1000.0f, "%.2f"))
-	{
-		viewConfigChanged = true;
-	}
 	if (ImGui::SliderFloat("Sun Azimuth", &m_SunAzimuth, 0.0f, 2.0f * floral::pi, "%.2f"))
 	{
 		sunConfigChanged = true;
@@ -265,27 +265,36 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 	{
 		sunConfigChanged = true;
 	}
+	if (DebugVec3f("Look-at", &m_LookAt, "%4.2f"))
+	{
+		viewConfigChanged = true;
+	}
+	if (DebugVec3f("Campos", &m_CamPos, "%4.2f"))
+	{
+		viewConfigChanged = true;
+	}
+	if (ImGui::SliderFloat("FovY", &m_FovY, 1.0f, 100.0f, "%.2f"))
+	{
+		projectionConfigChanged = true;
+	}
 	DebugMat4fRowOrder("ModelFromView", &m_SceneData.modelFromView);
 	DebugMat4fRowOrder("ViewFromClip", &m_SceneData.viewFromClip);
 	ImGui::End();
 
-	if (viewConfigChanged)
+	if (viewConfigChanged || projectionConfigChanged)
 	{
-		f32 cosZ = cosf(m_ViewZenith);
-		f32 sinZ = sinf(m_ViewZenith);
-		f32 cosA = cosf(m_ViewAzimuth);
-		f32 sinA = sinf(m_ViewAzimuth);
-		floral::vec3f ux(-sinA, cosA, 0.0f);
-		floral::vec3f uy(-cosZ * cosA, -cosZ * sinA, sinZ);
-		floral::vec3f uz(sinZ * cosA, sinZ * sinA, cosZ);
-		f32 l = m_ViewDistance / m_SkyFixedConfigs.unitLengthInMeters;
-		m_SceneData.modelFromView = floral::mat4x4f(
-				floral::vec4f(ux.x, uy.x, uz.x, /*uz.x * l*/0.0f),
-				floral::vec4f(ux.y, uy.y, uz.y, /*uz.y * l*/0.0f),
-				floral::vec4f(ux.z, uy.z, uz.z, /*uz.z * l*/l),
-				floral::vec4f(0.0f, 0.0f, 0.0f, 1.0f)).get_transpose();
+		m_ProjectionMatrix = floral::construct_infinity_perspective_lh(0.01f, m_FovY, m_AspectRatio);
+		floral::mat4x4f v = floral::construct_lookat_point_lh(
+				floral::vec3f(0.0f, 0.0f, 1.0f),
+				m_CamPos, m_LookAt);
+		m_ViewProjectionMatrix = m_ProjectionMatrix * v;
+		m_SceneData.viewFromClip = m_ProjectionMatrix.get_inverse();
+		m_SceneData.modelFromView = v.get_inverse();
 		insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
-		//m_ConfigsData.camera = floral::vec4f(uz.x * l, uz.y * l, uz.z * l, 1.0f);
+		m_ConfigsData.camera = floral::vec4f(m_CamPos, 1.0f);
+
+		m_ObjectSceneData.viewProjectionMatrix = m_ViewProjectionMatrix;
+		insigne::copy_update_ub(m_ObjectSceneUB, &m_ObjectSceneData, sizeof(ObjectSceneData), 0);
 	}
 
 	if (sunConfigChanged || viewConfigChanged)
@@ -296,6 +305,23 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 				cosf(m_SunZenith), 0.0f);
 		insigne::copy_update_ub(m_ConfigsUB, &m_ConfigsData, sizeof(ConfigsData), 0);
 	}
+
+	s32 m_GridRange = 10;
+	f32 m_GridSpacing = 1.0f;
+	const f32 maxCoord = m_GridRange * m_GridSpacing;
+	for (s32 i = -m_GridRange; i <= m_GridRange; i++)
+	{
+		debugdraw::DrawLine3D(floral::vec3f(i * m_GridSpacing, -maxCoord, 0.0f),
+				floral::vec3f(i * m_GridSpacing, maxCoord, 0.0f),
+				floral::vec4f(0.3f, 0.3f, 0.3f, 0.3f));
+		debugdraw::DrawLine3D(floral::vec3f(-maxCoord, i * m_GridSpacing, 0.0f),
+				floral::vec3f(maxCoord, i * m_GridSpacing, 0.0f),
+				floral::vec4f(0.3f, 0.3f, 0.3f, 0.3f));
+	}
+
+	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(1.0f, 0.0f, 0.0f), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
+	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 1.0f, 0.0f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
+	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 0.0f, 1.0f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
 }
 
 //-------------------------------------------------------------------
@@ -304,8 +330,10 @@ void SkyRuntime::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
+	insigne::draw_surface<geo3d::SurfacePNC>(m_Surface.vb, m_Surface.ib, m_SphereMSPair.material);
 	insigne::draw_surface<geo2d::SurfacePT>(m_Quad.vb, m_Quad.ib, m_MSPair.material);
 
+	debugdraw::Render(m_ViewProjectionMatrix);
 	RenderImGui();
 
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
