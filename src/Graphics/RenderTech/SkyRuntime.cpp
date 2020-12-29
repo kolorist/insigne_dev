@@ -61,10 +61,16 @@ void SkyRuntime::_OnInitialize()
 
 	g_MemoryManager.initialize_allocator(m_TexDataArenaRegion);
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
+	m_PostFXArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_KB(256));
 
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
 	m_AspectRatio = (f32)commonCtx->window_width / (f32)commonCtx->window_height;
+
+	m_MemoryArena->free_all();
+	floral::relative_path pfxPath = floral::build_relative_path("postfx.pfx");
+	pfx_parser::PostEffectsDescription pfxDesc = pfx_parser::ParsePostFX(m_FileSystem, pfxPath, m_MemoryArena);
+	m_PostFXChain.Initialize(m_FileSystem, pfxDesc, floral::vec2f(commonCtx->window_width, commonCtx->window_height), m_PostFXArena);
 
 	// register surfaces
 	insigne::register_surface_type<geo2d::SurfacePT>();
@@ -131,6 +137,11 @@ void SkyRuntime::_OnInitialize()
 	createResult = mat_loader::CreateMaterial(&m_SphereMSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
 	FLORAL_ASSERT(createResult == true);
 
+	matPath = floral::build_relative_path("convo.mat");
+	matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+	createResult = mat_loader::CreateMaterial(&m_ConvoMSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+	FLORAL_ASSERT(createResult == true);
+
 	m_TransmittanceTexture = LoadRawHDRTexture2D("transmittance_texture.rtex2d",
 			bakedDataInfos.transmittanceTextureWidth, bakedDataInfos.transmittanceTextureHeight, 3);
 	m_ScatteringTexture = LoadRawHDRTexture3D("scattering_texture.rtex3d",
@@ -145,7 +156,7 @@ void SkyRuntime::_OnInitialize()
 	insigne::helpers::assign_texture(m_SphereMSPair.material, "u_IrradianceTex", m_IrradianceTexture);
 
 	m_FovY = 50.0f;
-	m_ProjectionMatrix = floral::construct_infinity_perspective_lh(0.01f, m_FovY, m_AspectRatio);
+	m_ProjectionMatrix = floral::construct_infinity_perspective(0.01f, m_FovY, m_AspectRatio);
 	/*
 	const f32 k_orthoSize = 20.0f;
 	const f32 k_orthoWidth = k_orthoSize * m_AspectRatio;
@@ -155,7 +166,7 @@ void SkyRuntime::_OnInitialize()
 	m_SceneData.viewFromClip = m_ProjectionMatrix.get_inverse();
 	m_CamPos = floral::vec3f(-3.0f, 1.0f, 1.0f);
 	m_LookAt = floral::vec3f(0.0f, 0.0f, 0.0f);
-	floral::mat4x4f v = floral::construct_lookat_point_lh(
+	floral::mat4x4f v = floral::construct_lookat_point(
 			k_upDirection,
 			m_CamPos, m_LookAt);
 	m_ViewProjectionMatrix = m_ProjectionMatrix * v;
@@ -180,6 +191,16 @@ void SkyRuntime::_OnInitialize()
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 		m_ObjectSceneUB = insigne::copy_create_ub(desc);
 		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_Scene", 0, 0, m_ObjectSceneUB);
+	}
+
+	{
+		insigne::ubdesc_t desc;
+		desc.region_size = floral::next_pow2(size(sizeof(ConvolutionSceneData)));
+		desc.data = nullptr;
+		desc.data_size = sizeof(ConvolutionSceneData);
+		desc.usage = insigne::buffer_usage_e::dynamic_draw;
+		m_ConvolutionUB = insigne::create_ub(desc);
+		insigne::helpers::assign_uniform_block(m_ConvoMSPair.material, "ub_Scene", 0, 0, m_ConvolutionUB);
 	}
 
 	m_SunZenith = 1.564f;
@@ -247,6 +268,41 @@ void SkyRuntime::_OnInitialize()
 		insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Atmosphere", 0, 0, m_AtmosphereUB);
 		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_Atmosphere", 0, 0, m_AtmosphereUB);
 	}
+
+	{
+		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
+		insigne::color_attachment_t atm;
+		strcpy(atm.name, "pre_convolution_fb");
+		atm.texture_format = insigne::texture_format_e::hdr_rgb;
+		atm.texture_dimension = insigne::texture_dimension_e::tex_cube;
+		desc.color_attachments->push_back(atm);
+		desc.width = 512; desc.height = 512;
+		desc.has_depth = false;
+		desc.color_has_mipmap = false;
+
+		m_PreConvoFB = insigne::create_framebuffer(desc);
+		insigne::helpers::assign_texture(m_ConvoMSPair.material, "u_EnvMap",
+				insigne::extract_color_attachment(m_PreConvoFB, 0));
+	}
+
+	{
+		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
+		insigne::color_attachment_t atm;
+		strcpy(atm.name, "convolution_fb");
+		atm.texture_format = insigne::texture_format_e::hdr_rgb;
+		atm.texture_dimension = insigne::texture_dimension_e::tex_cube;
+		desc.color_attachments->push_back(atm);
+		desc.width = 16; desc.height = 16;
+		desc.has_depth = false;
+		desc.color_has_mipmap = true;
+
+		m_ConvolutionFB = insigne::create_framebuffer(desc);
+		insigne::helpers::assign_texture(m_SphereMSPair.material, "u_EnvMap",
+				insigne::extract_color_attachment(m_ConvolutionFB, 0));
+	}
+
+	m_PreConvoDone = false;
+	m_ConvoDone = false;
 }
 
 //-------------------------------------------------------------------
@@ -283,8 +339,8 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 
 	if (viewConfigChanged || projectionConfigChanged)
 	{
-		m_ProjectionMatrix = floral::construct_infinity_perspective_lh(0.01f, m_FovY, m_AspectRatio);
-		floral::mat4x4f v = floral::construct_lookat_point_lh(
+		m_ProjectionMatrix = floral::construct_infinity_perspective(0.01f, m_FovY, m_AspectRatio);
+		floral::mat4x4f v = floral::construct_lookat_point(
 				floral::vec3f(0.0f, 0.0f, 1.0f),
 				m_CamPos, m_LookAt);
 		m_ViewProjectionMatrix = m_ProjectionMatrix * v;
@@ -304,6 +360,8 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 				sinf(m_SunAzimuth) * sinf(m_SunZenith),
 				cosf(m_SunZenith), 0.0f);
 		insigne::copy_update_ub(m_ConfigsUB, &m_ConfigsData, sizeof(ConfigsData), 0);
+		m_PreConvoDone = false;
+		m_ConvoDone = false;
 	}
 
 	s32 m_GridRange = 10;
@@ -328,14 +386,99 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 
 void SkyRuntime::_OnRender(const f32 i_deltaMs)
 {
-	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
+	static const floral::vec3f s_lookAt[] =
+	{
+		floral::vec3f(1.0f, 0.0f, 0.0f),
+		floral::vec3f(-1.0f, 0.0f, 0.0f),
+		floral::vec3f(0.0f, 1.0f, 0.0f),
+		floral::vec3f(0.0f, -1.0f, 0.0f),
+		floral::vec3f(0.0f, 0.0f, 1.0f),
+		floral::vec3f(0.0f, 0.0f, -1.0f),
+	};
 
+	static const floral::vec3f s_upDir[] =
+	{
+		floral::vec3f(0.0f, -1.0f, 0.0f),
+		floral::vec3f(0.0f, -1.0f, 0.0f),
+		floral::vec3f(0.0f, 0.0f, 1.0f),
+		floral::vec3f(0.0f, 0.0f, -1.0f),
+		floral::vec3f(0.0f, -1.0f, 0.0f),
+		floral::vec3f(0.0f, -1.0f, 0.0f),
+	};
+
+	static const insigne::cubemap_face_e s_faces[] =
+	{
+		insigne::cubemap_face_e::positive_x,
+		insigne::cubemap_face_e::negative_x,
+		insigne::cubemap_face_e::positive_y,
+		insigne::cubemap_face_e::negative_y,
+		insigne::cubemap_face_e::positive_z,
+		insigne::cubemap_face_e::negative_z
+	};
+
+	if (!m_PreConvoDone)
+	{
+		floral::mat4x4f oldInvP = m_SceneData.viewFromClip;
+		floral::mat4x4f oldInvV = m_SceneData.modelFromView;
+
+		floral::mat4x4f p = floral::construct_infinity_perspective(0.01f, 90.0f, 1.0f);
+		m_SceneData.viewFromClip = p.get_inverse();
+		m_ConfigsData.camera = floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f);
+		insigne::copy_update_ub(m_ConfigsUB, &m_ConfigsData, sizeof(ConfigsData), 0);
+
+		for (int i = 0; i < 6; i++)
+		{
+			floral::mat4x4f v = floral::construct_lookat_dir(s_upDir[i], floral::vec3f(0.0f, 0.0f, 1.0f), s_lookAt[i]);
+			m_SceneData.modelFromView = v.get_inverse();
+			insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
+
+			insigne::begin_render_pass(m_PreConvoFB, s_faces[i]);
+			insigne::draw_surface<geo2d::SurfacePT>(m_Quad.vb, m_Quad.ib, m_MSPair.material);
+			insigne::end_render_pass(m_PreConvoFB);
+			insigne::dispatch_render_pass();
+		}
+
+		m_ConfigsData.camera = floral::vec4f(m_CamPos, 1.0f);
+		insigne::copy_update_ub(m_ConfigsUB, &m_ConfigsData, sizeof(ConfigsData), 0);
+		m_SceneData.viewFromClip = oldInvP;
+		m_SceneData.modelFromView = oldInvV;
+		insigne::copy_update_ub(m_SceneUB, &m_SceneData, sizeof(SceneData), 0);
+		m_PreConvoDone = true;
+	}
+
+	if (m_PreConvoDone && !m_ConvoDone)
+	{
+		for (s32 m = 0; m < 5; m++)
+		{
+			f32 r = (f32)m / 4.0f;
+			m_ConvolutionSceneData.roughness = r;
+			for (int i = 0; i < 6; i++)
+			{
+				floral::mat4x4f p = floral::construct_infinity_perspective(0.01f, 90.0f, 1.0f);
+				floral::mat4x4f v = floral::construct_lookat_dir(s_upDir[i], floral::vec3f(0.0f, 0.0f, 0.0f), s_lookAt[i]);
+				m_ConvolutionSceneData.viewProjectionMatrix = p * v;
+				insigne::copy_update_ub(m_ConvolutionUB, &m_ConvolutionSceneData, sizeof(ConvolutionSceneData), 0);
+
+				insigne::begin_render_pass(m_ConvolutionFB, s_faces[i], m);
+				insigne::draw_surface<geo3d::SurfacePNC>(m_Surface.vb, m_Surface.ib, m_ConvoMSPair.material);
+				insigne::end_render_pass(m_ConvolutionFB);
+				insigne::dispatch_render_pass();
+			}
+		}
+		m_ConvoDone = true;
+	}
+
+	m_PostFXChain.BeginMainOutput();
 	insigne::draw_surface<geo3d::SurfacePNC>(m_Surface.vb, m_Surface.ib, m_SphereMSPair.material);
 	insigne::draw_surface<geo2d::SurfacePT>(m_Quad.vb, m_Quad.ib, m_MSPair.material);
-
 	debugdraw::Render(m_ViewProjectionMatrix);
-	RenderImGui();
+	m_PostFXChain.EndMainOutput();
 
+	m_PostFXChain.Process();
+
+	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
+	m_PostFXChain.Present();
+	RenderImGui();
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();
 	insigne::dispatch_render_pass();
@@ -352,6 +495,7 @@ void SkyRuntime::_OnCleanUp()
 	g_MemoryManager.destroy_allocator(m_TexDataArenaRegion);
 
 	g_StreammingAllocator.free(m_MaterialDataArena);
+	g_StreammingAllocator.free(m_PostFXArena);
 	g_StreammingAllocator.free(m_MemoryArena);
 
 	floral::pop_directory(m_FileSystem);

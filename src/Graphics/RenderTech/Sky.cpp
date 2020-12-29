@@ -993,7 +993,7 @@ void Sky::_OnInitialize()
 	m_Atmosphere.MuSMin = cosf(k_maxSunZenithAngle);
 	m_Atmosphere.SolarIrradiance = to_rgb(wavelengths, solarIrradiance,
 			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), 1.0f);
-	m_Atmosphere.SunAngularRadius = 0.004675f;
+	m_Atmosphere.SunAngularRadius = 0.04675f;
 
 	m_Atmosphere.RayleighScattering = to_rgb(wavelengths, rayleighScattering,
 			floral::vec3f(k_lambdaR, k_lambdaG, k_lambdaB), k_lengthUnitInMeters);

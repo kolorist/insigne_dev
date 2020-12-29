@@ -7,6 +7,7 @@
 #include "Graphics/TestSuite.h"
 #include "Graphics/InsigneHelpers.h"
 #include "Graphics/MaterialLoader.h"
+#include "Graphics/PostFXChain.h"
 
 #include "Memory/MemorySystem.h"
 
@@ -33,6 +34,12 @@ private:
 	struct ObjectSceneData
 	{
 		floral::mat4x4f							viewProjectionMatrix;
+	};
+
+	struct ConvolutionSceneData
+	{
+		floral::mat4x4f							viewProjectionMatrix;
+		f32										roughness;
 	};
 
 	struct TextureInfoData
@@ -98,6 +105,7 @@ private:
 
 	SceneData									m_SceneData;
 	ObjectSceneData								m_ObjectSceneData;
+	ConvolutionSceneData						m_ConvolutionSceneData;
 	TextureInfoData								m_TextureInfoData;
 	AtmosphereData								m_AtmosphereData;
 	ConfigsData									m_ConfigsData;
@@ -115,21 +123,32 @@ private:
 
 	mat_loader::MaterialShaderPair				m_MSPair;
 	mat_loader::MaterialShaderPair				m_SphereMSPair;
+	mat_loader::MaterialShaderPair				m_ConvoMSPair;
 	insigne::texture_handle_t					m_TransmittanceTexture;
 	insigne::texture_handle_t					m_ScatteringTexture;
 	insigne::texture_handle_t					m_IrradianceTexture;
 
 	insigne::ub_handle_t						m_SceneUB;
+	insigne::ub_handle_t						m_ConvolutionUB;
 	insigne::ub_handle_t						m_ObjectSceneUB;
 	insigne::ub_handle_t						m_TextureInfoUB;
 	insigne::ub_handle_t						m_AtmosphereUB;
 	insigne::ub_handle_t						m_ConfigsUB;
+
+	insigne::framebuffer_handle_t				m_PreConvoFB;
+	insigne::framebuffer_handle_t				m_ConvolutionFB;
+
+	bool										m_PreConvoDone;
+	bool										m_ConvoDone;
+
+	pfx_chain::PostFXChain<LinearArena, FreelistArena>	m_PostFXChain;
 
 private:
 	helich::memory_region<LinearArena>			m_TexDataArenaRegion;
 	LinearArena									m_TexDataArena;
 
 	FreelistArena*								m_MemoryArena;
+	LinearArena*								m_PostFXArena;
 	LinearArena*								m_MaterialDataArena;
 };
 

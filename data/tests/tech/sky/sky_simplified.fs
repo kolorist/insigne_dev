@@ -228,6 +228,6 @@ void main()
 		radiance = radiance + transmittance * GetSolarRadiance();
 	}
 
-	o_Color.rgb = pow(vec3(1.0) - exp(-radiance / configs_whitePoint * configs_exposure), vec3(1.0 / 2.2));
-	o_Color.a = 1.0;
+	o_Color.rgb = radiance;
+	o_Color.a = 1.0f;
 }

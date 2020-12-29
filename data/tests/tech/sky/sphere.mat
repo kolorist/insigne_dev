@@ -6,13 +6,14 @@ _end_shader
 _state
 	depth_write on
 	depth_test on less_or_equal
-	cull_face on back cw
+	cull_face on back ccw
 	blending off
 _end_state
 
 _params
 	_p_tex_holder tex2d u_TransmittanceTex
 	_p_tex_holder tex2d u_IrradianceTex
+	_p_tex_holder texcube u_EnvMap
 
 	_p_ub_holder ub_Scene
 	_p_ub_holder ub_TextureInfo

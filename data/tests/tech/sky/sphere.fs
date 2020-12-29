@@ -48,7 +48,8 @@ layout(std140) uniform ub_Configs
 };
 
 uniform mediump sampler2D u_TransmittanceTex;
-uniform sampler2D u_IrradianceTex;
+uniform mediump sampler2D u_IrradianceTex;
+uniform mediump samplerCube u_EnvMap;
 
 float SafeSqrt(float a)
 {
@@ -125,9 +126,14 @@ mediump vec3 GetSunAndSkyIrradiance(in highp vec3 point, in highp vec3 normal, i
 
 void main()
 {
+#if 0
 	mediump vec3 sky_irradiance;
 	mediump vec3 sun_irradiance = GetSunAndSkyIrradiance(v_Position - configs_earthCenter,
 		v_Normal, configs_sunDirection, sky_irradiance);
 	mediump vec3 totalIrradiance = (sun_irradiance + sky_irradiance);
 	o_Color = vec4(totalIrradiance, 1.0f);
+#else
+	mediump vec3 col = texture(u_EnvMap, v_Normal).rgb;
+	o_Color = vec4(col, 1.0f);
+#endif
 }

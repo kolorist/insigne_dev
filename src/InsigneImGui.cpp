@@ -209,6 +209,7 @@ void InitializeImGui(floral::filesystem<FreelistArena>* i_fs)
 		insigne::infuse_material(s_ImGuiShader, s_ImGuiDefaultDrawData.Material);
 		s_ImGuiDefaultDrawData.Material.render_state.depth_write = false;
 		s_ImGuiDefaultDrawData.Material.render_state.depth_test = false;
+		s_ImGuiDefaultDrawData.Material.render_state.depth_func = insigne::compare_func_e::func_always;
 		s_ImGuiDefaultDrawData.Material.render_state.cull_face = false;
 		s_ImGuiDefaultDrawData.Material.render_state.blending = true;
 		s_ImGuiDefaultDrawData.Material.render_state.blend_equation = insigne::blend_equation_e::func_add;
@@ -329,7 +330,7 @@ void RenderImGui()
 
 			ImGuiDrawData* drawData = (ImGuiDrawData*)drawCmd->TextureId;
 			FLORAL_ASSERT(drawData != nullptr);
-			if (drawData == nullptr)
+			//if (drawData == nullptr)
 			{
 				drawData = &s_ImGuiDefaultDrawData;
 			}
@@ -338,7 +339,7 @@ void RenderImGui()
 			drawData->Material.textures[texSlot].value = drawData->Texture;
 
 			insigne::draw_surface<ImGuiSurface>(s_ImGuiVB[bufferSlot], s_ImGuiIB[bufferSlot], drawData->Material,
-					idxBufferOffset, (s32)drawCmd->ElemCount);
+					idxBufferOffset, (s32)drawCmd->ElemCount, "imgui-surface");
 			idxBufferOffset += drawCmd->ElemCount;
 		}
 	}
