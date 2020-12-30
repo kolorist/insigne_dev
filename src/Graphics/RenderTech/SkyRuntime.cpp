@@ -16,6 +16,7 @@
 #include "InsigneImGui.h"
 #include "Graphics/SurfaceDefinitions.h"
 #include "Graphics/MaterialParser.h"
+#include "Graphics/CbModelLoader.h"
 #include "Graphics/DebugDrawer.h"
 
 namespace stone
@@ -62,6 +63,7 @@ void SkyRuntime::_OnInitialize()
 	g_MemoryManager.initialize_allocator(m_TexDataArenaRegion);
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<FreelistArena>(SIZE_MB(16));
 	m_PostFXArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
+	m_ModelDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(1));
 	m_MaterialDataArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_KB(256));
 
 	calyx::context_attribs* commonCtx = calyx::get_context_attribs();
@@ -74,6 +76,7 @@ void SkyRuntime::_OnInitialize()
 
 	// register surfaces
 	insigne::register_surface_type<geo2d::SurfacePT>();
+	insigne::register_surface_type<geo3d::SurfacePNTT>();
 	insigne::register_surface_type<geo3d::SurfacePNC>();
 
 	floral::inplace_array<geo2d::VertexPT, 4> vertices;
@@ -92,6 +95,53 @@ void SkyRuntime::_OnInitialize()
 
 	m_Quad = helpers::CreateSurfaceGPU(&vertices[0], 4, sizeof(geo2d::VertexPT),
 			&indices[0], 6, insigne::buffer_usage_e::static_draw, true);
+
+	// prebake splitsum
+	{
+		m_MemoryArena->free_all();
+		mat_loader::MaterialShaderPair splitSumMSPair;
+		floral::relative_path matPath = floral::build_relative_path("pbr_splitsum.mat");
+		mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem, matPath, m_MemoryArena);
+		const bool ssMaterialResult = mat_loader::CreateMaterial(&splitSumMSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+		FLORAL_ASSERT(ssMaterialResult);
+
+		insigne::framebuffer_desc_t desc = insigne::create_framebuffer_desc();
+		insigne::color_attachment_t atm;
+		strcpy(atm.name, "main_color");
+		atm.texture_format = insigne::texture_format_e::hdr_rg;
+		atm.texture_dimension = insigne::texture_dimension_e::tex_2d;
+		desc.color_attachments->push_back(atm);
+		desc.width = 512; desc.height = 512;
+		desc.has_depth = false;
+
+		insigne::framebuffer_handle_t fb = insigne::create_framebuffer(desc);
+		insigne::dispatch_render_pass();
+
+		insigne::begin_render_pass(fb);
+		insigne::draw_surface<geo2d::SurfacePT>(m_Quad.vb, m_Quad.ib, splitSumMSPair.material);
+		insigne::end_render_pass(fb);
+		insigne::dispatch_render_pass();
+
+		m_SplitSumTexture = insigne::extract_color_attachment(fb, 0);
+	}
+
+	{
+		m_MemoryArena->free_all();
+		cbmodel::Model<geo3d::VertexPNTT> model = cbmodel::LoadModelData<geo3d::VertexPNTT>(m_FileSystem,
+				floral::build_relative_path("DamagedHelmet.gltf_mesh_0.cbmodel"),
+				cbmodel::VertexAttribute::Position | cbmodel::VertexAttribute::Normal | cbmodel::VertexAttribute::Tangent | cbmodel::VertexAttribute::TexCoord,
+				m_MemoryArena, m_ModelDataArena);
+
+		m_HelmetSurfaceGPU = helpers::CreateSurfaceGPU(model.verticesData, model.verticesCount, sizeof(geo3d::VertexPNTT),
+				model.indicesData, model.indicesCount, insigne::buffer_usage_e::static_draw, false);
+
+		m_MemoryArena->free_all();
+		mat_parser::MaterialDescription matDesc = mat_parser::ParseMaterial(m_FileSystem,
+				floral::build_relative_path("pbr_helmet.mat"), m_MemoryArena);
+		const bool pbrMaterialResult = mat_loader::CreateMaterial(&m_HelmetMSPair, m_FileSystem, matDesc, m_MemoryArena, m_MaterialDataArena);
+		FLORAL_ASSERT(pbrMaterialResult == true);
+		insigne::helpers::assign_texture(m_HelmetMSPair.material, "u_SplitSumTex", m_SplitSumTexture);
+	}
 
 	floral::fast_fixed_array<geo3d::VertexPNC, FreelistArena> sphereVertices;
 	floral::fast_fixed_array<s32, FreelistArena> sphereIndices;
@@ -151,9 +201,11 @@ void SkyRuntime::_OnInitialize()
 
 	insigne::helpers::assign_texture(m_MSPair.material, "u_TransmittanceTex", m_TransmittanceTexture);
 	insigne::helpers::assign_texture(m_SphereMSPair.material, "u_TransmittanceTex", m_TransmittanceTexture);
+	insigne::helpers::assign_texture(m_HelmetMSPair.material, "u_TransmittanceTex", m_TransmittanceTexture);
 	insigne::helpers::assign_texture(m_MSPair.material, "u_ScatteringTex", m_ScatteringTexture);
 	insigne::helpers::assign_texture(m_MSPair.material, "u_IrradianceTex", m_IrradianceTexture);
 	insigne::helpers::assign_texture(m_SphereMSPair.material, "u_IrradianceTex", m_IrradianceTexture);
+	insigne::helpers::assign_texture(m_HelmetMSPair.material, "u_IrradianceTex", m_IrradianceTexture);
 
 	m_FovY = 50.0f;
 	m_ProjectionMatrix = floral::construct_infinity_perspective(0.01f, m_FovY, m_AspectRatio);
@@ -182,6 +234,7 @@ void SkyRuntime::_OnInitialize()
 		insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Scene", 0, 0, m_SceneUB);
 	}
 
+	m_ObjectSceneData.cameraPosition = floral::vec4f(m_CamPos, 1.0f);
 	m_ObjectSceneData.viewProjectionMatrix = m_ViewProjectionMatrix;
 	{
 		insigne::ubdesc_t desc;
@@ -191,6 +244,7 @@ void SkyRuntime::_OnInitialize()
 		desc.usage = insigne::buffer_usage_e::dynamic_draw;
 		m_ObjectSceneUB = insigne::copy_create_ub(desc);
 		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_Scene", 0, 0, m_ObjectSceneUB);
+		insigne::helpers::assign_uniform_block(m_HelmetMSPair.material, "ub_Scene", 0, 0, m_ObjectSceneUB);
 	}
 
 	{
@@ -224,6 +278,7 @@ void SkyRuntime::_OnInitialize()
 		m_ConfigsUB = insigne::copy_create_ub(desc);
 		insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Configs", 0, 0, m_ConfigsUB);
 		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_Configs", 0, 0, m_ConfigsUB);
+		insigne::helpers::assign_uniform_block(m_HelmetMSPair.material, "ub_Configs", 0, 0, m_ConfigsUB);
 	}
 
 	m_TextureInfoData.transmittanceTextureWidth = bakedDataInfos.transmittanceTextureWidth;
@@ -247,6 +302,7 @@ void SkyRuntime::_OnInitialize()
 		m_TextureInfoUB = insigne::copy_create_ub(desc);
 		insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_TextureInfo", 0, 0, m_TextureInfoUB);
 		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_TextureInfo", 0, 0, m_TextureInfoUB);
+		insigne::helpers::assign_uniform_block(m_HelmetMSPair.material, "ub_TextureInfo", 0, 0, m_TextureInfoUB);
 	}
 
 	m_AtmosphereData.solarIrradiance = floral::vec4f(m_SkyFixedConfigs.solarIrradiance, 0.0f);
@@ -267,6 +323,7 @@ void SkyRuntime::_OnInitialize()
 		m_AtmosphereUB = insigne::copy_create_ub(desc);
 		insigne::helpers::assign_uniform_block(m_MSPair.material, "ub_Atmosphere", 0, 0, m_AtmosphereUB);
 		insigne::helpers::assign_uniform_block(m_SphereMSPair.material, "ub_Atmosphere", 0, 0, m_AtmosphereUB);
+		insigne::helpers::assign_uniform_block(m_HelmetMSPair.material, "ub_Atmosphere", 0, 0, m_AtmosphereUB);
 	}
 
 	{
@@ -292,12 +349,14 @@ void SkyRuntime::_OnInitialize()
 		atm.texture_format = insigne::texture_format_e::hdr_rgb;
 		atm.texture_dimension = insigne::texture_dimension_e::tex_cube;
 		desc.color_attachments->push_back(atm);
-		desc.width = 16; desc.height = 16;
+		desc.width = 256; desc.height = 256;
 		desc.has_depth = false;
 		desc.color_has_mipmap = true;
 
 		m_ConvolutionFB = insigne::create_framebuffer(desc);
 		insigne::helpers::assign_texture(m_SphereMSPair.material, "u_EnvMap",
+				insigne::extract_color_attachment(m_ConvolutionFB, 0));
+		insigne::helpers::assign_texture(m_HelmetMSPair.material, "u_PMREMTex",
 				insigne::extract_color_attachment(m_ConvolutionFB, 0));
 	}
 
@@ -448,9 +507,9 @@ void SkyRuntime::_OnRender(const f32 i_deltaMs)
 
 	if (m_PreConvoDone && !m_ConvoDone)
 	{
-		for (s32 m = 0; m < 5; m++)
+		for (s32 m = 0; m < 9; m++)
 		{
-			f32 r = (f32)m / 4.0f;
+			f32 r = (f32)m / 8.0f;
 			m_ConvolutionSceneData.roughness = r;
 			for (int i = 0; i < 6; i++)
 			{
@@ -469,8 +528,9 @@ void SkyRuntime::_OnRender(const f32 i_deltaMs)
 	}
 
 	m_PostFXChain.BeginMainOutput();
-	insigne::draw_surface<geo3d::SurfacePNC>(m_Surface.vb, m_Surface.ib, m_SphereMSPair.material);
 	insigne::draw_surface<geo2d::SurfacePT>(m_Quad.vb, m_Quad.ib, m_MSPair.material);
+	insigne::draw_surface<geo3d::SurfacePNTT>(m_HelmetSurfaceGPU.vb, m_HelmetSurfaceGPU.ib, m_HelmetMSPair.material, "helmet");
+	//insigne::draw_surface<geo3d::SurfacePNC>(m_Surface.vb, m_Surface.ib, m_SphereMSPair.material);
 	debugdraw::Render(m_ViewProjectionMatrix);
 	m_PostFXChain.EndMainOutput();
 
@@ -490,11 +550,13 @@ void SkyRuntime::_OnCleanUp()
 {
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
 	insigne::unregister_surface_type<geo3d::SurfacePNC>();
+	insigne::unregister_surface_type<geo3d::SurfacePNTT>();
 	insigne::unregister_surface_type<geo2d::SurfacePT>();
 
 	g_MemoryManager.destroy_allocator(m_TexDataArenaRegion);
 
 	g_StreammingAllocator.free(m_MaterialDataArena);
+	g_StreammingAllocator.free(m_ModelDataArena);
 	g_StreammingAllocator.free(m_PostFXArena);
 	g_StreammingAllocator.free(m_MemoryArena);
 

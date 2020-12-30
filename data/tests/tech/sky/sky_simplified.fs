@@ -213,6 +213,7 @@ vec3 GetSkyRadiance(vec3 camera, vec3 view_ray, vec3 sun_direction, out mediump 
 
 mediump vec3 GetSolarRadiance()
 {
+	// TODO: tone map the sun disk
 	return atmosphere_solarIrradiance / (PI * atmosphere_sunAngularRadius * atmosphere_sunAngularRadius);
 }
 

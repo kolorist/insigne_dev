@@ -1,0 +1,64 @@
+_shader
+	vs	pbr.vs
+	fs	pbr.fs
+_end_shader
+
+_state
+	depth_write on
+	depth_test on less_or_equal
+	cull_face on back ccw
+	blending off
+_end_state
+
+_params
+	_p_ub ub_Light
+		vec3			iu_LightDirection		0.7399 0.6428 0.1983
+		vec3			iu_LightIntensity		2.0  2.0  2.0
+	_end_p_ub
+	
+	_p_ub_holder ub_Scene
+	_p_ub_holder ub_TextureInfo
+	_p_ub_holder ub_Atmosphere
+	_p_ub_holder ub_Configs
+
+	_p_tex u_AlbedoTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			repeat
+		wrap_t			repeat
+		path			damaged_helmet_albedo.cbtex
+	_end_p_tex
+
+	_p_tex u_MetalRoughnessTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			repeat
+		wrap_t			repeat
+		path			damaged_helmet_metalroughness.cbtex
+	_end_p_tex
+
+	_p_tex u_NormalTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			repeat
+		wrap_t			repeat
+		path			damaged_helmet_normal.cbtex
+	_end_p_tex
+
+	_p_tex u_EmissionTex
+		dim				tex2d
+		min_filter		linear_mipmap_linear
+		mag_filter		linear
+		wrap_s			repeat
+		wrap_t			repeat
+		path			damaged_helmet_emissive.cbtex
+	_end_p_tex
+	
+	_p_tex_holder tex2d u_TransmittanceTex
+	_p_tex_holder tex2d u_IrradianceTex
+	_p_tex_holder texcube u_PMREMTex
+	_p_tex_holder tex2d u_SplitSumTex
+_end_params

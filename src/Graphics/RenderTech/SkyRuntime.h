@@ -34,6 +34,7 @@ private:
 	struct ObjectSceneData
 	{
 		floral::mat4x4f							viewProjectionMatrix;
+		floral::vec4f							cameraPosition;
 	};
 
 	struct ConvolutionSceneData
@@ -120,13 +121,16 @@ private:
 
 	helpers::SurfaceGPU							m_Quad;
 	helpers::SurfaceGPU							m_Surface;
+	helpers::SurfaceGPU							m_HelmetSurfaceGPU;
 
 	mat_loader::MaterialShaderPair				m_MSPair;
 	mat_loader::MaterialShaderPair				m_SphereMSPair;
 	mat_loader::MaterialShaderPair				m_ConvoMSPair;
+	mat_loader::MaterialShaderPair				m_HelmetMSPair;
 	insigne::texture_handle_t					m_TransmittanceTexture;
 	insigne::texture_handle_t					m_ScatteringTexture;
 	insigne::texture_handle_t					m_IrradianceTexture;
+	insigne::texture_handle_t					m_SplitSumTexture;
 
 	insigne::ub_handle_t						m_SceneUB;
 	insigne::ub_handle_t						m_ConvolutionUB;
@@ -149,6 +153,7 @@ private:
 
 	FreelistArena*								m_MemoryArena;
 	LinearArena*								m_PostFXArena;
+	LinearArena*								m_ModelDataArena;
 	LinearArena*								m_MaterialDataArena;
 };
 
