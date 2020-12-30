@@ -213,8 +213,11 @@ vec3 GetSkyRadiance(vec3 camera, vec3 view_ray, vec3 sun_direction, out mediump 
 
 mediump vec3 GetSolarRadiance()
 {
-	// TODO: tone map the sun disk
-	return atmosphere_solarIrradiance / (PI * atmosphere_sunAngularRadius * atmosphere_sunAngularRadius);
+	highp vec3 radiance = atmosphere_solarIrradiance / (PI * atmosphere_sunAngularRadius * atmosphere_sunAngularRadius);
+	// tone map it
+	highp float maxLuma = max(max(radiance.x, radiance.y), radiance.z);
+	radiance = radiance / (1.0f + maxLuma / 35.0f);
+	return radiance;
 }
 
 void main()
