@@ -7,6 +7,7 @@ layout (location = 3) in mediump vec2 l_TexCoord;
 layout(std140) uniform ub_Scene
 {
 	highp mat4 iu_viewProjectionMatrix;
+	highp mat4 iu_xformMatrix;
 	mediump vec3 iu_CameraPos;
 };
 
@@ -29,11 +30,11 @@ out highp vec3 v_Position;
 void main()
 {
 	v_TexCoord = l_TexCoord;
-	mediump vec3 normalW = l_Normal_L;
-	mediump vec3 tangentW = l_Tangent_L;
+	mediump vec3 normalW = (iu_xformMatrix * vec4(l_Normal_L, 0.0f)).xyz;
+	mediump vec3 tangentW = (iu_xformMatrix * vec4(l_Tangent_L, 0.0f)).xyz;
 	mediump vec3 bitangentW = cross(normalW, tangentW);
 	v_TBN = mat3(tangentW, bitangentW, normalW);
-	vec3 posW = l_Position_L;
+	vec3 posW = (iu_xformMatrix * vec4(l_Position_L, 1.0f)).xyz;
 	v_ViewDir_W = normalize(iu_CameraPos - posW);
 	v_Position = posW - configs_earthCenter;
 	gl_Position = iu_viewProjectionMatrix * vec4(posW, 1.0f);

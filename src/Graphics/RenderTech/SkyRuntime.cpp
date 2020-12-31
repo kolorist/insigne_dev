@@ -216,7 +216,7 @@ void SkyRuntime::_OnInitialize()
 			k_orthoSize * 0.5f, -k_orthoSize * 0.5f, 0.0f, 100.0f);
 	*/
 	m_SceneData.viewFromClip = m_ProjectionMatrix.get_inverse();
-	m_CamPos = floral::vec3f(-3.0f, 1.0f, 1.0f);
+	m_CamPos = floral::vec3f(-1.0f, -3.0f, 1.0f);
 	m_LookAt = floral::vec3f(0.0f, 0.0f, 0.0f);
 	floral::mat4x4f v = floral::construct_lookat_point(
 			k_upDirection,
@@ -235,6 +235,7 @@ void SkyRuntime::_OnInitialize()
 	}
 
 	m_ObjectSceneData.cameraPosition = floral::vec4f(m_CamPos, 1.0f);
+	m_ObjectSceneData.transformMatrix = floral::construct_Xrotation3d(-floral::pi * 0.5f);
 	m_ObjectSceneData.viewProjectionMatrix = m_ViewProjectionMatrix;
 	{
 		insigne::ubdesc_t desc;
@@ -409,6 +410,7 @@ void SkyRuntime::_OnUpdate(const f32 i_deltaMs)
 		m_ConfigsData.camera = floral::vec4f(m_CamPos, 1.0f);
 
 		m_ObjectSceneData.viewProjectionMatrix = m_ViewProjectionMatrix;
+		m_ObjectSceneData.cameraPosition = floral::vec4f(m_CamPos, 1.0f);
 		insigne::copy_update_ub(m_ObjectSceneUB, &m_ObjectSceneData, sizeof(ObjectSceneData), 0);
 	}
 

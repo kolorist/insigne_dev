@@ -6,6 +6,8 @@ layout (location = 2) in mediump vec4 l_Color;
 layout(std140) uniform ub_Scene
 {
 	highp mat4 iu_viewProjectionMatrix;
+	highp mat4 iu_xformMatrix;
+	mediump vec3 iu_CameraPos;
 };
 
 out mediump vec4 v_Color;

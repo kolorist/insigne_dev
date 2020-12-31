@@ -488,7 +488,8 @@ void DebugDrawer::Initialize(floral::filesystem<FreelistArena>* i_fs)
 		s32 ubSlot = insigne::get_material_uniform_block_slot(m_Material, "ub_XForm");
 		m_Material.uniform_blocks[ubSlot].value = insigne::ubmat_desc_t { 0, 0, m_UB };
 		m_Material.render_state.depth_write = false;
-		m_Material.render_state.depth_test = false;
+		m_Material.render_state.depth_test = true;
+		m_Material.render_state.depth_func = insigne::compare_func_e::func_less_or_equal;
 		m_Material.render_state.cull_face = false;
 		m_Material.render_state.blending = true;
 		m_Material.render_state.blend_equation = insigne::blend_equation_e::func_add;

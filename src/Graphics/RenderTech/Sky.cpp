@@ -131,10 +131,6 @@ void Sky::_OnInitialize()
 
 				taskData[i].currentDepth = i;
 			}
-#if 0
-			generate_single_scattering_texture(m_Atmosphere, transmittanceTexture,
-					deltaRayleighScatteringTexture, deltaMieScatteringTexture, scatteringTexture);
-#else
 			for (int i = 0; i < depth; i++)
 			{
 				refrain2::Task newTask;
@@ -149,7 +145,6 @@ void Sky::_OnInitialize()
 			WriteCacheTex3D("delta_rayleigh_scattering.dat", deltaRayleighScatteringTexture, width, height, depth, 3);
 			WriteCacheTex3D("delta_mie_scattering.dat", deltaMieScatteringTexture, width, height, depth, 3);
 			WriteCacheTex3D("scattering.dat", scatteringTexture, width, height, depth, 4);
-#endif
 		}
 
 		_DebugWriteHDR3D("deltaRayleighScatteringTexture.hdr", width, height, depth, 3, deltaRayleighScatteringTexture);
@@ -297,7 +292,7 @@ void Sky::_OnInitialize()
 
 void Sky::_OnUpdate(const f32 i_deltaMs)
 {
-	ImGui::Begin("Controller");
+	ImGui::Begin("Controller##Sky");
 	ImGui::End();
 }
 

@@ -34,6 +34,7 @@ private:
 	struct ObjectSceneData
 	{
 		floral::mat4x4f							viewProjectionMatrix;
+		floral::mat4x4f							transformMatrix;
 		floral::vec4f							cameraPosition;
 	};
 
