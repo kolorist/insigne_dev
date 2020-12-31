@@ -41,5 +41,59 @@ struct SkyFixedConfigs
 
 #pragma pack(pop)
 
+struct DensityProfileLayer
+{
+	f32											Width;
+
+	f32											ExpTerm;
+	f32											ExpScale;
+	f32											LinearTerm;
+	f32											ConstantTerm;
+};
+
+struct DensityProfile
+{
+	DensityProfileLayer							Layers[2];
+};
+
+struct Atmosphere
+{
+	f32											TopRadius;
+	f32											BottomRadius;
+	f32											MuSMin;
+	floral::vec3f								SolarIrradiance;
+	f32											SunAngularRadius;
+
+	floral::vec3f								RayleighScattering;
+	DensityProfile								RayleighDensity;
+	floral::vec3f								MieScattering;
+	floral::vec3f								MieExtinction;
+	DensityProfile								MieDensity;
+	f32											MiePhaseFunctionG;
+	floral::vec3f								AbsorptionExtinction;
+	DensityProfile								AbsorptionDensity;
+
+	floral::vec3f								GroundAlbedo;
+};
+
 //-------------------------------------------------------------------
+
+void											initialize_atmosphere(Atmosphere* o_atmosphere, BakedDataInfos* o_textureInfo, SkyFixedConfigs* o_skyConfigs);
+void											generate_transmittance_texture(const Atmosphere& i_atmosphere, f32* o_texture);
+void											generate_direct_irradiance_texture(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture, f32* o_texture);
+void											generate_single_scattering_texture(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture,
+													f32** o_deltaRayleighScatteringTexture, f32** o_deltaMieScatteringTexture, f32** o_scatteringTexture,
+													const s32 i_depth = -1);
+void											generate_scattering_density_texture(const Atmosphere& i_atmosphere, f32* i_transmittanceTexture,
+													f32** i_deltaRayleighScatteringTexture, f32** i_deltaMieScatteringTexture, f32** i_deltaMultipleScatteringTexture, f32* i_deltaIrradianceTexture,
+													f32** o_deltaScatteringDensityTexture, const s32 i_scatteringOrder, const s32 i_depth);
+
+void											generate_indirect_irradiance_texture(const Atmosphere& i_atmosphere,
+													f32** i_deltaRayleighScatteringTexture, f32** i_deltaMieScatteringTexture, f32** i_deltaMultipleScatteringTexture,
+													f32* o_deltaIrradianceTexture, f32* o_irradianceTexture, const s32 i_scatteringOrder);
+
+void											generate_multiple_scattering_texture(const Atmosphere& i_atmosphere,
+													f32* i_transmittanceTexture, f32** i_deltaScatteringDensityTexture,
+													f32** o_deltaMultipleScatteringTexture, f32** o_scatteringTexture, const s32 i_depth);
+
 }

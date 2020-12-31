@@ -4,8 +4,12 @@
 
 #include <insigne/commons.h>
 
+#include <refrain2.h>
+
 #include "Graphics/TestSuite.h"
 #include "Memory/MemorySystem.h"
+
+#include "precomputed_sky.h"
 
 namespace stone
 {
@@ -13,47 +17,49 @@ namespace tech
 {
 // ------------------------------------------------------------------
 
-struct DensityProfileLayer
-{
-	f32											Width;
-
-	f32											ExpTerm;
-	f32											ExpScale;
-	f32											LinearTerm;
-	f32											ConstantTerm;
-};
-
-struct DensityProfile
-{
-	DensityProfileLayer							Layers[2];
-};
-
-struct Atmosphere
-{
-	f32											TopRadius;
-	f32											BottomRadius;
-	f32											MuSMin;
-	floral::vec3f								SolarIrradiance;
-	f32											SunAngularRadius;
-
-	floral::vec3f								RayleighScattering;
-	DensityProfile								RayleighDensity;
-	floral::vec3f								MieScattering;
-	floral::vec3f								MieExtinction;
-	DensityProfile								MieDensity;
-	f32											MiePhaseFunctionG;
-	floral::vec3f								AbsorptionExtinction;
-	DensityProfile								AbsorptionDensity;
-
-	floral::vec3f								GroundAlbedo;
-};
-
-// ------------------------------------------------------------------
-
 class Sky : public TestSuite
 {
 public:
 	static constexpr const_cstr k_name			= "sky";
+
+private:
+	struct SingleScatteringTaskData
+	{
+		Atmosphere*								atmosphere;
+		f32**									deltaRayleighScatteringTexture;
+		f32**									deltaMieScatteringTexture;
+		f32**									scatteringTexture;
+		f32*									transmittanceTexture;
+
+		s32										currentDepth;
+	};
+
+	struct ScatteringDensityTaskData
+	{
+		Atmosphere*								atmosphere;
+		f32**									deltaScatteringDensityTexture;
+
+		f32**									deltaMultipleScatteringTexture;
+		f32**									deltaRayleighScatteringTexture;
+		f32**									deltaMieScatteringTexture;
+		f32*									transmittanceTexture;
+		f32*									deltaIrradianceTexture;
+
+		s32										currentDepth;
+		s32										scatteringOrder;
+	};
+
+	struct MultipleScatteringTaskData
+	{
+		Atmosphere*								atmosphere;
+		f32*									transmittanceTexture;
+		f32**									deltaScatteringDensityTexture;
+
+		f32**									scatteringTexture;
+		f32**									deltaMultipleScatteringTexture;
+
+		s32										currentDepth;
+	};
 
 public:
 	Sky();
@@ -61,6 +67,11 @@ public:
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;
+
+private:
+	static refrain2::Task						ComputeSingleScattering(voidptr i_data);
+	static refrain2::Task						ComputeScatteringDensity(voidptr i_data);
+	static refrain2::Task						ComputeMultipleScattering(voidptr i_data);
 
 private:
 	f32**										AllocateTexture3D(const s32 i_w, const s32 i_h, const s32 i_d, const s32 i_channel);
@@ -81,6 +92,7 @@ private:
 
 private:
 	LinearArena*								m_DataArena;
+	LinearArena*								m_TaskDataArena;
 	helich::memory_region<LinearArena>			m_TexDataArenaRegion;
 	LinearArena									m_TexDataArena;
 
