@@ -28,3 +28,6 @@
 [submodule "externals/lua"]
 	path = externals/lua
 	url = https://github.com/kolorist/lua.git
+[submodule "externals/swappy"]
+	path = externals/swappy
+	url = https://github.com/kolorist/swappy.git
