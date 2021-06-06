@@ -19,6 +19,17 @@ typedef floral::fixed_array<u32, LinearArena> IndicesArray;
 
 typedef floral::fixed_array<DebugTextVertex, LinearArena> TextVerticesArray;
 
+struct GlyphInfo
+{
+    s32                                     codePoint;
+    s32                                     width, height;
+    s32                                     advanceX, offsetX, offsetY;
+    s32                                     aX, aY;
+
+    p8                                      bmData;
+};
+typedef floral::fixed_array<GlyphInfo, LinearArena> GlyphsArray;
+
 public:
 	DebugDrawer();
 	~DebugDrawer();
@@ -54,7 +65,7 @@ private:
 	IndicesArray								m_DebugSurfaceIndices[2];
 	TextVerticesArray							m_DebugTextVertices[2];
 	IndicesArray								m_DebugTextIndices[2];
-	stbtt_bakedchar*							m_CharacterData;
+    GlyphsArray                                 m_Glyphs;
 
 	struct MyData {
 		floral::mat4x4f							WVP;

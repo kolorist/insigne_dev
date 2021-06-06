@@ -6,6 +6,8 @@
 #include <insigne/memory.h>
 #include <lotus/memory.h>
 
+#include "Graphics/FontRenderer.h"
+
 helich::memory_manager							g_MemoryManager;
 
 // allocators for calyx
@@ -35,6 +37,12 @@ namespace insigne {
 namespace lotus {
 	linear_allocator_t							e_main_allocator;
 };
+
+// allocators for font_renderer
+namespace font_renderer
+{
+    LinearAllocator                             g_Allocator;
+}
 
 namespace stone {
 	FreelistArena								g_LoggerArena;
@@ -67,6 +75,8 @@ void init_memory_system()
 			memory_region<insigne::freelist_allocator_t>{ "insigne/stream",				SIZE_MB(64),	&insigne::g_stream_allocator },
 
 			memory_region<lotus::linear_allocator_t>	{ "lotus/main",					SIZE_MB(32),	&lotus::e_main_allocator },
+
+            memory_region<font_renderer::LinearAllocator> { "stone/font_renderer/main", SIZE_MB(16),     &font_renderer::g_Allocator },
 
 			memory_region<stone::FreelistArena>			{ "stone/logger_arena",			SIZE_MB(8),		&stone::g_LoggerArena },
 			memory_region<stone::LinearAllocator>		{ "stone/system",				SIZE_MB(1),		&stone::g_SystemAllocator },

@@ -16,6 +16,7 @@ namespace geo3d
 {
 // ------------------------------------------------------------------
 
+ssize GlyphSurface::index                       = -1;
 ssize SurfacePC::index							= -1;
 ssize SurfacePNC::index							= -1;
 ssize SurfacePNTT::index						= -1;

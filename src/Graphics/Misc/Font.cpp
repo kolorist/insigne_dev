@@ -9,15 +9,14 @@
 #include <insigne/ut_textures.h>
 
 #include "InsigneImGui.h"
-#include "Graphics/stb_truetype.h"
 #include "Graphics/DebugDrawer.h"
+#include "Graphics/FontRenderer.h"
 
 namespace stone
 {
 namespace misc
 {
 //-------------------------------------------------------------------
-
 
 Font::Font()
 {
@@ -44,6 +43,18 @@ void Font::_OnInitialize()
 	floral::push_directory(m_FileSystem, wdir);
 
 	m_MemoryArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
+
+    // add fonts
+    const font_renderer::FontHandle arialFont = m_FontRenderer->AddFont("arial.ttf", 50);
+    // font_renderer::FontHandle someFont = m_FontRenderer->AddFont("some_font.ttf", 50);
+
+    // static texts
+    font_renderer::StaticTextHandle static0 = m_FontRenderer->AddText2D(floral::vec2f(400, 400), "Some Text. WAR", arialFont, 30, font_renderer::Alignment::Left);
+    font_renderer::StaticTextHandle static1 = m_FontRenderer->AddText2D(floral::vec2f(400, 200), "Hello World", arialFont, 30, font_renderer::Alignment::Left);
+    // font_renderer::StaticTextHandle static1 = m_FontRenderer->AddText3D(floral::vec3f(0.0f, 0.0f, 0.0f), "Some Text 3D", 50, font_renderer::Alignment::Left);
+    // font_renderer::SetText(static0, "Some Text"); // => hash checking then doing nothing
+    // font_renderer::SetText(static0, "Some Other Text"); // => update
+
 #if 0
 	m_MemoryArena->free_all();
 	floral::relative_path iFilePath = floral::build_relative_path("NotoSans-Regular.ttf");
@@ -75,6 +86,9 @@ void Font::_OnInitialize()
 
 void Font::_OnUpdate(const f32 i_deltaMs)
 {
+    // dynamic text
+    // m_FontRenderer->DrawText2D(floral::vec2f(0, 0), "FPS: 12", 20, font_renderer::Alignment::Left);
+    // m_FontRenderer->DrawText3D(floral::vec3f(0, 0, 0), "FPS: 12", 30, font_renderer::Alignment::Left);
 	debugdraw::DrawText3D("12345", floral::vec3f(0.0f, 0.0f, 0.0f));
 }
 
@@ -82,6 +96,8 @@ void Font::_OnRender(const f32 i_deltaMs)
 {
 	insigne::begin_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 
+    m_FontRenderer->Render(floral::mat4x4f(1.0f));
+    m_FontRenderer->Render2D();
 	RenderImGui();
 
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
@@ -91,6 +107,9 @@ void Font::_OnRender(const f32 i_deltaMs)
 
 void Font::_OnCleanUp()
 {
+    // cleant up font_renderer
+    // font_renderer::CleanUp();
+
 	CLOVER_VERBOSE("Cleaning up '%s' TestSuite", k_name);
 	g_StreammingAllocator.free(m_MemoryArena);
 

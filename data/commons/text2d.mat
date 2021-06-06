@@ -1,0 +1,15 @@
+_shader
+	vs	text2d.vs
+	fs	text2d.fs
+_end_shader
+
+_state
+	depth_write off
+	depth_test off
+	cull_face off
+	blending on add src_alpha one_minus_src_alpha
+_end_state
+
+_params
+	_p_tex_holder tex2d u_FontAtlas
+_end_params

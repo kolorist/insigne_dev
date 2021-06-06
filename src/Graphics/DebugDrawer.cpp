@@ -2,6 +2,8 @@
 
 #include <math.h>
 
+#include <floral/math/utils.h>
+
 #include <insigne/system.h>
 #include <insigne/commons.h>
 #include <insigne/ut_buffers.h>
@@ -77,9 +79,16 @@ uniform mediump sampler2D u_Tex;
 
 void main()
 {
-	o_Color = mix(vec4(0.3f, 0.4f, 0.5f, 1.0f), v_Color, texture(u_Tex, v_TexCoord).r);
+	o_Color = mix(vec4(0.3f, 0.4f, 0.5f, 0.5f), v_Color, texture(u_Tex, v_TexCoord).r);
+    //o_Color = vec4(v_Color.rgb, texture(u_Tex, v_TexCoord).r);
 }
 )";
+
+const f32 k_fontSize = 40.0f;
+const s32 k_padding = 4;
+f32 k_scaleFactor = 1.0f;
+floral::vec2f k_atlasSize(0.0f, 0.0f);
+stbtt_fontinfo fontInfo;
 
 DebugDrawer::DebugDrawer()
 	: m_CurrentBufferIdx(0)
@@ -288,33 +297,37 @@ void DebugDrawer::DrawText3D(const_cstr i_str, const floral::vec3f& i_position)
 	for (s32 i = 0; i < len; i++)
 	{
 		u8 ascii = i_str[i];
-		const stbtt_bakedchar& charInfo = m_CharacterData[ascii - 32];
-		strLenFrag += charInfo.xadvance;
+		strLenFrag += m_Glyphs[ascii - 32].advanceX;
+        if (i < len - 1)
+        {
+            s32 kernX = stbtt_GetCodepointKernAdvance(&fontInfo, i_str[i], i_str[i + 1]);
+            strLenFrag += k_scaleFactor * kernX;
+        }
 	}
 
 	// TODO: remove hardcode
 	floral::vec2f px = floral::vec2f(2.0f, 2.0f) / floral::vec2f(1280.0f, 720.0f);
-	floral::vec2f dt = floral::vec2f(1.0f, 1.0f) / 1024.0f;
+	floral::vec2f dt = floral::vec2f(1.0f, 1.0f) / k_atlasSize;
 	floral::vec2f leftOrg(-strLenFrag * 0.5f * px.x, 0.0f);
 	floral::vec4f i_color = floral::vec4f(1.0f, 1.0f, 0.0f, 1.0f);
 
 	for (s32 i = 0; i < len; i++)
 	{
 		u8 ascii = i_str[i];
-		const stbtt_bakedchar& charInfo = m_CharacterData[ascii - 32];
+		const GlyphInfo& charInfo = m_Glyphs[ascii - 32];
 
 		if (ascii != ' ')
 		{
-			const floral::vec2f s0(charInfo.x0 * dt.x, charInfo.y1 * dt.y);
-			const floral::vec2f s1(charInfo.x1 * dt.x, charInfo.y0 * dt.y);
+			const floral::vec2f s0(charInfo.aX * dt.x, charInfo.aY * dt.y);
+			const floral::vec2f s1((charInfo.aX + charInfo.width) * dt.x, (charInfo.aY + charInfo.height) * dt.y);
 
 			DebugTextVertex v[4];
-			floral::vec2f dim = floral::vec2f(charInfo.x1 - charInfo.x0, charInfo.y1 - charInfo.y0) * px;
-			floral::vec2f pos = leftOrg + floral::vec2f(charInfo.xoff, -charInfo.yoff * 0.5f) * px;
-			v[0] = DebugTextVertex { i_position, floral::vec4f(pos.x, pos.y - dim.y * 0.5f, s0.x, s0.y), i_color };
-			v[1] = DebugTextVertex { i_position, floral::vec4f(pos.x + dim.x, pos.y - dim.y * 0.5f, s1.x, s0.y), i_color };
-			v[2] = DebugTextVertex { i_position, floral::vec4f(pos.x + dim.x, pos.y + dim.y * 0.5f, s1.x, s1.y), i_color };
-			v[3] = DebugTextVertex { i_position, floral::vec4f(pos.x, pos.y + dim.y * 0.5f, s0.x, s1.y), i_color };
+			floral::vec2f dim = floral::vec2f(charInfo.width, charInfo.height) * px;
+			floral::vec2f pos = leftOrg + floral::vec2f(charInfo.offsetX, -charInfo.offsetY) * px;
+			v[0] = DebugTextVertex { i_position, floral::vec4f(pos.x, pos.y, s0.x, s0.y), i_color };
+			v[1] = DebugTextVertex { i_position, floral::vec4f(pos.x + dim.x, pos.y, s1.x, s0.y), i_color };
+			v[2] = DebugTextVertex { i_position, floral::vec4f(pos.x + dim.x, pos.y - dim.y, s1.x, s1.y), i_color };
+			v[3] = DebugTextVertex { i_position, floral::vec4f(pos.x, pos.y - dim.y, s0.x, s1.y), i_color };
 
 			u32 currentIdx = m_DebugTextVertices[m_CurrentBufferIdx].get_size();
 			m_DebugTextVertices[m_CurrentBufferIdx].push_back(v[0]);
@@ -323,15 +336,21 @@ void DebugDrawer::DrawText3D(const_cstr i_str, const floral::vec3f& i_position)
 			m_DebugTextVertices[m_CurrentBufferIdx].push_back(v[3]);
 
 			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 0);
-			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 1);
+			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 3);
 			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 2);
 
 			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 2);
-			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 3);
+			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 1);
 			m_DebugTextIndices[m_CurrentBufferIdx].push_back(currentIdx + 0);
 		}
 
-		leftOrg.x += charInfo.xadvance * px.x;
+        f32 advanceX = charInfo.advanceX;
+        if (i < len - 1)
+        {
+            s32 kernX = stbtt_GetCodepointKernAdvance(&fontInfo, i_str[i], i_str[i + 1]);
+            advanceX += k_scaleFactor * kernX;
+        }
+		leftOrg.x += advanceX * px.x;
 	}
 }
 
@@ -350,32 +369,138 @@ void DebugDrawer::Initialize(floral::filesystem<FreelistArena>* i_fs)
 
 	tempArena->free_all();
 	floral::absolute_path iFilePath = floral::get_application_directory();
-	floral::relative_path fontPath = floral::build_relative_path("NotoSans-Regular.ttf");
+	//floral::relative_path fontPath = floral::build_relative_path("LiberationMono-Regular.ttf");
+	floral::relative_path fontPath = floral::build_relative_path("arial.ttf");
 	floral::concat_path(&iFilePath, fontPath);
 	floral::file_info iFile = floral::open_file_read(i_fs, iFilePath);
-	FLORAL_ASSERT(iFile.file_size > 0);
+	if (iFile.file_size <= 0)
+	{
+		CLOVER_ERROR("No font");
+	}
 	p8 ttfData = (p8)tempArena->allocate(iFile.file_size);
 	floral::read_all_file(iFile, ttfData);
 	floral::close_file(iFile);
 
+    // font bitmap creation
+	#if 0
 	insigne::texture_desc_t texDesc;
-	texDesc.width = 1024;
-	texDesc.height = 1024;
-	texDesc.format = insigne::texture_format_e::r;
-	texDesc.min_filter = insigne::filtering_e::linear;
-	texDesc.mag_filter = insigne::filtering_e::linear;
-	texDesc.dimension = insigne::texture_dimension_e::tex_2d;
-	texDesc.has_mipmap = false;
-	texDesc.compression = insigne::texture_compression_e::no_compression;
-	texDesc.data = nullptr;
+    {
+        const size k_charCount = 96;
 
-	insigne::prepare_texture_desc(texDesc);
+        m_Glyphs.init(k_charCount, m_MemoryArena);
 
-	m_CharacterData = m_MemoryArena->allocate_array<stbtt_bakedchar>(96);
-	stbtt_BakeFontBitmap(ttfData, 0, 40.0f, (p8)texDesc.data, 1024, 1024, 32, 96, m_CharacterData);
+        FLORAL_ASSERT(stbtt_InitFont(&fontInfo, ttfData, 0));
+        k_scaleFactor = stbtt_ScaleForPixelHeight(&fontInfo, k_fontSize);
+        s32 kerningTableLen = stbtt_GetKerningTableLength(&fontInfo);
+        stbtt_kerningentry* kerningTable = m_MemoryArena->allocate_array<stbtt_kerningentry>(kerningTableLen);
+        fontInfo.gpos = 0;
+        stbtt_GetKerningTable(&fontInfo, kerningTable, kerningTableLen);
+
+        s32 ascent = 0, descent = 0, lineGap = 0;
+        stbtt_GetFontVMetrics(&fontInfo, &ascent, &descent, &lineGap);
+
+        for (size i = 0; i < k_charCount; i++)
+        {
+            s32 charWidth = 0, charHeight = 0;
+            s32 ch = i + 32;
+
+            s32 x0 = 0, x1 = 0, y0 = 0, y1 = 0;
+            stbtt_GetCodepointBitmapBox(&fontInfo, ch, k_scaleFactor, k_scaleFactor, &x0, &y0, &x1, &y1);
+            charWidth = x1 - x0;
+            charHeight = y1 - y0;
+
+            s32 advanceX = 0, offsetX = 0, offsetY = y0, leftSideBearing = 0;
+            stbtt_GetCodepointHMetrics(&fontInfo, ch, &advanceX, &leftSideBearing);
+            advanceX = (s32)(advanceX * k_scaleFactor);
+            offsetX = (s32)(leftSideBearing * k_scaleFactor);
+            offsetY += (s32)(ascent * k_scaleFactor);
+
+            p8 bmData = nullptr;
+            if (ch == 32)
+            {
+                charWidth = advanceX;
+                charHeight = k_fontSize;
+                size bitmapSize = charWidth * charHeight;
+                bmData = (p8)tempArena->allocate(bitmapSize);
+                memset(bmData, 0, bitmapSize);
+            }
+            else
+            {
+                size bitmapSize = charWidth * charHeight;
+                bmData = (p8)tempArena->allocate(bitmapSize);
+                stbtt_MakeCodepointBitmap(&fontInfo, bmData, charWidth, charHeight, charWidth, k_scaleFactor, k_scaleFactor, ch);
+            }
+
+            GlyphInfo newGlyph {
+                ch,
+                charWidth, charHeight,
+                advanceX, offsetX, offsetY,
+                0, 0,
+                bmData
+            };
+
+            m_Glyphs.push_back(newGlyph);
+        }
+
+        // pack into an atlas
+        f32 requiredArea = 0.0f;
+        for (size i = 0; i < k_charCount; i++)
+        {
+            requiredArea += (m_Glyphs[i].width + 2 * k_padding) * (m_Glyphs[i].height + 2 * k_padding);
+        }
+        f32 guessSize = sqrtf(requiredArea) * 1.3f;
+        s32 imageSize = floral::next_pow2((s32)guessSize);
+		
+        k_atlasSize = floral::vec2f(imageSize, imageSize);
+        texDesc.width = imageSize;
+        texDesc.height = imageSize;
+        FLORAL_ASSERT(texDesc.width <= 2048 && texDesc.height <= 2048);
+        texDesc.format = insigne::texture_format_e::r;
+        texDesc.min_filter = insigne::filtering_e::linear;
+        texDesc.mag_filter = insigne::filtering_e::linear;
+        texDesc.dimension = insigne::texture_dimension_e::tex_2d;
+        texDesc.has_mipmap = false;
+        texDesc.compression = insigne::texture_compression_e::no_compression;
+        texDesc.data = nullptr;
+
+        insigne::prepare_texture_desc(texDesc);
+
+        // create the atlas
+        s32 offsetX = k_padding, offsetY = k_padding;
+        p8 atlas = (p8)texDesc.data;
+        for (size i = 0; i < k_charCount; i++)
+        {
+            GlyphInfo& glyph = m_Glyphs[i];
+            glyph.aX = offsetX;
+            glyph.aY = offsetY;
+            // copy glyph's image to atlas
+            for (s32 y = 0; y < glyph.height; y++)
+            {
+                for (s32 x = 0; x < glyph.width; x++)
+                {
+                    atlas[(offsetY + y) * imageSize + offsetX + x] =
+                        glyph.bmData[y * glyph.width + x];
+                }
+            }
+
+            offsetX += (glyph.width + 2 * k_padding);
+            if (offsetX >= (imageSize - glyph.width - 2 * k_padding))
+            {
+                offsetX = k_padding;
+                offsetY += (k_fontSize + 2 * k_padding);
+                if (offsetY > (imageSize - k_fontSize - 2 * k_padding))
+                {
+                    break;
+                }
+            }
+        }
+    }
+
+	//m_CharacterData = m_MemoryArena->allocate_array<stbtt_bakedchar>(96);
+	//stbtt_BakeFontBitmap(ttfData, 0, 40.0f, (p8)texDesc.data, 1024, 1024, 32, 96, m_CharacterData);
 
 	m_FontAtlas = insigne::create_texture(texDesc);
-
+	#endif
 	// DebugLine and DebugSurface has already been registered
 	static const u32 s_verticesLimit = 1u << 17;
 	static const s32 s_indicesLimit = 1u << 18;
@@ -554,10 +679,12 @@ void DebugDrawer::Render(const floral::mat4x4f& i_wvp)
 		insigne::draw_surface<DebugSurface>(m_SurfaceVB, m_SurfaceIB, m_Material);
 	}
 
+#if 0
 	if (m_DebugTextIndices[m_CurrentBufferIdx].get_size() > 0)
 	{
 		insigne::draw_surface<DebugTextSurface>(m_TextVB, m_TextIB, m_TextMaterial);
 	}
+#endif
 }
 
 void DebugDrawer::BeginFrame()
@@ -687,7 +814,7 @@ void DrawPoint3D(const floral::vec3f& i_position, const f32 i_size, const size i
 
 void DrawText3D(const_cstr i_str, const floral::vec3f& i_position)
 {
-	s_DebugDrawer->DrawText3D(i_str, i_position);
+	//s_DebugDrawer->DrawText3D(i_str, i_position);
 }
 
 }

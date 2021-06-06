@@ -135,7 +135,7 @@ void Application::OnInitializeRenderer()
 
 	insigne::register_post_surface_type<DebugLine>();
 	insigne::register_post_surface_type<DebugSurface>();
-	insigne::register_post_surface_type<DebugTextSurface>();
+	insigne::register_post_surface_type<geo3d::GlyphSurface>();
 	insigne::register_post_surface_type<ImGuiSurface>();
 
 	insigne::initialize_render_thread();

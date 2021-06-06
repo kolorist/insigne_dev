@@ -10,6 +10,11 @@
 #include "Memory/MemorySystem.h"
 #include "InsigneImGui.h"
 
+namespace font_renderer
+{
+class FontRenderer;
+}
+
 namespace stone
 {
 // ------------------------------------------------------------------
@@ -150,6 +155,7 @@ private:
 
 private:
 	floral::filesystem<FreelistArena>*			m_FileSystem;
+    font_renderer::FontRenderer*                m_FontRenderer;
 	s32											m_NextSuiteId;
 	s32											m_CurrentTestSuiteId;
 	ITestSuite*									m_Suite;

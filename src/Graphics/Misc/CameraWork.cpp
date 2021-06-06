@@ -153,8 +153,8 @@ void CameraWork::_OnUpdate(const f32 i_deltaMs)
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 1.0f, 0.0f), floral::vec4f(0.0f, 1.0f, 0.0f, 1.0f));
 	debugdraw::DrawLine3D(floral::vec3f(0.0f), floral::vec3f(0.0f, 0.0f, 1.0f), floral::vec4f(0.0f, 0.0f, 1.0f, 1.0f));
 
-	debugdraw::DrawText3D("THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG", floral::vec3f(1.0f, 0.0f, 0.0f));
-	debugdraw::DrawText3D("The quick brown fox jumps over the lazy dog", floral::vec3f(0.0f, 0.0f, 1.0f));
+	debugdraw::DrawText3D("AWAY", floral::vec3f(1.0f, 0.0f, 0.0f));
+	debugdraw::DrawText3D("The quick brown fox ljumps over the lazy dog", floral::vec3f(0.0f, 0.0f, 1.0f));
 }
 
 //-------------------------------------------------------------------

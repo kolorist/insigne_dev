@@ -9,6 +9,11 @@
 
 #include "Memory/MemorySystem.h"
 
+namespace font_renderer
+{
+class FontRenderer;
+}
+
 namespace stone
 {
 // ------------------------------------------------------------------
@@ -16,7 +21,7 @@ namespace stone
 class TestSuite : public ITestSuite
 {
 public:
-	void										OnInitialize(floral::filesystem<FreelistArena>* i_fs) override;
+	void										OnInitialize(const SubSystems& i_subSystems) override;
 	void										OnUpdate(const f32 i_deltaMs) override;
 	void										OnRender(const f32 i_deltaMs) override;
 	void										OnCleanUp() override;
@@ -29,6 +34,7 @@ protected:
 
 protected:
 	floral::filesystem<FreelistArena>*			m_FileSystem;
+    font_renderer::FontRenderer*                m_FontRenderer;
 
 	// resource control
 private:

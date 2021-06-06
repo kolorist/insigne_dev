@@ -5,10 +5,11 @@
 
 #include <floral/function/simple_callback.h>
 
-#include <clover/Logger.h>
-#include <clover/RedirectOutputSink.h>
+#include <clover/logger.h>
+#include <clover/redirect_output_sink.h>
 
 #include "Graphics/DebugDrawer.h"
+#include "Graphics/FontRenderer.h"
 
 // playground
 #include "Graphics/Performance/Vault.h"
@@ -19,9 +20,9 @@
 
 // performance demo
 #include "Graphics/Performance/Empty.h"
-#include "Graphics/Performance/TextureStreaming.h"
+//#include "Graphics/Performance/TextureStreaming.h"
 #include "Graphics/Performance/Triangle.h"
-#include "Graphics/Performance/ImGuiCustomWidgets.h"
+//#include "Graphics/Performance/ImGuiCustomWidgets.h"
 #include "Graphics/Performance/SceneLoader.h"
 #include "Graphics/Performance/GammaCorrection.h"
 #include "Graphics/Performance/Blending.h"
@@ -32,20 +33,20 @@
 #include "Graphics/Performance/Matrices.h"
 
 // tech demo
-#include "Graphics/RenderTech/FrameBuffer.h"
-#include "Graphics/RenderTech/PBR.h"
+//#include "Graphics/RenderTech/FrameBuffer.h"
+//#include "Graphics/RenderTech/PBR.h"
 #include "Graphics/RenderTech/PBRHelmet.h"
-#include "Graphics/RenderTech/PBRWithIBL.h"
-#include "Graphics/RenderTech/FragmentPartition.h"
-#include "Graphics/RenderTech/LightProbeGI.h"
+//#include "Graphics/RenderTech/PBRWithIBL.h"
+//#include "Graphics/RenderTech/FragmentPartition.h"
+//#include "Graphics/RenderTech/LightProbeGI.h"
 #include "Graphics/RenderTech/HDRBloom.h"
 #include "Graphics/RenderTech/Sky.h"
 #include "Graphics/RenderTech/SkyRuntime.h"
 
 // tools demo
-#include "Graphics/Tools/SingleAccurateFormFactor.h"
-#include "Graphics/Tools/SurfelsGenerator.h"
-#include "Graphics/Tools/Samplers.h"
+//#include "Graphics/Tools/SingleAccurateFormFactor.h"
+//#include "Graphics/Tools/SurfelsGenerator.h"
+//#include "Graphics/Tools/Samplers.h"
 #include "Graphics/Tools/SHCalculator.h"
 #include "Graphics/Tools/Noise.h"
 
@@ -150,6 +151,8 @@ void DemoHub::Initialize()
 	m_ImGuiSuite.reserve(8, &g_PersistanceAllocator);
 
 	InitializeImGui(m_FileSystem);
+    m_FontRenderer = g_PersistanceAllocator.allocate<font_renderer::FontRenderer>(m_FileSystem);
+    m_FontRenderer->Initialize();
 	debugdraw::Initialize(m_FileSystem);
 
 	//_EmplacePlaygroundSuite<perf::Vault>();
@@ -512,7 +515,11 @@ void DemoHub::_SwitchTestSuite(SuiteRegistry& i_to)
 
 		m_CurrentTestSuiteId = i_to.id;
 		m_Suite = i_to.createFunction();
-		m_Suite->OnInitialize(m_FileSystem);
+        SubSystems subSystems {
+            m_FileSystem,
+            m_FontRenderer
+        };
+		m_Suite->OnInitialize(subSystems);
 	}
 }
 

@@ -1,7 +1,7 @@
 #include "LuaScripting.h"
 
-#include <clover/Logger.h>
-#include <clover/SinkTopic.h>
+#include <clover/logger.h>
+#include <clover/sink_topic.h>
 #include <insigne/ut_render.h>
 
 #include <floral/containers/text.h>

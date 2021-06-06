@@ -53,6 +53,16 @@ else ()
 	file (GLOB_RECURSE deprecated_files
 		LIST_DIRECTORIES false
 		"${PROJECT_SOURCE_DIR}/src/Graphics/Tests/*.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/Performance/ImGuiCustomWidgets.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/Performance/TextureStreaming.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/PBR.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/PBRWithIBL.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/FrameBuffer.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/LightProbeGI.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/RenderTech/FragmentPartition.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/Tools/SurfelsGenerator.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/Tools/Samplers.cpp"
+        "${PROJECT_SOURCE_DIR}/src/Graphics/Tools/SingleAccurateFormFactor.cpp"
 		"${PROJECT_SOURCE_DIR}/src/ImGuiDebug/*.cpp")
 	list (REMOVE_ITEM file_list ${deprecated_files})
 endif ()

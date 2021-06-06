@@ -10,9 +10,10 @@ namespace stone
 {
 // ------------------------------------------------------------------
 
-void TestSuite::OnInitialize(floral::filesystem<FreelistArena>* i_fs)
+void TestSuite::OnInitialize(const SubSystems& i_subSystems)
 {
-	m_FileSystem = i_fs;
+	m_FileSystem = i_subSystems.fileSystem;
+    m_FontRenderer = i_subSystems.fontRenderer;
 
 	m_BuffersBeginStateId = insigne::get_buffers_resource_state();
 	m_ShadingBeginStateId = insigne::get_shading_resource_state();
