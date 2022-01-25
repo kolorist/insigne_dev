@@ -1,6 +1,6 @@
 #include "Font.h"
 
-#include <clover/Logger.h>
+#include <clover/logger.h>
 
 #include <insigne/system.h>
 #include <insigne/ut_render.h>
@@ -39,10 +39,16 @@ const_cstr Font::GetName() const
 void Font::_OnInitialize()
 {
 	CLOVER_VERBOSE("Initializing '%s' TestSuite", k_name);
+	m_MemoryArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
+    LinearArena* arena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
+    ImDrawer2D::InitializeData initData{
+        m_FileSystem,
+        arena
+    };
+    m_ImDrawer2D.Initialize(initData);
+
 	floral::relative_path wdir = floral::build_relative_path("tests/misc/font");
 	floral::push_directory(m_FileSystem, wdir);
-
-	m_MemoryArena = g_StreammingAllocator.allocate_arena<LinearArena>(SIZE_MB(4));
 
     // add fonts
     const font_renderer::FontHandle arialFont = m_FontRenderer->AddFont("arial.ttf", 50);
@@ -90,6 +96,7 @@ void Font::_OnUpdate(const f32 i_deltaMs)
     // m_FontRenderer->DrawText2D(floral::vec2f(0, 0), "FPS: 12", 20, font_renderer::Alignment::Left);
     // m_FontRenderer->DrawText3D(floral::vec3f(0, 0, 0), "FPS: 12", 30, font_renderer::Alignment::Left);
 	debugdraw::DrawText3D("12345", floral::vec3f(0.0f, 0.0f, 0.0f));
+    // m_ImDrawer2D->DrawFilledRect(floral::vec2f(0, 0), floral::vec2f(100, 100), floral::vec4f(1.0f, 0.0f, 0.0f, 1.0f));
 }
 
 void Font::_OnRender(const f32 i_deltaMs)
@@ -99,6 +106,7 @@ void Font::_OnRender(const f32 i_deltaMs)
     m_FontRenderer->Render(floral::mat4x4f(1.0f));
     m_FontRenderer->Render2D();
 	RenderImGui();
+    // m_ImDrawer2D->Render();
 
 	insigne::end_render_pass(DEFAULT_FRAMEBUFFER_HANDLE);
 	insigne::mark_present_render();

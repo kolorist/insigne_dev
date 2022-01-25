@@ -5,6 +5,7 @@
 #include <insigne/commons.h>
 
 #include "Graphics/TestSuite.h"
+#include "Graphics/ImDrawer2D.h"
 #include "Memory/MemorySystem.h"
 
 namespace stone
@@ -24,6 +25,9 @@ public:
 
 	ICameraMotion*								GetCameraMotion() override;
 	const_cstr									GetName() const override;
+
+private:
+    ImDrawer2D                                  m_ImDrawer2D;
 
 private:
 	LinearArena*								m_MemoryArena;
