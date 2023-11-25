@@ -1,5 +1,5 @@
 # 1. required version
-cmake_minimum_required(VERSION 3.4.1)
+cmake_minimum_required(VERSION 3.20min)
 
 # 2. initial setup
 set (PROJECT_NAME "insigne_dev")
@@ -154,6 +154,8 @@ if (${TARGET_PLATFORM} STREQUAL "arm64-v8a" OR ${TARGET_PLATFORM} STREQUAL "arm-
 		# PUBLIC	$<$<COMPILE_LANGUAGE:CXX>:-std=c++11 -Wall -fno-rtti -fno-exceptions>
 		# PUBLIC	$<$<COMPILE_LANGUAGE:C>:-std=c11 -Wall>)
 else ()
+    target_compile_definitions(${PROJECT_NAME}
+        PUBLIC WIN32_LEAN_AND_MEAN)
 	# we will c++14 on Windows build as c++11 yields compile errors
 	# target_compile_options(${PROJECT_NAME}
 		# PUBLIC	$<$<COMPILE_LANGUAGE:CXX>:-std=c++14 -Wall -fno-rtti -fno-exceptions>

@@ -1,5 +1,5 @@
 # 1. required version
-cmake_minimum_required(VERSION 3.4.1)
+cmake_minimum_required(VERSION 3.20min)
 
 # 2. initial setup
 set (PROJECT_NAME "modelbaker")
