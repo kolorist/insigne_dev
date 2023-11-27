@@ -109,7 +109,7 @@ void Application::OnInitializePlatform()
 	insigne::g_settings.native_res_x = commonCtx->window_width;
 	insigne::g_settings.native_res_y = commonCtx->window_height;
 
-	insigne::g_scene_settings.max_shaders = 32;
+	insigne::g_scene_settings.max_shaders = 128;
 	insigne::g_scene_settings.max_ubos = 1024;
 	insigne::g_scene_settings.max_ibos = 2048;
 	insigne::g_scene_settings.max_vbos = 2048;
