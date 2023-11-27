@@ -7,10 +7,10 @@
 #include <floral/gpds/vec.h>
 #include <floral/io/filesystem.h>
 
-#include <clover/Logger.h>
-#include <clover/SinkTopic.h>
-#include <clover/VSOutputSink.h>
-#include <clover/ConsoleOutputSink.h>
+#include <clover/logger.h>
+#include <clover/sink_topic.h>
+#include <clover/vs_output_sink.h>
+#include <clover/console_output_sink.h>
 
 #include "Memory/MemorySystem.h"
 
