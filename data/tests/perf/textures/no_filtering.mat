@@ -21,6 +21,6 @@ _params
 		mag_filter		nearest
 		wrap_s			clamp_to_edge
 		wrap_t			clamp_to_edge
-		path			ldrtex2d_albedo.etc.cbtex
+		path			ldrtex2d_albedo_dxt_rgb.cbtex
 	_end_p_tex
 _end_params
