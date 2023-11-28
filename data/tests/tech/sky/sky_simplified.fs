@@ -12,43 +12,43 @@ layout(std140) uniform ub_Scene
 
 layout(std140) uniform ub_TextureInfo
 {
-	mediump int textureInfo_transmittanceTextureWidth;
-	mediump int textureInfo_transmittanceTextureHeight;
+	highp int textureInfo_transmittanceTextureWidth;
+	highp int textureInfo_transmittanceTextureHeight;
 
-	mediump int textureInfo_scatteringTextureRSize;
-	mediump int textureInfo_scatteringTextureMuSize;
-	mediump int textureInfo_scatteringTextureMuSSize;
-	mediump int textureInfo_scatteringTextureNuSize;
+	highp int textureInfo_scatteringTextureRSize;
+	highp int textureInfo_scatteringTextureMuSize;
+	highp int textureInfo_scatteringTextureMuSSize;
+	highp int textureInfo_scatteringTextureNuSize;
 
-	mediump int textureInfo_scatteringTextureWidth;
-	mediump int textureInfo_scatteringTextureHeight;
-	mediump int textureInfo_scatteringTextureDepth;
+	highp int textureInfo_scatteringTextureWidth;
+	highp int textureInfo_scatteringTextureHeight;
+	highp int textureInfo_scatteringTextureDepth;
 
-	mediump int textureInfo_irrandianceTextureWidth;
-	mediump int textureInfo_irrandianceTextureHeight;
+	highp int textureInfo_irrandianceTextureWidth;
+	highp int textureInfo_irrandianceTextureHeight;
 };
 
 layout(std140) uniform ub_Atmosphere
 {
-	mediump vec3 atmosphere_solarIrradiance;
-	mediump vec3 atmosphere_rayleighScattering;
-	mediump vec3 atmosphere_mieScattering;
-	mediump float atmosphere_sunAngularRadius;
-	mediump float atmosphere_bottomRadius;
-	mediump float atmosphere_topRadius;
-	mediump float atmosphere_miePhaseFunctionG;
-	mediump float atmosphere_muSMin;
+	highp vec3 atmosphere_solarIrradiance;
+	highp vec3 atmosphere_rayleighScattering;
+	highp vec3 atmosphere_mieScattering;
+	highp float atmosphere_sunAngularRadius;
+	highp float atmosphere_bottomRadius;
+	highp float atmosphere_topRadius;
+	highp float atmosphere_miePhaseFunctionG;
+	highp float atmosphere_muSMin;
 };
 
 layout(std140) uniform ub_Configs
 {
-	mediump vec3 configs_camera;
-	mediump vec3 configs_whitePoint;
-	mediump vec3 configs_earthCenter;
-	mediump vec3 configs_sunDirection;
-	mediump vec2 configs_sunSize;
-	mediump float configs_exposure;
-	mediump float configs_lengthUnitInMeters;
+	highp vec3 configs_camera;
+	highp vec3 configs_whitePoint;
+	highp vec3 configs_earthCenter;
+	highp vec3 configs_sunDirection;
+	highp vec2 configs_sunSize;
+	highp float configs_exposure;
+	highp float configs_lengthUnitInMeters;
 };
 
 uniform mediump sampler2D u_TransmittanceTex;
